@@ -1,7 +1,9 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "PAKETO"
+    "builder": "NIXPACKS",
+    "nixpacksVersion": "1.38.0",  // Use a known stable version
+    "buildEnvironment": "V2"       // Use stable build environment
   },
   "deploy": {
     "startCommand": "npm start",
@@ -14,4 +16,5 @@
     "NODE_ENV": "production",
     "PORT": "${{PORT}}"
   }
-}
+} 
+//ist that clear/
