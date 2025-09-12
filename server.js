@@ -688,7 +688,6 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);
@@ -704,5 +703,3 @@ process.on('SIGTERM', () => {
     process.exit(0);
   });
 });
-
-//well well well//
