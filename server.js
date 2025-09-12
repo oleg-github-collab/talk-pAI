@@ -10,6 +10,9 @@ const path = require('path');
 const OpenAI = require('openai');
 require('dotenv').config();
 
+// ✅ CRITICAL: Define PORT — Railway injects it via process.env.PORT
+const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
+
 const db = require('./database');
 const aiAssistant = require('./ai-assistant');
 
@@ -674,6 +677,7 @@ app.put('/api/users/settings', authenticateToken, async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  console.log('✅ Health check called'); // 👈 Helps debug in logs
   res.json({
     status: 'healthy',
     timestamp: Date.now(),
