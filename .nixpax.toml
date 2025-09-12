@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "python3", "gcc", "make", "pkg-config"]
+
+[phases.install]
+cmd = "npm install --ignore-scripts"
+
+[phases.start]
+cmd = "npm start"
