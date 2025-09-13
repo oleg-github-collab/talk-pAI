@@ -11,46 +11,49 @@
   <title>Talk pAI - AI-Powered Messenger</title>
   <style>
     :root {
-      --primary: #667eea;
-      --primary-light: #7c3aed;
+      --primary: #6366f1;
+      --primary-light: #8b5cf6;
       --primary-dark: #4f46e5;
-      --secondary: #f093fb;
-      --accent: #4ade80;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --error: #ef4444;
+      --secondary: #ec4899;
+      --accent: #10b981;
+      --success: #059669;
+      --warning: #d97706;
+      --error: #dc2626;
       --ai: #06b6d4;
-      --news: #f97316;
+      --news: #ea580c;
 
-      --bg: #ffffff;
-      --bg-secondary: #fafbff;
+      --bg: #fafafa;
+      --bg-secondary: #f4f4f5;
       --surface: #ffffff;
       --surface-hover: #f8fafc;
       --surface-2: #f1f5f9;
       --surface-elevated: #ffffff;
-      --text: #0f172a;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --border-light: #f1f5f9;
+      --text: #09090b;
+      --text-secondary: #71717a;
+      --text-muted: #a1a1aa;
+      --border: #e4e4e7;
+      --border-light: #f4f4f5;
       --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 
-      --radius: 16px;
-      --radius-lg: 24px;
-      --radius-xl: 32px;
+      --radius: 20px;
+      --radius-lg: 28px;
+      --radius-xl: 36px;
       --header-height: 64px;
       --bottom-bar-height: 76px;
       --safe-area-top: env(safe-area-inset-top);
       --safe-area-bottom: env(safe-area-inset-bottom);
 
-      --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-light));
-      --gradient-secondary: linear-gradient(135deg, var(--secondary), var(--primary));
-      --gradient-ai: linear-gradient(135deg, var(--ai), var(--primary-light));
-      --gradient-news: linear-gradient(135deg, var(--news), var(--secondary));
-      --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
+      --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --gradient-secondary: linear-gradient(135deg, #ec4899, #6366f1);
+      --gradient-ai: linear-gradient(135deg, #06b6d4, #3b82f6);
+      --gradient-news: linear-gradient(135deg, #ea580c, #ec4899);
+      --gradient-success: linear-gradient(135deg, #059669, #10b981);
+      --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+      --gradient-mesh: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899, #06b6d4);
     }
 
     [data-theme="dark"] {
@@ -82,6 +85,10 @@
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
       color: var(--text);
       height: 100vh;
       overflow: hidden;
@@ -102,64 +109,80 @@
       background: var(--bg);
     }
 
-    /* Enhanced Animations */
+    /* Ultra Enhanced Animations */
     @keyframes slideInRight {
       from {
-        transform: translateX(100%);
+        transform: translateX(100%) scale(0.95);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
         opacity: 1;
       }
     }
 
     @keyframes slideInLeft {
       from {
-        transform: translateX(-100%);
+        transform: translateX(-100%) scale(0.95);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
         opacity: 1;
       }
     }
 
     @keyframes slideInUp {
       from {
-        transform: translateY(20px);
+        transform: translateY(30px) scale(0.95);
         opacity: 0;
       }
       to {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
       }
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     @keyframes scaleIn {
       from {
-        transform: scale(0.95);
+        transform: scale(0.9) rotate(-3deg);
         opacity: 0;
       }
       to {
-        transform: scale(1);
+        transform: scale(1) rotate(0deg);
         opacity: 1;
       }
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
     }
 
     @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
+      0% { transform: translateX(-100%) rotate(-5deg); }
+      100% { transform: translateX(100%) rotate(5deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(1deg); }
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+      50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4), 0 0 60px rgba(99, 102, 241, 0.1); }
     }
 
     /* Screens */
@@ -213,7 +236,9 @@
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
+      filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.3));
+      animation: float 3s ease-in-out infinite;
+      display: inline-block;
     }
 
     .logo h1 {
@@ -249,20 +274,26 @@
       padding: 1.25rem 1.5rem;
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      background: var(--surface);
+      background: rgba(255, 255, 255, 0.8);
       color: var(--text);
       font-size: 1rem;
       font-weight: 500;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
     }
 
     .input-group input:focus {
       outline: none;
       border-color: var(--primary);
-      background: var(--surface-elevated);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg), 0 0 0 4px rgba(102, 126, 234, 0.1);
+      background: rgba(255, 255, 255, 0.95);
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: var(--shadow-xl), 0 0 0 4px rgba(99, 102, 241, 0.1), 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+
+    .input-group input:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
     }
 
     .input-group label {
@@ -286,7 +317,7 @@
       font-weight: 600;
     }
 
-    /* Enhanced Buttons */
+    /* Ultra Enhanced Buttons */
     .btn {
       padding: 1.25rem 2rem;
       border: none;
@@ -294,14 +325,15 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.75rem;
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(20px);
+      letter-spacing: 0.025em;
     }
 
     .btn::before {
@@ -311,49 +343,81 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s ease;
     }
 
     .btn:hover::before {
       left: 100%;
     }
 
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.1));
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: xor;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn:hover::after {
+      opacity: 1;
+    }
+
     .btn-primary {
       background: var(--gradient-primary);
       color: white;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-lg);
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-xl);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: var(--shadow-2xl);
+      animation: glow 2s ease-in-out infinite;
     }
 
     .btn-primary:active {
-      transform: translateY(0);
+      transform: translateY(-1px) scale(1.01);
     }
 
     .btn-secondary {
-      background: var(--surface-2);
+      background: var(--surface);
       color: var(--text);
       border: 2px solid var(--border);
+      box-shadow: var(--shadow);
     }
 
     .btn-secondary:hover {
       background: var(--surface-hover);
       border-color: var(--primary);
-      transform: translateY(-1px);
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: var(--shadow-lg);
     }
 
     .btn-ai {
       background: var(--gradient-ai);
       color: white;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-ai:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: var(--shadow-2xl);
     }
 
     .btn-news {
       background: var(--gradient-news);
       color: white;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-news:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: var(--shadow-2xl);
     }
 
     .btn-text {
@@ -361,47 +425,18 @@
       color: var(--primary);
       padding: 1rem;
       font-weight: 600;
+      position: relative;
+    }
+
+    .btn-text::before {
+      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
     }
 
     .btn-text:hover {
-      background: rgba(102, 126, 234, 0.1);
+      background: rgba(99, 102, 241, 0.1);
+      transform: translateY(-1px);
     }
 
-    /* Enhanced Avatar Grid */
-    .avatar-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-
-    .avatar-option {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      border: 3px solid var(--border);
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--surface);
-      backdrop-filter: blur(10px);
-    }
-
-    .avatar-option:hover {
-      transform: translateY(-2px) scale(1.05);
-      border-color: var(--primary);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .avatar-option.selected {
-      border-color: var(--primary);
-      background: var(--primary);
-      color: white;
-      transform: scale(1.1);
-      box-shadow: var(--shadow-xl), 0 0 0 4px rgba(102, 126, 234, 0.2);
-    }
 
     /* Enhanced Header */
     .header {
@@ -1205,16 +1240,6 @@
             <input type="password" id="regPassword" placeholder=" " required>
             <label>Password (min 6 chars)</label>
           </div>
-          <div class="avatar-grid">
-            <div class="avatar-option selected" data-avatar="👤" onclick="selectAvatar(this)">👤</div>
-            <div class="avatar-option" data-avatar="🦊" onclick="selectAvatar(this)">🦊</div>
-            <div class="avatar-option" data-avatar="🐼" onclick="selectAvatar(this)">🐼</div>
-            <div class="avatar-option" data-avatar="🦄" onclick="selectAvatar(this)">🦄</div>
-            <div class="avatar-option" data-avatar="🐙" onclick="selectAvatar(this)">🐙</div>
-            <div class="avatar-option" data-avatar="🦉" onclick="selectAvatar(this)">🦉</div>
-            <div class="avatar-option" data-avatar="🐲" onclick="selectAvatar(this)">🐲</div>
-            <div class="avatar-option" data-avatar="🎭" onclick="selectAvatar(this)">🎭</div>
-          </div>
           <button class="btn btn-primary" onclick="register()">
             <span>Create Account</span>
           </button>
@@ -1428,7 +1453,6 @@
     let currentUser = null;
     let currentChat = null;
     let lastMessageId = 0;
-    let selectedAvatar = '👤';
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -1543,7 +1567,7 @@
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nickname, password, avatar: selectedAvatar })
+          body: JSON.stringify({ nickname, password })
         });
 
         const data = await response.json();
@@ -1552,12 +1576,12 @@
           currentUser = {
             nickname: data.nickname,
             token: data.token,
-            avatar: selectedAvatar
+            avatar: '👤'
           };
 
           localStorage.setItem('token', data.token);
           localStorage.setItem('nickname', data.nickname);
-          localStorage.setItem('avatar', selectedAvatar);
+          localStorage.setItem('avatar', '👤');
 
           connectSocket();
           showScreen('chatListScreen');
@@ -1703,16 +1727,6 @@
       document.getElementById('registerForm').style.display = 'flex';
     }
 
-    function selectAvatar(el) {
-      document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedAvatar = el.dataset.avatar;
-
-      // Add haptic feedback if supported
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }
 
     // Enhanced toast with types
     function showToast(message, type = 'info') {

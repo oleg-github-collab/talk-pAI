@@ -296,6 +296,136 @@ const getContacts = async (owner) => {
   return result.rows;
 };
 
+// Additional functions needed by server.js
+const validateSession = async (nickname, token) => {
+  const result = await query(
+    'SELECT * FROM sessions WHERE nickname = $1 AND token = $2 AND expires_at > CURRENT_TIMESTAMP',
+    [nickname, token]
+  );
+  return result.rows[0];
+};
+
+const createMessage = async (sender, receiver, type, content, replyTo = null) => {
+  const result = await query(
+    'INSERT INTO messages (sender, receiver, type, content, reply_to) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+    [sender, receiver, type, content, replyTo]
+  );
+  return result.rows[0].id;
+};
+
+const getMessageById = async (id) => {
+  const result = await query('SELECT * FROM messages WHERE id = $1', [id]);
+  return result.rows[0];
+};
+
+const getContact = async (owner, contact) => {
+  const result = await query(
+    'SELECT * FROM contacts WHERE owner = $1 AND contact = $2',
+    [owner, contact]
+  );
+  return result.rows[0];
+};
+
+const markMessageAsRead = async (id) => {
+  const result = await query(
+    'UPDATE messages SET read = true WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return result.rows[0];
+};
+
+const getConversationMessages = async (user, conversation, lastId = 0) => {
+  const result = await query(`
+    SELECT * FROM messages
+    WHERE ((sender = $1 AND receiver = $2) OR (sender = $2 AND receiver = $1))
+    AND id > $3
+    ORDER BY timestamp DESC
+    LIMIT 50
+  `, [user, conversation, lastId]);
+  return result.rows;
+};
+
+const getNewMessages = async (user, lastId = 0) => {
+  const result = await query(`
+    SELECT * FROM messages
+    WHERE (receiver = $1 OR sender = $1)
+    AND id > $2
+    ORDER BY timestamp DESC
+    LIMIT 50
+  `, [user, lastId]);
+  return result.rows;
+};
+
+const getConversationHistory = async (user, conversation, hours = 24) => {
+  const result = await query(`
+    SELECT * FROM messages
+    WHERE ((sender = $1 AND receiver = $2) OR (sender = $2 AND receiver = $1))
+    AND timestamp > NOW() - INTERVAL '${hours} hours'
+    ORDER BY timestamp ASC
+  `, [user, conversation]);
+  return result.rows;
+};
+
+// Stub functions for features not yet implemented
+const updateUserActivity = async (nickname) => {
+  return await updateLastSeen(nickname);
+};
+
+const setTypingStatus = async (user, receiver, isTyping) => {
+  // Typing status could be stored in memory or cache for performance
+  return true;
+};
+
+const clearTypingStatus = async (user) => {
+  // Clear typing status
+  return true;
+};
+
+const getTypingUsers = async (receiver, currentUser) => {
+  // Return empty array for now
+  return [];
+};
+
+const searchUsers = async (searchQuery, currentUser) => {
+  const result = await query(
+    'SELECT nickname, avatar, last_seen FROM users WHERE nickname ILIKE $1 AND nickname != $2 LIMIT 10',
+    [`%${searchQuery}%`, currentUser]
+  );
+  return result.rows;
+};
+
+const updateUserSettings = async (nickname, settings) => {
+  const setClause = [];
+  const values = [nickname];
+  let paramIndex = 2;
+
+  if (settings.avatar) {
+    setClause.push(`avatar = $${paramIndex++}`);
+    values.push(settings.avatar);
+  }
+  if (settings.theme) {
+    setClause.push(`theme = $${paramIndex++}`);
+    values.push(settings.theme);
+  }
+  if (settings.notifications !== undefined) {
+    setClause.push(`notifications = $${paramIndex++}`);
+    values.push(settings.notifications);
+  }
+
+  if (setClause.length === 0) return null;
+
+  const result = await query(
+    `UPDATE users SET ${setClause.join(', ')} WHERE nickname = $1 RETURNING *`,
+    values
+  );
+  return result.rows[0];
+};
+
+const getUserNewsPreferences = async (nickname) => {
+  // Default preferences for now
+  return { language: 'en', categories: ['technology', 'business'] };
+};
+
 // Close pool gracefully
 const closePool = async () => {
   if (pool) {
@@ -323,5 +453,19 @@ module.exports = {
   deleteExpiredSessions,
   addContact,
   getContacts,
+  validateSession,
+  createMessage,
+  getMessageById,
+  getContact,
+  getConversationMessages,
+  getNewMessages,
+  getConversationHistory,
+  updateUserActivity,
+  setTypingStatus,
+  clearTypingStatus,
+  getTypingUsers,
+  searchUsers,
+  updateUserSettings,
+  getUserNewsPreferences,
   closePool
 };

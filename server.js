@@ -223,8 +223,13 @@ function authenticateToken(req, res, next) {
 // Registration
 app.post('/api/auth/register', async (req, res) => {
   try {
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      return res.status(503).json({ error: 'Database not configured. Please add PostgreSQL service on Railway.' });
+    }
+
     const { nickname, password, avatar } = req.body;
-    
+
     if (!nickname || !password) {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
@@ -244,22 +249,22 @@ app.post('/api/auth/register', async (req, res) => {
     }
     
     // Check if user exists
-    const existingUser = db.getUserByNickname(nickname);
+    const existingUser = await db.getUserByNickname(nickname);
     if (existingUser) {
       return res.status(400).json({ error: 'This nickname is already taken' });
     }
-    
+
     // Create user
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
     const token = generateToken();
-    
-    db.createUser(nickname, hashedPassword, salt, avatar || '👤');
-    db.createSession(nickname, token);
-    
+
+    await db.createUser(nickname, hashedPassword, salt, avatar || '👤');
+    await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
+
     // Add pAI and Sage as default contacts
-    db.addContact(nickname, 'pAI');
-    db.addContact(nickname, 'Sage');
+    await db.addContact(nickname, 'pAI');
+    await db.addContact(nickname, 'Sage');
     
     // Send welcome messages from pAI and Sage
     const paiWelcomeMessage = `Hi ${nickname}! 👋 I'm pAI, your personal AI assistant. I can help you with:
@@ -306,25 +311,30 @@ Say something like "Subscribe me to daily tech news" or "Give me the latest head
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      return res.status(503).json({ error: 'Database not configured. Please add PostgreSQL service on Railway.' });
+    }
+
     const { nickname, password } = req.body;
-    
+
     if (!nickname || !password) {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
     
-    const user = db.getUserByNickname(nickname);
+    const user = await db.getUserByNickname(nickname);
     if (!user) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
     }
-    
+
     const hashedInput = hashPassword(password, user.salt);
     if (hashedInput !== user.password) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
     }
-    
+
     const token = generateToken();
-    db.createSession(nickname, token);
-    db.updateUserActivity(nickname);
+    await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
+    await db.updateLastSeen(nickname);
     
     res.json({
       success: true,
