@@ -70,8 +70,22 @@ async function initialize() {
       return;
     }
 
-    // Create extensions
-    await query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    // Test connection first
+    try {
+      await query('SELECT NOW()');
+      console.log('✅ PostgreSQL connection verified');
+    } catch (error) {
+      console.error('❌ PostgreSQL connection failed:', error.message);
+      return;
+    }
+
+    // Create extensions (ignore errors if already exist)
+    try {
+      await query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+      console.log('✅ UUID extension ready');
+    } catch (error) {
+      console.warn('⚠️ UUID extension warning:', error.message);
+    }
 
     // Users table
     await query(`
@@ -146,8 +160,19 @@ async function initialize() {
 
     console.log('✅ PostgreSQL database schema initialized successfully');
 
+    // Verify tables were created
+    const tableCheck = await query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+
+    console.log('📊 Created tables:', tableCheck.rows.map(r => r.table_name).join(', '));
+
   } catch (error) {
     console.error('❌ PostgreSQL database initialization failed:', error.message);
+    console.error('Stack:', error.stack);
     throw error;
   }
 }

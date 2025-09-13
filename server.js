@@ -881,14 +881,28 @@ app.get('/api/news/summary', authenticateToken, async (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   console.log('✅ Health check called');
+
+  let dbStatus = 'unknown';
+  try {
+    if (process.env.DATABASE_URL && pool) {
+      await db.query('SELECT 1');
+      dbStatus = 'connected';
+    } else {
+      dbStatus = 'not_configured';
+    }
+  } catch (error) {
+    dbStatus = 'error';
+  }
+
   res.status(200).json({
     status: 'healthy',
     timestamp: Date.now(),
     uptime: process.uptime(),
     activeUsers: activeUsers.size,
     memory: process.memoryUsage(),
+    database: dbStatus,
     version: require('./package.json').version
   });
 });
@@ -909,11 +923,18 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);
   console.log(`📁 Audio Upload: ${process.env.GAS_AUDIO_UPLOAD_URL ? 'Connected' : 'Not configured'}`);
-  db.initialize();
+
+  // Initialize database after server is ready
+  try {
+    await db.initialize();
+    console.log('🗄️ Database ready');
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error.message);
+  }
 });
 
 // Graceful shutdown
