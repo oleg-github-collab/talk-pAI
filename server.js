@@ -22,7 +22,7 @@ dirs.forEach(dir => {
   }
 });
 
-const db = require('./database-better');
+const db = require('./database-pg');
 const aiAssistant = require('./ai-assistant');
 const NewsAgent = require('./news-agent');
 

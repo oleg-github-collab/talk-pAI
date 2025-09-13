@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 
 async function setupProduction() {
-  console.log('🚀 Talk pAI Production Setup');
+  console.log('🚀 Talk pAI Production Setup (PostgreSQL)');
 
   try {
     // Create necessary directories
@@ -13,7 +13,8 @@ async function setupProduction() {
       console.log(`✅ Created ${dir}/`);
     }
 
-    console.log('✅ Directories created - database will be initialized on first server start');
+    console.log('✅ Directories created');
+    console.log('📊 PostgreSQL database will be initialized on first server start');
 
     // Create default .env if it doesn't exist (for Railway environment variables)
     const envExists = await fs.access('.env').then(() => true).catch(() => false);
@@ -21,11 +22,14 @@ async function setupProduction() {
     if (!envExists) {
       console.log('📝 Creating default .env template...');
 
-      const defaultEnv = `# Talk pAI Production Configuration
+      const defaultEnv = `# Talk pAI Production Configuration (PostgreSQL)
 # Set these environment variables in Railway
 
 # Server Configuration (Railway will set PORT automatically)
 NODE_ENV=production
+
+# PostgreSQL Database (Railway will provide DATABASE_URL automatically)
+DATABASE_URL=postgresql://username:password@hostname:port/database
 
 # OpenAI Configuration - REQUIRED
 OPENAI_API_KEY=your_openai_api_key_here
@@ -40,11 +44,6 @@ SESSION_MAX_PER_USER=10
 # Rate Limiting
 RATE_LIMIT_WINDOW_MINUTES=15
 RATE_LIMIT_MAX_REQUESTS=200
-
-# Database Configuration
-DATABASE_PATH=./talkpai.db
-DATABASE_BACKUP_ENABLED=true
-DATABASE_BACKUP_INTERVAL_HOURS=24
 
 # AI Assistant Configuration
 AI_MAX_CONTEXT_MESSAGES=10
@@ -72,9 +71,10 @@ ENABLE_VIDEO_CALLS=false
       console.log('✅ Created .env template');
     }
 
-    console.log('✨ Production setup complete!');
+    console.log('✨ PostgreSQL production setup complete!');
     console.log('🔧 Remember to set environment variables in Railway:');
     console.log('  - OPENAI_API_KEY (required)');
+    console.log('  - DATABASE_URL (automatically provided by Railway PostgreSQL)');
     console.log('  - GAS_AUDIO_UPLOAD_URL (optional)');
 
   } catch (error) {

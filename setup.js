@@ -142,7 +142,7 @@ ENABLE_VIDEO_CALLS=false
 
     // Initialize database
     console.log('\n🗄️ Initializing database...\n');
-    const db = require('./database-better');
+    const db = require('./database-pg');
     db.initialize();
     console.log('✅ Database initialized');
 
