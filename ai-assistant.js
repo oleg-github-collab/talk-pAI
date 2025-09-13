@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const db = require('./database');
+const db = require('./database-better');
 const NewsAgent = require('./news-agent');
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
