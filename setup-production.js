@@ -5,16 +5,9 @@ async function setupProduction() {
   console.log('🚀 Talk pAI Production Setup (PostgreSQL)');
 
   try {
-    // Create necessary directories
-    console.log('📁 Creating directories...');
-    const dirs = ['public', 'uploads', 'uploads/images', 'uploads/audio', 'backups'];
-    for (const dir of dirs) {
-      await fs.mkdir(dir, { recursive: true });
-      console.log(`✅ Created ${dir}/`);
-    }
-
-    console.log('✅ Directories created');
+    console.log('✅ Production setup running...');
     console.log('📊 PostgreSQL database will be initialized on first server start');
+    console.log('📁 Upload directories will be created in /tmp automatically');
 
     // Create default .env if it doesn't exist (for Railway environment variables)
     const envExists = await fs.access('.env').then(() => true).catch(() => false);

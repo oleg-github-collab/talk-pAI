@@ -13,14 +13,41 @@ require('dotenv').config();
 // ✅ CRITICAL: Define PORT — Railway injects it via process.env.PORT
 const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
 
-// Initialize directories first
+// Initialize only writable directories in /tmp for Railway
 const fs = require('fs');
-const dirs = ['public', 'uploads', 'uploads/images', 'uploads/audio', 'backups'];
-dirs.forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+
+function initializeDirectories() {
+  try {
+    // Use /tmp for writable directories on Railway
+    const tmpDir = process.env.NODE_ENV === 'production' ? '/tmp' : '.';
+    const dirs = [
+      path.join(tmpDir, 'uploads'),
+      path.join(tmpDir, 'uploads/images'),
+      path.join(tmpDir, 'uploads/audio')
+    ];
+
+    dirs.forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`✅ Created directory: ${dir}`);
+      }
+    });
+
+    // Set upload paths for later use
+    global.UPLOAD_DIR = path.join(tmpDir, 'uploads');
+    global.UPLOAD_IMAGES_DIR = path.join(tmpDir, 'uploads/images');
+    global.UPLOAD_AUDIO_DIR = path.join(tmpDir, 'uploads/audio');
+
+  } catch (error) {
+    console.warn('⚠️ Could not create directories:', error.message);
+    // Fallback: use /tmp directly if mkdir fails
+    global.UPLOAD_DIR = '/tmp';
+    global.UPLOAD_IMAGES_DIR = '/tmp';
+    global.UPLOAD_AUDIO_DIR = '/tmp';
   }
-});
+}
+
+initializeDirectories();
 
 const db = require('./database-pg');
 const aiAssistant = require('./ai-assistant');
@@ -53,7 +80,8 @@ app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+// Serve uploads from the correct directory
+app.use('/uploads', express.static(global.UPLOAD_DIR));
 
 // Trust proxy for Railway
 app.set('trust proxy', 1);
