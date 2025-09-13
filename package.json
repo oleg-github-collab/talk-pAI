@@ -4,12 +4,11 @@
   "description": "Talk pAI - AI-Powered Messenger with GPT-4o integration",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run setup-production && node server.js",
     "dev": "nodemon server.js",
     "setup": "node setup.js",
     "setup-production": "node setup-production.js",
-    "migrate": "node migrate.js",
-    "postinstall": "node setup-production.js"
+    "migrate": "node migrate.js"
   },
   "keywords": [
     "messenger",
