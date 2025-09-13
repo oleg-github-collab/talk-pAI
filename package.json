@@ -7,9 +7,7 @@
     "start": "node server.js",
     "build": "npm run setup-production",
     "dev": "nodemon server.js",
-    "setup": "node setup.js",
-    "setup-production": "node setup-production.js",
-    "migrate": "node migrate.js"
+    "setup-production": "node setup-production.js"
   },
   "keywords": [
     "messenger",

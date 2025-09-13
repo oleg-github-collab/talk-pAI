@@ -5,14 +5,19 @@ let pool;
 
 function createPool() {
   try {
-    // Skip pool creation if no DATABASE_URL (for local dev)
-    if (!process.env.DATABASE_URL) {
-      console.log('⚠️ No DATABASE_URL - PostgreSQL pool not created');
+    // Check for any database URL
+    const dbUrl = process.env.DATABASE_URL ||
+                  process.env.POSTGRES_URL ||
+                  process.env.DB_URL ||
+                  process.env.POSTGRESQL_URL;
+
+    if (!dbUrl) {
+      console.log('⚠️ No database URL found - PostgreSQL pool not created');
       return null;
     }
 
     const config = {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbUrl,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: 20,
       idleTimeoutMillis: 30000,
@@ -63,12 +68,19 @@ async function initialize() {
   try {
     console.log('🗄️ Initializing PostgreSQL database...');
 
-    // Skip initialization if DATABASE_URL is not provided (for local dev)
-    if (!process.env.DATABASE_URL) {
-      console.log('⚠️ No DATABASE_URL provided - skipping database initialization');
-      console.log('💡 Set DATABASE_URL for PostgreSQL, or this will work only on Railway');
+    // Check for DATABASE_URL (Railway auto-provides this)
+    const dbUrl = process.env.DATABASE_URL ||
+                  process.env.POSTGRES_URL ||
+                  process.env.DB_URL ||
+                  process.env.POSTGRESQL_URL;
+
+    if (!dbUrl) {
+      console.log('⚠️ No database URL found - database features disabled');
+      console.log('💡 Railway will automatically provide DATABASE_URL when PostgreSQL service is added');
       return;
     }
+
+    console.log('✅ Database URL detected:', dbUrl.substring(0, 30) + '...');
 
     // Test connection first
     try {

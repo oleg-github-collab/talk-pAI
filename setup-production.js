@@ -15,60 +15,32 @@ async function setupProduction() {
     if (!envExists) {
       console.log('📝 Creating default .env template...');
 
-      const defaultEnv = `# Talk pAI Production Configuration (PostgreSQL)
-# Set these environment variables in Railway
-
-# Server Configuration (Railway will set PORT automatically)
+      const defaultEnv = `# Talk pAI Configuration
 NODE_ENV=production
 
-# PostgreSQL Database (Railway will provide DATABASE_URL automatically)
-DATABASE_URL=postgresql://username:password@hostname:port/database
+# PostgreSQL Database - Railway auto-provides DATABASE_URL
+# DATABASE_URL=postgresql://user:pass@host:port/db
 
-# OpenAI Configuration - REQUIRED
-OPENAI_API_KEY=your_openai_api_key_here
+# REQUIRED: OpenAI API Key
+OPENAI_API_KEY=your_openai_key_here
 
-# Optional: Google Apps Script for audio storage
-GAS_AUDIO_UPLOAD_URL=
+# OPTIONAL: Google Apps Script for audio storage
+# GAS_AUDIO_UPLOAD_URL=your_google_script_url
 
-# Session Configuration
-SESSION_TIMEOUT_MINUTES=30
-SESSION_MAX_PER_USER=10
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MINUTES=15
-RATE_LIMIT_MAX_REQUESTS=200
-
-# AI Assistant Configuration
-AI_MAX_CONTEXT_MESSAGES=10
-AI_RESPONSE_MAX_TOKENS=500
-AI_TEMPERATURE=0.7
-AI_MODEL=gpt-4o
-
-# Security (generate random values for production)
+# Auto-generated security keys
 JWT_SECRET=${crypto.randomBytes(32).toString('hex')}
 ENCRYPTION_KEY=${crypto.randomBytes(32).toString('hex')}
-
-# Storage Limits
-MAX_IMAGE_SIZE_MB=10
-MAX_AUDIO_DURATION_SECONDS=120
-AUDIO_AUTO_DELETE_HOURS=3
-
-# Feature Flags
-ENABLE_VOICE_TRANSCRIPTION=true
-ENABLE_AI_SUMMARIES=true
-ENABLE_GROUP_CHATS=false
-ENABLE_VIDEO_CALLS=false
 `;
 
       await fs.writeFile('.env', defaultEnv);
       console.log('✅ Created .env template');
     }
 
-    console.log('✨ PostgreSQL production setup complete!');
-    console.log('🔧 Remember to set environment variables in Railway:');
-    console.log('  - OPENAI_API_KEY (required)');
-    console.log('  - DATABASE_URL (automatically provided by Railway PostgreSQL)');
-    console.log('  - GAS_AUDIO_UPLOAD_URL (optional)');
+    console.log('✨ Production setup complete!');
+    console.log('🔧 Set these in Railway:');
+    console.log('  ✅ Add PostgreSQL service → DATABASE_URL auto-provided');
+    console.log('  ⚠️  Set OPENAI_API_KEY manually (required)');
+    console.log('  📁 GAS_AUDIO_UPLOAD_URL (optional)');
 
   } catch (error) {
     console.error('❌ Production setup failed:', error);
