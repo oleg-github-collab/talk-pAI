@@ -922,8 +922,8 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-server.listen(PORT, '0.0.0.0', async () => {
+// Start server - Railway expects only PORT, no host binding
+server.listen(PORT, async () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);
   console.log(`📁 Audio Upload: ${process.env.GAS_AUDIO_UPLOAD_URL ? 'Connected' : 'Not configured'}`);
