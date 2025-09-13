@@ -172,6 +172,29 @@ async function initialize() {
 
     console.log('✅ PostgreSQL database schema initialized successfully');
 
+    // Create AI system users if they don't exist
+    try {
+      const paiUser = await query('SELECT * FROM users WHERE nickname = $1', ['pAI']);
+      if (paiUser.rows.length === 0) {
+        await query(
+          'INSERT INTO users (nickname, password, salt, avatar, theme) VALUES ($1, $2, $3, $4, $5)',
+          ['pAI', 'system_ai_user', 'system_salt', '🤖', 'auto']
+        );
+        console.log('🤖 Created pAI system user');
+      }
+
+      const sageUser = await query('SELECT * FROM users WHERE nickname = $1', ['Sage']);
+      if (sageUser.rows.length === 0) {
+        await query(
+          'INSERT INTO users (nickname, password, salt, avatar, theme) VALUES ($1, $2, $3, $4, $5)',
+          ['Sage', 'system_news_user', 'system_salt', '📰', 'auto']
+        );
+        console.log('📰 Created Sage system user');
+      }
+    } catch (error) {
+      console.warn('⚠️ Warning creating AI users:', error.message);
+    }
+
     // Verify tables were created
     const tableCheck = await query(`
       SELECT table_name

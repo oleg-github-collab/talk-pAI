@@ -11,49 +11,52 @@
   <title>Talk pAI - AI-Powered Messenger</title>
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-light: #8b5cf6;
-      --primary-dark: #4f46e5;
+      --primary: #7c3aed;
+      --primary-light: #a855f7;
+      --primary-dark: #5b21b6;
       --secondary: #ec4899;
-      --accent: #10b981;
-      --success: #059669;
-      --warning: #d97706;
-      --error: #dc2626;
-      --ai: #06b6d4;
-      --news: #ea580c;
+      --accent: #06d6a0;
+      --success: #00d9ff;
+      --warning: #ffd60a;
+      --error: #ff006e;
+      --ai: #00f5ff;
+      --news: #ff5e5b;
 
-      --bg: #fafafa;
-      --bg-secondary: #f4f4f5;
-      --surface: #ffffff;
-      --surface-hover: #f8fafc;
-      --surface-2: #f1f5f9;
-      --surface-elevated: #ffffff;
-      --text: #09090b;
-      --text-secondary: #71717a;
-      --text-muted: #a1a1aa;
-      --border: #e4e4e7;
-      --border-light: #f4f4f5;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-      --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+      --bg: #0a0a0b;
+      --bg-secondary: #111111;
+      --surface: rgba(16, 16, 16, 0.8);
+      --surface-hover: rgba(24, 24, 24, 0.9);
+      --surface-2: rgba(30, 30, 30, 0.7);
+      --surface-elevated: rgba(20, 20, 20, 0.95);
+      --text: #ffffff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border: rgba(139, 92, 246, 0.2);
+      --border-light: rgba(124, 58, 237, 0.1);
+      --shadow-sm: 0 1px 2px 0 rgba(124, 58, 237, 0.1);
+      --shadow: 0 4px 12px -2px rgba(124, 58, 237, 0.25), 0 2px 6px -2px rgba(236, 72, 153, 0.15);
+      --shadow-lg: 0 10px 25px -5px rgba(124, 58, 237, 0.35), 0 6px 12px -6px rgba(236, 72, 153, 0.25);
+      --shadow-xl: 0 20px 40px -8px rgba(124, 58, 237, 0.45), 0 8px 16px -8px rgba(236, 72, 153, 0.35);
+      --shadow-2xl: 0 30px 60px -12px rgba(124, 58, 237, 0.6), 0 12px 24px -12px rgba(236, 72, 153, 0.4);
 
-      --radius: 20px;
-      --radius-lg: 28px;
-      --radius-xl: 36px;
+      --radius: 24px;
+      --radius-lg: 32px;
+      --radius-xl: 40px;
       --header-height: 64px;
       --bottom-bar-height: 76px;
       --safe-area-top: env(safe-area-inset-top);
       --safe-area-bottom: env(safe-area-inset-bottom);
 
-      --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-      --gradient-secondary: linear-gradient(135deg, #ec4899, #6366f1);
-      --gradient-ai: linear-gradient(135deg, #06b6d4, #3b82f6);
-      --gradient-news: linear-gradient(135deg, #ea580c, #ec4899);
-      --gradient-success: linear-gradient(135deg, #059669, #10b981);
-      --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
-      --gradient-mesh: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899, #06b6d4);
+      --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+      --gradient-secondary: linear-gradient(135deg, #ec4899 0%, #f97316 50%, #06d6a0 100%);
+      --gradient-ai: linear-gradient(135deg, #00f5ff 0%, #00d9ff 50%, #7c3aed 100%);
+      --gradient-news: linear-gradient(135deg, #ff5e5b 0%, #ffd60a 50%, #ec4899 100%);
+      --gradient-success: linear-gradient(135deg, #06d6a0 0%, #00d9ff 100%);
+      --gradient-glass: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(236, 72, 153, 0.1));
+      --gradient-mesh: conic-gradient(from 0deg at 50% 50%, #7c3aed, #ec4899, #00f5ff, #06d6a0, #7c3aed);
+      --gradient-cosmic: radial-gradient(ellipse at top, #7c3aed, transparent),
+                         radial-gradient(ellipse at bottom, #ec4899, transparent),
+                         conic-gradient(from 0deg, #00f5ff, #06d6a0, #ffd60a, #ff006e, #00f5ff);
     }
 
     [data-theme="dark"] {
@@ -85,10 +88,8 @@
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
-      background-image:
-        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+      background-image: var(--gradient-cosmic);
+      background-attachment: fixed;
       color: var(--text);
       height: 100vh;
       overflow: hidden;
@@ -99,6 +100,22 @@
       font-feature-settings: 'cv02','cv03','cv04','cv11';
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.4) 0%, transparent 40%),
+        radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.3) 0%, transparent 40%),
+        radial-gradient(circle at 40% 60%, rgba(0, 245, 255, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 70% 30%, rgba(6, 214, 160, 0.25) 0%, transparent 40%);
+      animation: cosmicMove 20s ease-in-out infinite;
+      z-index: -1;
     }
 
     .app {
@@ -181,8 +198,68 @@
     }
 
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
-      50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4), 0 0 60px rgba(99, 102, 241, 0.1); }
+      0%, 100% {
+        box-shadow: 0 0 30px rgba(124, 58, 237, 0.4), 0 0 60px rgba(124, 58, 237, 0.2);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 0 60px rgba(124, 58, 237, 0.8), 0 0 100px rgba(236, 72, 153, 0.4), 0 0 140px rgba(0, 245, 255, 0.2);
+        filter: brightness(1.2);
+      }
+    }
+
+    @keyframes cosmicMove {
+      0%, 100% {
+        transform: rotate(0deg) scale(1);
+        opacity: 0.8;
+      }
+      25% {
+        transform: rotate(90deg) scale(1.1);
+        opacity: 1;
+      }
+      50% {
+        transform: rotate(180deg) scale(0.9);
+        opacity: 0.9;
+      }
+      75% {
+        transform: rotate(270deg) scale(1.05);
+        opacity: 0.95;
+      }
+    }
+
+    @keyframes particleFloat {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px) rotate(0deg);
+        opacity: 0.6;
+      }
+      25% {
+        transform: translateY(-20px) translateX(10px) rotate(90deg);
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-10px) translateX(-15px) rotate(180deg);
+        opacity: 0.8;
+      }
+      75% {
+        transform: translateY(-25px) translateX(5px) rotate(270deg);
+        opacity: 0.9;
+      }
+    }
+
+    @keyframes neonPulse {
+      0%, 100% {
+        text-shadow:
+          0 0 10px rgba(124, 58, 237, 0.8),
+          0 0 20px rgba(124, 58, 237, 0.6),
+          0 0 30px rgba(236, 72, 153, 0.4);
+      }
+      50% {
+        text-shadow:
+          0 0 20px rgba(124, 58, 237, 1),
+          0 0 30px rgba(124, 58, 237, 0.8),
+          0 0 40px rgba(236, 72, 153, 0.6),
+          0 0 50px rgba(0, 245, 255, 0.4);
+      }
     }
 
     /* Screens */
@@ -242,13 +319,27 @@
     }
 
     .logo h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
+      font-size: 2.8rem;
+      font-weight: 900;
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 0.5rem;
       letter-spacing: -0.02em;
+      animation: neonPulse 3s ease-in-out infinite;
+      position: relative;
+    }
+
+    .logo h1::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: var(--gradient-cosmic);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.3;
+      animation: particleFloat 4s ease-in-out infinite;
     }
 
     .logo p {
@@ -271,50 +362,95 @@
 
     .input-group input {
       width: 100%;
-      padding: 1.25rem 1.5rem;
+      padding: 1.5rem 2rem;
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.8);
+      background: var(--surface);
       color: var(--text);
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 500;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       backdrop-filter: blur(20px);
       box-shadow: var(--shadow);
+      position: relative;
+      z-index: 1;
+    }
+
+    .input-group input::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      padding: 2px;
+      background: var(--gradient-primary);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: xor;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
     .input-group input:focus {
       outline: none;
-      border-color: var(--primary);
-      background: rgba(255, 255, 255, 0.95);
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: var(--shadow-xl), 0 0 0 4px rgba(99, 102, 241, 0.1), 0 0 20px rgba(99, 102, 241, 0.1);
+      border-color: transparent;
+      background: var(--surface-elevated);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--shadow-2xl);
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    .input-group input:focus::before {
+      opacity: 1;
     }
 
     .input-group input:hover {
-      transform: translateY(-1px);
+      transform: translateY(-2px) scale(1.01);
       box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+
+    .input-group::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: var(--radius);
+      background: var(--gradient-primary);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 0;
+    }
+
+    .input-group:focus-within::before {
+      opacity: 0.3;
+      animation: glow 2s ease-in-out infinite;
     }
 
     .input-group label {
       position: absolute;
-      left: 1.5rem;
+      left: 2rem;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
       pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       background: var(--surface);
-      padding: 0 0.5rem;
-      font-weight: 500;
+      padding: 0 0.75rem;
+      font-weight: 600;
+      font-size: 1rem;
+      z-index: 2;
+      border-radius: 8px;
     }
 
     .input-group input:focus + label,
     .input-group input:not(:placeholder-shown) + label {
-      top: 0;
+      top: -8px;
       font-size: 0.875rem;
       color: var(--primary);
-      font-weight: 600;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+      transform: translateY(0) scale(0.95);
     }
 
     /* Ultra Enhanced Buttons */
@@ -1212,8 +1348,8 @@
       <div class="auth-container">
         <div class="logo">
           <div class="logo-icon">🤖</div>
-          <h1>Talk pAI</h1>
-          <p>Next-Generation AI Messenger</p>
+          <h1 data-text="Talk pAI">Talk pAI</h1>
+          <p>🌌 Next-Generation AI Messenger 🚀</p>
         </div>
 
         <div id="loginForm" class="auth-form">
