@@ -130,6 +130,24 @@ async function initialize() {
       )
     `);
 
+    // News preferences table
+    await runAsync(`
+      CREATE TABLE IF NOT EXISTS news_preferences (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        categories TEXT NOT NULL,
+        sources TEXT,
+        frequency TEXT DEFAULT 'daily',
+        language TEXT DEFAULT 'en',
+        max_articles INTEGER DEFAULT 5,
+        last_sent DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(nickname) ON DELETE CASCADE,
+        UNIQUE(user_id)
+      )
+    `);
+
     // Create indexes
     await runAsync('CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver, deleted_for_receiver)');
     await runAsync('CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender, deleted_for_sender)');
@@ -143,6 +161,15 @@ async function initialize() {
       await runAsync(
         'INSERT INTO users (nickname, password, salt, avatar, theme) VALUES (?, ?, ?, ?, ?)',
         ['pAI', 'system', 'system', '🤖', 'auto']
+      );
+    }
+
+    // Create Sage news agent user
+    const sageUser = await getAsync('SELECT * FROM users WHERE nickname = ?', ['Sage']);
+    if (!sageUser) {
+      await runAsync(
+        'INSERT INTO users (nickname, password, salt, avatar, theme) VALUES (?, ?, ?, ?, ?)',
+        ['Sage', 'system', 'system', '📰', 'auto']
       );
     }
 
@@ -455,6 +482,56 @@ async function getUserStats(nickname) {
   };
 }
 
+// News preferences operations
+async function setUserNewsPreferences(userId, preferences) {
+  return await runAsync(
+    `INSERT INTO news_preferences (user_id, categories, sources, frequency, language, max_articles, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(user_id) DO UPDATE SET
+       categories = excluded.categories,
+       sources = excluded.sources,
+       frequency = excluded.frequency,
+       language = excluded.language,
+       max_articles = excluded.max_articles,
+       updated_at = CURRENT_TIMESTAMP`,
+    [
+      userId,
+      JSON.stringify(preferences.categories || ['technology']),
+      JSON.stringify(preferences.sources || []),
+      preferences.frequency || 'daily',
+      preferences.language || 'en',
+      preferences.maxArticles || 5
+    ]
+  );
+}
+
+async function getUserNewsPreferences(userId) {
+  const prefs = await getAsync(
+    'SELECT * FROM news_preferences WHERE user_id = ?',
+    [userId]
+  );
+
+  if (prefs) {
+    return {
+      categories: JSON.parse(prefs.categories),
+      sources: JSON.parse(prefs.sources || '[]'),
+      frequency: prefs.frequency,
+      language: prefs.language,
+      maxArticles: prefs.max_articles,
+      lastSent: new Date(prefs.last_sent)
+    };
+  }
+
+  return null;
+}
+
+async function updateNewsLastSent(userId) {
+  return await runAsync(
+    'UPDATE news_preferences SET last_sent = CURRENT_TIMESTAMP WHERE user_id = ?',
+    [userId]
+  );
+}
+
 // Close database
 function close() {
   db.close((err) => {
@@ -489,5 +566,8 @@ module.exports = {
   saveSummary,
   getSummaries,
   getUserStats,
+  setUserNewsPreferences,
+  getUserNewsPreferences,
+  updateNewsLastSent,
   close
 };

@@ -15,6 +15,10 @@ const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
 
 const db = require('./database');
 const aiAssistant = require('./ai-assistant');
+const NewsAgent = require('./news-agent');
+
+// Initialize news agent
+const newsAgent = new NewsAgent(db);
 
 const app = express();
 const server = http.createServer(app);
@@ -27,9 +31,9 @@ const io = new Server(server, {
 });
 
 // Initialize OpenAI
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
 
 // Middleware
 app.use(helmet({
@@ -196,8 +200,9 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
     
-    // Reserved nickname for AI
-    if (nickname.toLowerCase() === 'pai' || nickname.toLowerCase() === 'assistant') {
+    // Reserved nicknames for AI agents
+    const reservedNames = ['pai', 'assistant', 'sage', 'bot', 'system', 'admin'];
+    if (reservedNames.includes(nickname.toLowerCase())) {
       return res.status(400).json({ error: 'This nickname is reserved' });
     }
     
@@ -215,21 +220,36 @@ app.post('/api/auth/register', async (req, res) => {
     db.createUser(nickname, hashedPassword, salt, avatar || '👤');
     db.createSession(nickname, token);
     
-    // Add pAI as default contact
+    // Add pAI and Sage as default contacts
     db.addContact(nickname, 'pAI');
+    db.addContact(nickname, 'Sage');
     
-    // Send welcome message from pAI
-    const welcomeMessage = `Hi ${nickname}! 👋 I'm pAI, your personal AI assistant. I can help you with:
-    
+    // Send welcome messages from pAI and Sage
+    const paiWelcomeMessage = `Hi ${nickname}! 👋 I'm pAI, your personal AI assistant. I can help you with:
+
 📝 Summarizing conversations
 💡 Answering questions
 🎯 Task management
 🌐 Language translation
 🎨 Creative ideas
-    
+
+🔮 **Coming Soon:** Create your own custom AI agents for specialized tasks!
+
 Just send me a message anytime! You can also send voice messages - I'll transcribe and respond to them.`;
-    
-    db.createMessage('pAI', nickname, 'text', welcomeMessage);
+
+    const sageWelcomeMessage = `📰 Hello ${nickname}! I'm Sage, your intelligent news assistant.
+
+I can provide you with personalized news briefings from hundreds of trusted sources. Just tell me what interests you:
+
+📱 Technology • 💼 Business • 🌍 World News
+🧬 Science • ⚕️ Health • 🎬 Entertainment
+
+Say something like "Subscribe me to daily tech news" or "Give me the latest headlines" to get started!
+
+🗞️ Stay informed, stay ahead. Let's make news personal.`;
+
+    db.createMessage('pAI', nickname, 'text', paiWelcomeMessage);
+    db.createMessage('Sage', nickname, 'text', sageWelcomeMessage);
     
     res.json({
       success: true,
@@ -345,6 +365,17 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
           const aiMessageId = db.createMessage('pAI', sender, 'text', aiResponse);
           const aiMessage = db.getMessageById(aiMessageId);
           io.to(`user:${sender}`).emit('newMessage', aiMessage);
+        }
+      }).catch(console.error);
+    }
+
+    // Handle Sage news agent messages
+    if (receiver === 'Sage') {
+      newsAgent.processNewsInteraction(sender, content).then(newsResponse => {
+        if (newsResponse) {
+          const newsMessageId = db.createMessage('Sage', sender, 'text', newsResponse);
+          const newsMessage = db.getMessageById(newsMessageId);
+          io.to(`user:${sender}`).emit('newMessage', newsMessage);
         }
       }).catch(console.error);
     }
@@ -638,6 +669,10 @@ app.post('/api/transcribe', authenticateToken, async (req, res) => {
     const audioResponse = await fetch(audioUrl);
     const audioBuffer = await audioResponse.arrayBuffer();
     
+    if (!openai) {
+      return res.status(503).json({ error: 'Transcription service unavailable - OpenAI API not configured' });
+    }
+
     // Use OpenAI Whisper API
     const transcription = await openai.audio.transcriptions.create({
       file: new File([audioBuffer], 'audio.mp3', { type: 'audio/mpeg' }),
@@ -661,28 +696,173 @@ app.put('/api/users/settings', authenticateToken, async (req, res) => {
   try {
     const { avatar, theme, notifications } = req.body;
     const nickname = req.user.nickname;
-    
+
     db.updateUserSettings(nickname, { avatar, theme, notifications });
-    
+
     res.json({
       success: true,
       message: 'Settings updated'
     });
-    
+
   } catch (error) {
     console.error('Update settings error:', error);
     res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 
+// News API Routes
+
+// Get news sources
+app.get('/api/news/sources', authenticateToken, (req, res) => {
+  try {
+    const sources = newsAgent.getAvailableSources();
+    res.json({
+      success: true,
+      sources
+    });
+  } catch (error) {
+    console.error('Get news sources error:', error);
+    res.status(500).json({ error: 'Failed to get news sources' });
+  }
+});
+
+// Subscribe to news
+app.post('/api/news/subscribe', authenticateToken, async (req, res) => {
+  try {
+    const { categories, frequency, language, maxArticles, sources } = req.body;
+    const nickname = req.user.nickname;
+
+    const preferences = {
+      categories: categories || ['technology'],
+      frequency: frequency || 'daily',
+      language: language || 'en',
+      maxArticles: maxArticles || 5,
+      sources: sources || []
+    };
+
+    const result = newsAgent.subscribeUser(nickname, preferences);
+
+    res.json(result);
+  } catch (error) {
+    console.error('News subscription error:', error);
+    res.status(500).json({ error: 'Failed to subscribe to news' });
+  }
+});
+
+// Get user news preferences
+app.get('/api/news/preferences', authenticateToken, async (req, res) => {
+  try {
+    const nickname = req.user.nickname;
+    const preferences = db.getUserNewsPreferences(nickname);
+
+    res.json({
+      success: true,
+      preferences
+    });
+  } catch (error) {
+    console.error('Get news preferences error:', error);
+    res.status(500).json({ error: 'Failed to get news preferences' });
+  }
+});
+
+// Get latest news
+app.get('/api/news/latest', authenticateToken, async (req, res) => {
+  try {
+    const { category, limit = 5 } = req.query;
+    const nickname = req.user.nickname;
+
+    let categories = ['technology']; // default
+    if (category) {
+      categories = [category];
+    } else {
+      const userPrefs = db.getUserNewsPreferences(nickname);
+      if (userPrefs && userPrefs.categories) {
+        categories = userPrefs.categories;
+      }
+    }
+
+    const allArticles = [];
+    for (const cat of categories) {
+      const articles = await newsAgent.fetchNews(cat, 3);
+      allArticles.push(...articles);
+    }
+
+    // Sort by date and limit
+    const recentArticles = allArticles
+      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+      .slice(0, parseInt(limit));
+
+    res.json({
+      success: true,
+      articles: recentArticles,
+      count: recentArticles.length
+    });
+  } catch (error) {
+    console.error('Get latest news error:', error);
+    res.status(500).json({ error: 'Failed to get latest news' });
+  }
+});
+
+// Get news summary
+app.get('/api/news/summary', authenticateToken, async (req, res) => {
+  try {
+    const { category, limit = 5 } = req.query;
+    const nickname = req.user.nickname;
+
+    let categories = ['technology']; // default
+    if (category) {
+      categories = [category];
+    } else {
+      const userPrefs = db.getUserNewsPreferences(nickname);
+      if (userPrefs && userPrefs.categories) {
+        categories = userPrefs.categories;
+      }
+    }
+
+    const allArticles = [];
+    for (const cat of categories) {
+      const articles = await newsAgent.fetchNews(cat, 3);
+      allArticles.push(...articles);
+    }
+
+    const recentArticles = allArticles
+      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+      .slice(0, parseInt(limit));
+
+    const userPrefs = db.getUserNewsPreferences(nickname) || { language: 'en' };
+    const summary = await newsAgent.generateNewsSummary(recentArticles, userPrefs.language, userPrefs);
+
+    res.json({
+      success: true,
+      summary,
+      articleCount: recentArticles.length
+    });
+  } catch (error) {
+    console.error('Get news summary error:', error);
+    res.status(500).json({ error: 'Failed to generate news summary' });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  console.log('✅ Health check called'); // 👈 Helps debug in logs
-  res.json({
+  console.log('✅ Health check called');
+  res.status(200).json({
     status: 'healthy',
     timestamp: Date.now(),
     uptime: process.uptime(),
-    activeUsers: activeUsers.size
+    activeUsers: activeUsers.size,
+    memory: process.memoryUsage(),
+    version: require('./package.json').version
+  });
+});
+
+// Ready check for Railway
+app.get('/ready', (req, res) => {
+  console.log('🚀 Ready check called');
+  res.status(200).json({
+    status: 'ready',
+    port: PORT,
+    timestamp: Date.now()
   });
 });
 
