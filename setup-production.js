@@ -13,11 +13,7 @@ async function setupProduction() {
       console.log(`✅ Created ${dir}/`);
     }
 
-    // Initialize database
-    console.log('🗄️ Initializing database...');
-    const db = require('./database');
-    db.initialize();
-    console.log('✅ Database initialized');
+    console.log('✅ Directories created - database will be initialized on first server start');
 
     // Create default .env if it doesn't exist (for Railway environment variables)
     const envExists = await fs.access('.env').then(() => true).catch(() => false);

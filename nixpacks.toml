@@ -1,0 +1,14 @@
+[variables]
+NODE_VERSION = "18"
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "npm"]
+
+[phases.install]
+cmd = "npm ci --omit=dev"
+
+[phases.build]
+cmd = "npm run setup-production"
+
+[start]
+cmd = "npm start"

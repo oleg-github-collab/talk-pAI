@@ -1,9 +1,36 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Create database instance
-const dbPath = path.join(__dirname, process.env.DATABASE_PATH || 'talkpai.db');
-const db = new sqlite3.Database(dbPath);
+// Create database instance with proper error handling
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'talkpai.db');
+let db;
+
+function createDatabase() {
+  try {
+    // Ensure the directory exists
+    const dbDir = path.dirname(dbPath);
+    if (!require('fs').existsSync(dbDir)) {
+      require('fs').mkdirSync(dbDir, { recursive: true });
+    }
+
+    db = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error('❌ Database connection failed:', err.message);
+        // Fallback to memory database for Railway
+        console.log('🔄 Falling back to in-memory database...');
+        db = new sqlite3.Database(':memory:');
+      }
+    });
+  } catch (error) {
+    console.error('❌ Database creation failed:', error.message);
+    // Ultimate fallback to memory database
+    console.log('🔄 Using in-memory database as final fallback...');
+    db = new sqlite3.Database(':memory:');
+  }
+}
+
+// Initialize database connection
+createDatabase();
 
 // Promisify database methods for easier use
 const runAsync = (sql, params = []) => {
