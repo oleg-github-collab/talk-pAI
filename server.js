@@ -13,6 +13,15 @@ require('dotenv').config();
 // ✅ CRITICAL: Define PORT — Railway injects it via process.env.PORT
 const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
 
+// Initialize directories first
+const fs = require('fs');
+const dirs = ['public', 'uploads', 'uploads/images', 'uploads/audio', 'backups'];
+dirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
 const db = require('./database');
 const aiAssistant = require('./ai-assistant');
 const NewsAgent = require('./news-agent');

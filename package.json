@@ -4,7 +4,8 @@
   "description": "Talk pAI - AI-Powered Messenger with GPT-4o integration",
   "main": "server.js",
   "scripts": {
-    "start": "npm run setup-production && node server.js",
+    "start": "node server.js",
+    "build": "npm run setup-production",
     "dev": "nodemon server.js",
     "setup": "node setup.js",
     "setup-production": "node setup-production.js",
