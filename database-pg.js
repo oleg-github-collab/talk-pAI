@@ -153,14 +153,27 @@ async function initialize() {
         id SERIAL PRIMARY KEY,
         owner VARCHAR(50) NOT NULL,
         contact VARCHAR(50) NOT NULL,
+        custom_name VARCHAR(100) DEFAULT NULL,
+        group_name VARCHAR(50) DEFAULT 'General',
         blocked BOOLEAN DEFAULT false,
         muted BOOLEAN DEFAULT false,
+        favorite BOOLEAN DEFAULT false,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (owner) REFERENCES users(nickname) ON DELETE CASCADE,
         FOREIGN KEY (contact) REFERENCES users(nickname) ON DELETE CASCADE,
         UNIQUE(owner, contact)
       )
     `);
+
+    // Add columns to existing contacts table if they don't exist
+    try {
+      await query('ALTER TABLE contacts ADD COLUMN IF NOT EXISTS custom_name VARCHAR(100) DEFAULT NULL');
+      await query('ALTER TABLE contacts ADD COLUMN IF NOT EXISTS group_name VARCHAR(50) DEFAULT \'General\'');
+      await query('ALTER TABLE contacts ADD COLUMN IF NOT EXISTS favorite BOOLEAN DEFAULT false');
+      console.log('✅ Contacts table enhanced with custom names and groups');
+    } catch (error) {
+      console.log('💡 Contacts table columns already exist or update skipped');
+    }
 
     // Create indexes for better performance
     await query('CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender)');
@@ -300,21 +313,23 @@ const deleteExpiredSessions = async () => {
   return result.rows;
 };
 
-const addContact = async (owner, contact) => {
+const addContact = async (owner, contact, customName = null, groupName = 'General') => {
   const result = await query(
-    'INSERT INTO contacts (owner, contact) VALUES ($1, $2) ON CONFLICT (owner, contact) DO NOTHING RETURNING *',
-    [owner, contact]
+    'INSERT INTO contacts (owner, contact, custom_name, group_name) VALUES ($1, $2, $3, $4) ON CONFLICT (owner, contact) DO UPDATE SET custom_name = $3, group_name = $4 RETURNING *',
+    [owner, contact, customName, groupName]
   );
   return result.rows[0];
 };
 
 const getContacts = async (owner) => {
   const result = await query(`
-    SELECT u.nickname, u.avatar, u.last_seen, c.blocked, c.muted
+    SELECT u.nickname, u.avatar, u.last_seen,
+           c.custom_name, c.group_name, c.blocked, c.muted, c.favorite,
+           COALESCE(c.custom_name, u.nickname) as display_name
     FROM contacts c
     JOIN users u ON c.contact = u.nickname
     WHERE c.owner = $1
-    ORDER BY u.nickname
+    ORDER BY c.group_name, c.favorite DESC, display_name
   `, [owner]);
   return result.rows;
 };
@@ -450,6 +465,35 @@ const getUserNewsPreferences = async (nickname) => {
 };
 
 // Close pool gracefully
+const updateContactInfo = async (owner, contact, customName, groupName, favorite) => {
+  const result = await query(
+    'UPDATE contacts SET custom_name = $3, group_name = $4, favorite = $5 WHERE owner = $1 AND contact = $2 RETURNING *',
+    [owner, contact, customName, groupName, favorite]
+  );
+  return result.rows[0];
+};
+
+const getContactGroups = async (owner) => {
+  const result = await query(
+    'SELECT group_name, COUNT(*) as count FROM contacts WHERE owner = $1 GROUP BY group_name ORDER BY group_name',
+    [owner]
+  );
+  return result.rows;
+};
+
+const getContactsByGroup = async (owner, groupName) => {
+  const result = await query(`
+    SELECT u.nickname, u.avatar, u.last_seen,
+           c.custom_name, c.group_name, c.blocked, c.muted, c.favorite,
+           COALESCE(c.custom_name, u.nickname) as display_name
+    FROM contacts c
+    JOIN users u ON c.contact = u.nickname
+    WHERE c.owner = $1 AND c.group_name = $2
+    ORDER BY c.favorite DESC, display_name
+  `, [owner, groupName]);
+  return result.rows;
+};
+
 const closePool = async () => {
   if (pool) {
     await pool.end();
@@ -490,5 +534,8 @@ module.exports = {
   searchUsers,
   updateUserSettings,
   getUserNewsPreferences,
+  updateContactInfo,
+  getContactGroups,
+  getContactsByGroup,
   closePool
 };

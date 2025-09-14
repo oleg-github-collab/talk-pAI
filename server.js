@@ -11,7 +11,7 @@ const OpenAI = require('openai');
 require('dotenv').config();
 
 // ✅ CRITICAL: Define PORT — Railway injects it via process.env.PORT
-const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
+const PORT = process.env.PORT || 3000; // Development default port
 
 // Initialize only writable directories in /tmp for Railway
 const fs = require('fs');
@@ -201,21 +201,26 @@ function generateSalt() {
 }
 
 // Auth middleware
-function authenticateToken(req, res, next) {
-  const token = req.headers['authorization']?.split(' ')[1];
-  const nickname = req.headers['x-nickname'];
-  
-  if (!token || !nickname) {
-    return res.status(401).json({ error: 'Authentication required' });
+async function authenticateToken(req, res, next) {
+  try {
+    const token = req.headers['authorization']?.split(' ')[1];
+    const nickname = req.headers['x-nickname'];
+
+    if (!token || !nickname) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const session = await db.validateSession(nickname, token);
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+
+    req.user = { nickname, token };
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(500).json({ error: 'Authentication failed' });
   }
-  
-  const session = db.validateSession(nickname, token);
-  if (!session) {
-    return res.status(401).json({ error: 'Invalid or expired session' });
-  }
-  
-  req.user = { nickname, token };
-  next();
 }
 
 // API Routes
@@ -523,13 +528,16 @@ app.get('/api/typing', authenticateToken, (req, res) => {
 });
 
 // Get contacts
-app.get('/api/contacts', authenticateToken, (req, res) => {
+app.get('/api/contacts', authenticateToken, async (req, res) => {
   try {
     const nickname = req.user.nickname;
-    const contacts = db.getContacts(nickname);
-    
+    const contacts = await db.getContacts(nickname);
+
+    // Ensure contacts is an array
+    const contactsArray = Array.isArray(contacts) ? contacts : [];
+
     // Add online status
-    const contactsWithStatus = contacts.map(contact => ({
+    const contactsWithStatus = contactsArray.map(contact => ({
       ...contact,
       online: activeUsers.has(contact.nickname),
       lastSeen: contact.lastSeen
@@ -576,28 +584,28 @@ app.get('/api/users/search', authenticateToken, (req, res) => {
 });
 
 // Add contact
-app.post('/api/contacts/add', authenticateToken, (req, res) => {
+app.post('/api/contacts/add', authenticateToken, async (req, res) => {
   try {
-    const { contact } = req.body;
+    const { contact, customName, groupName } = req.body;
     const owner = req.user.nickname;
-    
+
     if (!contact) {
       return res.status(400).json({ error: 'Contact nickname is required' });
     }
-    
+
     // Check if contact exists
-    const contactUser = db.getUserByNickname(contact);
+    const contactUser = await db.getUserByNickname(contact);
     if (!contactUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Check if already a contact
-    const existingContact = db.getContact(owner, contact);
+    const existingContact = await db.getContact(owner, contact);
     if (existingContact) {
       return res.status(400).json({ error: 'Already in contacts' });
     }
-    
-    db.addContact(owner, contact);
+
+    await db.addContact(owner, contact, customName || null, groupName || 'General');
     
     // Notify the contact
     const notificationMsg = `${owner} added you to their contacts! 👋`;
@@ -925,6 +933,67 @@ app.get('/ready', (req, res) => {
     port: PORT,
     timestamp: Date.now()
   });
+});
+
+// Update contact info
+app.put('/api/contacts/:contact', authenticateToken, async (req, res) => {
+  try {
+    const { contact } = req.params;
+    const { customName, groupName, favorite } = req.body;
+    const owner = req.user.nickname;
+
+    const result = await db.updateContactInfo(owner, contact, customName, groupName, favorite);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    res.json({
+      success: true,
+      contact: result
+    });
+
+  } catch (error) {
+    console.error('Update contact error:', error);
+    res.status(500).json({ error: 'Failed to update contact' });
+  }
+});
+
+// Get contact groups
+app.get('/api/contacts/groups', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+    const groups = await db.getContactGroups(owner);
+
+    res.json({
+      success: true,
+      groups
+    });
+
+  } catch (error) {
+    console.error('Get groups error:', error);
+    res.status(500).json({ error: 'Failed to get contact groups' });
+  }
+});
+
+// Get contacts by group
+app.get('/api/contacts/groups/:groupName', authenticateToken, async (req, res) => {
+  try {
+    const { groupName } = req.params;
+    const owner = req.user.nickname;
+
+    const contacts = await db.getContactsByGroup(owner, decodeURIComponent(groupName));
+
+    res.json({
+      success: true,
+      contacts,
+      groupName
+    });
+
+  } catch (error) {
+    console.error('Get contacts by group error:', error);
+    res.status(500).json({ error: 'Failed to get contacts by group' });
+  }
 });
 
 // Serve frontend
