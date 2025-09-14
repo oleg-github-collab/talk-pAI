@@ -469,13 +469,44 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
       }
     }
     
-    const messageId = await db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
+    let messageId;
+    let message;
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Demo mode - create a mock message
+      messageId = Date.now();
+      message = {
+        id: messageId,
+        sender,
+        receiver: receiver || 'all',
+        type: type || 'text',
+        content,
+        timestamp: new Date().toISOString(),
+        read: false,
+        reply_to: replyTo
+      };
+    } else {
+      try {
+        messageId = await db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
+      } catch (dbError) {
+        console.error('Error creating message:', dbError);
+        return res.status(500).json({ error: 'Failed to create message' });
+      }
+    }
     
     // Clear typing status
     db.clearTypingStatus(sender);
     
-    // Get message details
-    const message = await db.getMessageById(messageId);
+    // Get message details (if not already created in demo mode)
+    if (!message) {
+      try {
+        message = await db.getMessageById(messageId);
+      } catch (dbError) {
+        console.error('Error retrieving message:', dbError);
+        return res.status(500).json({ error: 'Failed to retrieve message' });
+      }
+    }
     
     // Emit via Socket.io for real-time delivery
     if (receiver === 'all') {
@@ -503,9 +534,15 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
         });
 
         if (aiResponse) {
-          const aiMessageId = await db.createMessage('pAI', sender, 'text', aiResponse);
-          const aiMessage = await db.getMessageById(aiMessageId);
-          io.to(`user:${sender}`).emit('newMessage', aiMessage);
+          try {
+            const aiMessageId = await db.createMessage('pAI', sender, 'text', aiResponse);
+            const aiMessage = await db.getMessageById(aiMessageId);
+            if (aiMessage) {
+              io.to(`user:${sender}`).emit('newMessage', aiMessage);
+            }
+          } catch (dbError) {
+            console.error('Error saving AI message:', dbError);
+          }
         }
       }).catch(error => {
         console.error('AI Assistant error:', error);
@@ -536,9 +573,15 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
         });
 
         if (newsResponse) {
-          const newsMessageId = await db.createMessage('Sage', sender, 'text', newsResponse);
-          const newsMessage = await db.getMessageById(newsMessageId);
-          io.to(`user:${sender}`).emit('newMessage', newsMessage);
+          try {
+            const newsMessageId = await db.createMessage('Sage', sender, 'text', newsResponse);
+            const newsMessage = await db.getMessageById(newsMessageId);
+            if (newsMessage) {
+              io.to(`user:${sender}`).emit('newMessage', newsMessage);
+            }
+          } catch (dbError) {
+            console.error('Error saving Sage message:', dbError);
+          }
         }
       }).catch(error => {
         console.error('Sage News Agent error:', error);
@@ -564,30 +607,55 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
 });
 
 // Get messages
-app.get('/api/messages', authenticateToken, (req, res) => {
+app.get('/api/messages', authenticateToken, async (req, res) => {
   try {
     const { lastId = 0, conversation } = req.query;
-    const nickname = req.user.nickname;
-    
-    const messages = conversation 
-      ? db.getConversationMessages(nickname, conversation, parseInt(lastId))
-      : db.getNewMessages(nickname, parseInt(lastId));
-    
+    const nickname = req.user?.nickname;
+
+    if (!nickname) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    let messages;
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Return empty messages for demo mode
+      messages = [];
+    } else {
+      try {
+        messages = conversation
+          ? await db.getConversationMessages(nickname, conversation, parseInt(lastId))
+          : await db.getNewMessages(nickname, parseInt(lastId));
+      } catch (dbError) {
+        console.error('Database query error in /api/messages:', dbError);
+        return res.status(500).json({ error: 'Database error' });
+      }
+    }
+
     // Ensure messages is an array and mark messages as read
     const messageArray = Array.isArray(messages) ? messages : [];
-    messageArray.forEach(msg => {
+    for (const msg of messageArray) {
       if (msg.receiver === nickname && !msg.read) {
-        db.markMessageAsRead(msg.id);
+        // Skip marking as read in demo mode
+        if (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DB_URL || process.env.POSTGRESQL_URL) {
+          try {
+            await db.markMessageAsRead(msg.id);
+          } catch (markError) {
+            console.error('Error marking message as read:', markError);
+            // Continue processing other messages
+          }
+        }
       }
-    });
-    
-    const maxId = messages.length > 0 
-      ? Math.max(...messages.map(m => m.id))
+    }
+
+    const maxId = messageArray.length > 0
+      ? Math.max(...messageArray.map(m => m.id))
       : parseInt(lastId);
     
     res.json({
       success: true,
-      messages,
+      messages: messageArray,
       lastId: maxId
     });
     
@@ -601,12 +669,22 @@ app.get('/api/messages', authenticateToken, (req, res) => {
 app.post('/api/messages/summarize', authenticateToken, async (req, res) => {
   try {
     const { conversation, hours = 24 } = req.body;
-    const nickname = req.user.nickname;
+    const nickname = req.user?.nickname;
+
+    if (!nickname || !conversation) {
+      return res.status(400).json({ error: 'Nickname and conversation are required' });
+    }
     
     // Get messages from the specified timeframe
-    const messages = db.getConversationHistory(nickname, conversation, hours);
-    
-    if (messages.length === 0) {
+    let messages;
+    try {
+      messages = await db.getConversationHistory(nickname, conversation, hours);
+    } catch (dbError) {
+      console.error('Database error in summarize:', dbError);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!messages || messages.length === 0) {
       return res.json({ 
         success: true, 
         summary: 'No messages found in the specified timeframe.' 
