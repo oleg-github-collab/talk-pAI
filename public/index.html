@@ -4167,7 +4167,7 @@
         const data = await response.json();
 
         if (data.success) {
-          showToast(\`✅ Added \${displayName || nickname} to \${group}\`, 'success');
+          showToast(`✅ Added \${displayName || nickname} to \${group}`, 'success');
           document.querySelector('.modal-overlay').remove();
           loadChats();
           loadDesktopContacts();
@@ -4184,7 +4184,7 @@
     function showGroupManagement() {
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
-      modal.innerHTML = \`
+      modal.innerHTML = `
         <div class="modal group-management-modal">
           <div class="modal-header">
             <h3>📁 Manage Contact Groups</h3>
@@ -4192,15 +4192,15 @@
           </div>
           <div class="modal-content">
             <div class="group-list">
-              \${contactGroups.map(group => \`
+              \${contactGroups.map(group => `
                 <div class="group-item">
                   <span class="group-name">\${group}</span>
                   <div class="group-actions">
                     <button class="btn-small" onclick="renameGroup('\${group}')">✏️ Rename</button>
-                    \${group !== 'General' ? \`<button class="btn-small danger" onclick="deleteGroup('\${group}')">🗑️ Delete</button>\` : ''}
+                    \${group !== 'General' ? `<button class="btn-small danger" onclick="deleteGroup('\${group}')">🗑️ Delete</button>` : ''}
                   </div>
                 </div>
-              \`).join('')}
+              `).join('')}
             </div>
 
             <div class="add-group-form">
@@ -4212,7 +4212,7 @@
             </div>
           </div>
         </div>
-      \`;
+      `;
 
       document.body.appendChild(modal);
     }
@@ -4232,7 +4232,7 @@
       }
 
       contactGroups.push(groupName);
-      showToast(\`✅ Created group: \${groupName}\`, 'success');
+      showToast(`✅ Created group: \${groupName}`, 'success');
       showGroupManagement(); // Refresh modal
     }
 
@@ -4244,7 +4244,7 @@
 
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
-        modal.innerHTML = \`
+        modal.innerHTML = `
           <div class="modal edit-contact-modal">
             <div class="modal-header">
               <h3>✏️ Edit Contact: \${contact.nickname}</h3>
@@ -4260,7 +4260,7 @@
                 <div class="input-group">
                   <select id="editContactGroup">
                     \${contactGroups.map(group =>
-                      \`<option value="\${group}" \${contact.group_name === group ? 'selected' : ''}>\${group}</option>\`
+                      `<option value="\${group}" \${contact.group_name === group ? 'selected' : ''}>\${group}</option>`
                     ).join('')}
                   </select>
                   <label>Group</label>
@@ -4281,7 +4281,7 @@
               </div>
             </div>
           </div>
-        \`;
+        `;
 
         document.body.appendChild(modal);
       } catch (error) {
@@ -4296,11 +4296,11 @@
       const favorite = document.getElementById('editFavorite').checked;
 
       try {
-        const response = await fetch(\`\${API_URL}/contacts/update\`, {
+        const response = await fetch(`${API_URL}/contacts/update`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer \${currentUser.token}\`,
+            'Authorization': `Bearer ${currentUser.token}`,
             'X-Nickname': currentUser.nickname
           },
           body: JSON.stringify({
@@ -4329,14 +4329,14 @@
 
     // Видалити контакт
     async function removeContact(nickname) {
-      if (!confirm(\`Are you sure you want to remove \${nickname}?\`)) return;
+      if (!confirm(`Are you sure you want to remove ${nickname}?`)) return;
 
       try {
-        const response = await fetch(\`\${API_URL}/contacts/remove\`, {
+        const response = await fetch(`${API_URL}/contacts/remove`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer \${currentUser.token}\`,
+            'Authorization': `Bearer ${currentUser.token}`,
             'X-Nickname': currentUser.nickname
           },
           body: JSON.stringify({ contact: nickname })
@@ -4345,7 +4345,7 @@
         const data = await response.json();
 
         if (data.success) {
-          showToast(\`🗑️ Removed \${nickname}\`, 'success');
+          showToast(`🗑️ Removed \${nickname}`, 'success');
           document.querySelector('.modal-overlay').remove();
           loadChats();
           loadDesktopContacts();
@@ -4365,7 +4365,7 @@
 
       // Update UI to show current filter
       document.querySelectorAll('.group-filter').forEach(btn => btn.classList.remove('active'));
-      document.querySelector(\`[data-group="\${groupName}"]\`)?.classList.add('active');
+      document.querySelector(`[data-group="\${groupName}"]`)?.classList.add('active');
     }
 
     // Пошук контактів з розширеними можливостями
@@ -4392,7 +4392,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = \`talk-pai-contacts-\${new Date().toISOString().split('T')[0]}.json\`;
+      a.download = `talk-pai-contacts-\${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -4429,7 +4429,7 @@
             }
           }
 
-          showToast(\`📥 Imported \${imported} contacts successfully\`, 'success');
+          showToast(`📥 Imported \${imported} contacts successfully`, 'success');
           loadChats();
         } else {
           showToast('Invalid contacts file format', 'error');

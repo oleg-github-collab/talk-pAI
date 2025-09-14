@@ -37,12 +37,18 @@ window.login = async function login() {
 
     const data = await response.json();
     if (data.success) {
-      alert('Успішний вхід!');
+      console.log('✅ Login successful, redirecting...');
       localStorage.setItem('token', data.token);
       localStorage.setItem('nickname', data.nickname);
-      location.reload();
+      localStorage.setItem('avatar', data.avatar || '👤');
+
+      // Показати чат
+      showChatAfterLogin();
+
+      // Backup: reload if redirect fails
+      setTimeout(() => location.reload(), 1000);
     } else {
-      alert('Помилка: ' + data.error);
+      alert('Помилка входу: ' + data.error);
     }
   } catch (error) {
     alert('Помилка з\'єднання: ' + error.message);
@@ -78,15 +84,51 @@ window.register = async function register() {
 
     const data = await response.json();
     if (data.success) {
-      alert('Реєстрація успішна!');
+      console.log('✅ Registration successful, redirecting...');
       localStorage.setItem('token', data.token || data.user?.token);
       localStorage.setItem('nickname', data.nickname || data.user?.nickname);
-      location.reload();
+      localStorage.setItem('avatar', data.avatar || data.user?.avatar || '👤');
+
+      // Показати чат
+      showChatAfterLogin();
+
+      // Backup: reload if redirect fails
+      setTimeout(() => location.reload(), 1000);
     } else {
-      alert('Помилка: ' + data.error);
+      alert('Помилка реєстрації: ' + data.error);
     }
   } catch (error) {
     alert('Помилка з\'єднання: ' + error.message);
+  }
+};
+
+// Функція показу чату після авторизації
+window.showChatAfterLogin = function() {
+  console.log('🔄 Switching to chat screen...');
+
+  // Приховати auth screen
+  const authScreen = document.getElementById('authScreen');
+  if (authScreen) {
+    authScreen.style.display = 'none';
+    authScreen.classList.remove('active');
+  }
+
+  // Показати chat screen
+  const chatScreen = document.getElementById('chatListScreen') || document.getElementById('chatScreen');
+  if (chatScreen) {
+    chatScreen.style.display = 'flex';
+    chatScreen.classList.add('active');
+  }
+
+  // Backup: знайти перший доступний екран чату
+  const screens = ['chatListScreen', 'chatScreen', 'desktopLayout'];
+  for (const screenId of screens) {
+    const screen = document.getElementById(screenId);
+    if (screen) {
+      screen.style.display = 'flex';
+      screen.classList.add('active');
+      break;
+    }
   }
 };
 
