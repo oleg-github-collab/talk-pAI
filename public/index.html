@@ -1321,25 +1321,306 @@
       .message-input-container { padding: 1.5rem 2rem; }
     }
 
-    /* Desktop */
+    /* Desktop Telegram-style Layout */
     @media (min-width: 1025px) {
+      body {
+        overflow: hidden;
+        background: var(--bg);
+      }
+
       .app {
-        max-width: 800px;
-        margin: 0 auto;
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
-        box-shadow: var(--shadow-2xl);
-        border-radius: var(--radius-lg);
+        display: flex;
+        height: 100vh;
+        max-width: none;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
         overflow: hidden;
       }
-      .auth-container { max-width: 600px; padding: 3rem; }
+
+      /* Desktop Sidebar */
+      .desktop-sidebar {
+        width: 420px;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      .sidebar-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--surface-elevated);
+      }
+
+      .sidebar-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+      }
+
+      .sidebar-search {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .sidebar-search input {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+      }
+
+      .sidebar-search input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      .sidebar-chats {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+      }
+
+      .sidebar-chat-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid var(--border-light);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--surface);
+      }
+
+      .sidebar-chat-item:hover {
+        background: var(--surface-hover);
+      }
+
+      .sidebar-chat-item.active {
+        background: var(--primary);
+        color: white;
+      }
+
+      .sidebar-chat-item.active .chat-preview,
+      .sidebar-chat-item.active .chat-time {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .sidebar-chat-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        background: var(--gradient-primary);
+      }
+
+      .sidebar-chat-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .sidebar-chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .sidebar-chat-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .sidebar-chat-time {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+      }
+
+      .sidebar-chat-preview {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+      }
+
+      .sidebar-unread {
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      /* Desktop Main Chat Area */
+      .desktop-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        height: 100vh;
+      }
+
+      .desktop-chat-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .desktop-chat-info {
+        display: flex;
+        align-items: center;
+      }
+
+      .desktop-chat-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-right: 1rem;
+        background: var(--gradient-secondary);
+      }
+
+      .desktop-chat-details h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text);
+      }
+
+      .desktop-chat-status {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0.2rem 0 0 0;
+      }
+
+      .desktop-chat-actions {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .desktop-action-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+      }
+
+      .desktop-action-btn:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-1px);
+      }
+
+      .desktop-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        background: var(--bg);
+      }
+
+      .desktop-message-input {
+        padding: 2rem;
+        border-top: 1px solid var(--border-light);
+        background: var(--surface);
+      }
+
+      /* Hide mobile elements on desktop */
+      .header,
+      .bottom-nav,
+      #chatListScreen,
+      #chatScreen,
+      #newsScreen,
+      #searchScreen {
+        display: none;
+      }
+
+      /* Show desktop layout */
+      .desktop-layout {
+        display: flex;
+      }
+
+      /* Auth container adjustments */
+      .auth-container {
+        max-width: 600px;
+        padding: 3rem;
+        margin: auto;
+      }
       .logo h1 { font-size: 3.5rem; }
       .logo p { font-size: 1.2rem; }
-      .message { max-width: 65%; }
-      .bottom-nav { max-width: 800px; left: 50%; transform: translateX(-50%); }
-      .header { padding: 0 2.5rem; }
-      .message-input-container { padding: 2rem 2.5rem; }
       .btn { font-size: 1.1rem; padding: 1.25rem 2.5rem; }
+
+      /* Welcome screen for desktop */
+      .desktop-welcome {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      .desktop-welcome-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.6;
+      }
+
+      .desktop-welcome h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      .desktop-welcome p {
+        font-size: 1rem;
+        opacity: 0.8;
+        max-width: 400px;
+      }
     }
 
     /* Performance Optimizations */
@@ -1630,6 +1911,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Desktop Layout (shown only on desktop) -->
+    <div class="desktop-layout" style="display: none;">
+      <!-- Desktop Sidebar -->
+      <div class="desktop-sidebar">
+        <div class="sidebar-header">
+          <h1>Talk pAI</h1>
+        </div>
+
+        <div class="sidebar-search">
+          <input type="text" placeholder="Search conversations..." id="desktopSearchInput" oninput="desktopSearch()">
+        </div>
+
+        <div class="sidebar-chats" id="desktopChatList">
+          <!-- Chat items will be populated here -->
+        </div>
+      </div>
+
+      <!-- Desktop Main Chat Area -->
+      <div class="desktop-main" id="desktopMain">
+        <div class="desktop-welcome">
+          <div class="desktop-welcome-icon">💬</div>
+          <h2>Welcome to Talk pAI</h2>
+          <p>Select a conversation from the sidebar to start chatting with AI assistants and your contacts.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="uploadImage(event)">
@@ -1684,6 +1992,21 @@
       setTimeout(adjustViewportHeight, 100);
     });
 
+    // Desktop layout detection
+    function isDesktop() {
+      return window.innerWidth >= 1025;
+    }
+
+    function showDesktopLayout() {
+      if (isDesktop()) {
+        document.querySelector('.desktop-layout').style.display = 'flex';
+        document.querySelector('.app > .screen.active').style.display = 'none';
+        loadDesktopContacts();
+        return true;
+      }
+      return false;
+    }
+
     // Auth functions with enhanced animations
     async function checkAuth() {
       const token = localStorage.getItem('token');
@@ -1691,7 +2014,11 @@
 
       if (token && nickname) {
         currentUser = { token, nickname };
-        await keepAlive();
+        const keepAliveResult = await keepAlive();
+
+        if (keepAliveResult && showDesktopLayout()) {
+          return; // Desktop layout shown, don't show mobile
+        }
       }
     }
 
@@ -1725,9 +2052,14 @@
           localStorage.setItem('avatar', data.avatar);
 
           connectSocket();
-          showScreen('chatListScreen');
-          loadChats();
-          showToast(data.message, 'success');
+
+          if (showDesktopLayout()) {
+            showToast(data.message, 'success');
+          } else {
+            showScreen('chatListScreen');
+            loadChats();
+            showToast(data.message, 'success');
+          }
         } else {
           showToast(data.error || 'Login failed', 'error');
         }
@@ -1771,9 +2103,14 @@
           localStorage.setItem('avatar', '👤');
 
           connectSocket();
-          showScreen('chatListScreen');
-          loadChats();
-          showToast(data.message, 'success');
+
+          if (showDesktopLayout()) {
+            showToast(data.message, 'success');
+          } else {
+            showScreen('chatListScreen');
+            loadChats();
+            showToast(data.message, 'success');
+          }
         } else {
           showToast(data.error || 'Registration failed', 'error');
         }
@@ -2695,6 +3032,333 @@
         document.body.style.animationPlayState = 'paused';
       } else {
         document.body.style.animationPlayState = 'running';
+      }
+    });
+
+    // ==================== DESKTOP FUNCTIONS ====================
+
+    let desktopCurrentChat = null;
+    let desktopMessages = [];
+
+    // Load contacts for desktop sidebar
+    async function loadDesktopContacts() {
+      try {
+        const response = await fetch(`${API_URL}/contacts`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+            'X-Nickname': currentUser.nickname
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          populateDesktopSidebar(data.contacts);
+        }
+      } catch (error) {
+        console.error('Error loading desktop contacts:', error);
+      }
+    }
+
+    // Populate desktop sidebar with contacts
+    function populateDesktopSidebar(contacts) {
+      const container = document.getElementById('desktopChatList');
+
+      let html = `
+        <div class="sidebar-chat-item" onclick="openDesktopChat('pAI')">
+          <div class="sidebar-chat-avatar">🤖</div>
+          <div class="sidebar-chat-info">
+            <div class="sidebar-chat-header">
+              <div class="sidebar-chat-name">pAI Assistant</div>
+              <div class="sidebar-chat-time">online</div>
+            </div>
+            <div class="sidebar-chat-preview">Your personal AI assistant</div>
+          </div>
+        </div>
+
+        <div class="sidebar-chat-item" onclick="openDesktopChat('Sage')">
+          <div class="sidebar-chat-avatar">📰</div>
+          <div class="sidebar-chat-info">
+            <div class="sidebar-chat-header">
+              <div class="sidebar-chat-name">Sage News Agent</div>
+              <div class="sidebar-chat-time">online</div>
+            </div>
+            <div class="sidebar-chat-preview">Personalized news briefings</div>
+          </div>
+        </div>
+      `;
+
+      // Add other contacts
+      contacts.filter(c => c.nickname !== 'pAI' && c.nickname !== 'Sage').forEach(contact => {
+        const lastSeen = contact.online ? 'online' : 'last seen recently';
+        html += `
+          <div class="sidebar-chat-item" onclick="openDesktopChat('${contact.nickname}')">
+            <div class="sidebar-chat-avatar">${contact.avatar || '👤'}</div>
+            <div class="sidebar-chat-info">
+              <div class="sidebar-chat-header">
+                <div class="sidebar-chat-name">${contact.display_name || contact.nickname}</div>
+                <div class="sidebar-chat-time">${lastSeen}</div>
+              </div>
+              <div class="sidebar-chat-preview">Start a conversation</div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Open desktop chat
+    async function openDesktopChat(nickname) {
+      desktopCurrentChat = nickname;
+
+      // Update active chat in sidebar
+      document.querySelectorAll('.sidebar-chat-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+
+      // Update main chat area
+      const mainArea = document.getElementById('desktopMain');
+      const avatar = nickname === 'pAI' ? '🤖' : nickname === 'Sage' ? '📰' : '👤';
+      const displayName = nickname === 'pAI' ? 'pAI Assistant' :
+                          nickname === 'Sage' ? 'Sage News Agent' : nickname;
+      const status = nickname === 'pAI' || nickname === 'Sage' ? 'online' : 'last seen recently';
+
+      mainArea.innerHTML = `
+        <div class="desktop-chat-header">
+          <div class="desktop-chat-info">
+            <div class="desktop-chat-avatar">${avatar}</div>
+            <div class="desktop-chat-details">
+              <h2>${displayName}</h2>
+              <div class="desktop-chat-status">${status}</div>
+            </div>
+          </div>
+          <div class="desktop-chat-actions">
+            <button class="desktop-action-btn" onclick="desktopSummarizeChat()">📊</button>
+            <button class="desktop-action-btn" onclick="desktopSearch()">🔍</button>
+            <button class="desktop-action-btn" onclick="desktopMoreActions()">⋯</button>
+          </div>
+        </div>
+
+        <div class="desktop-messages" id="desktopMessages">
+          <!-- Messages will be loaded here -->
+        </div>
+
+        <div class="desktop-message-input">
+          <div class="input-wrapper">
+            <textarea
+              id="desktopMessageInput"
+              class="message-input"
+              placeholder="Type a message..."
+              rows="1"
+              onkeypress="handleDesktopKeyPress(event)"
+              oninput="adjustTextarea(this)"></textarea>
+            <div class="input-actions">
+              <button class="input-btn" onclick="attachImage()">📷</button>
+              <button class="input-btn" onclick="startDesktopRecording()">🎙️</button>
+            </div>
+          </div>
+          <button class="input-btn send-btn" onclick="sendDesktopMessage()">➤</button>
+        </div>
+      `;
+
+      // Load messages for this chat
+      await loadDesktopMessages();
+    }
+
+    // Load messages for desktop chat
+    async function loadDesktopMessages() {
+      if (!desktopCurrentChat) return;
+
+      try {
+        const response = await fetch(`${API_URL}/messages?conversation=${desktopCurrentChat}&lastId=${lastMessageId}`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+            'X-Nickname': currentUser.nickname
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          const container = document.getElementById('desktopMessages');
+          container.innerHTML = '';
+
+          data.messages.reverse().forEach(message => {
+            addDesktopMessage(message);
+          });
+
+          container.scrollTop = container.scrollHeight;
+        }
+      } catch (error) {
+        console.error('Error loading desktop messages:', error);
+      }
+    }
+
+    // Add message to desktop chat
+    function addDesktopMessage(message) {
+      const container = document.getElementById('desktopMessages');
+      if (!container) return;
+
+      const messageEl = document.createElement('div');
+      const isOwn = message.sender === currentUser.nickname;
+      const isAI = message.sender === 'pAI';
+      const isSage = message.sender === 'Sage';
+
+      messageEl.className = `message ${isOwn ? 'own' : 'other'} ${isAI ? 'ai' : ''} ${isSage ? 'news' : ''}`;
+
+      const avatarEmoji = isOwn ? '👤' :
+                         isAI ? '🤖' :
+                         isSage ? '📰' : '👤';
+
+      messageEl.innerHTML = `
+        <div class="message-avatar">${avatarEmoji}</div>
+        <div class="message-content">
+          <div class="message-text">${escapeHtml(message.content).replace(/\n/g, '<br>')}</div>
+          <div class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</div>
+        </div>
+      `;
+
+      container.appendChild(messageEl);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Handle desktop enter key
+    function handleDesktopKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendDesktopMessage();
+      }
+    }
+
+    // Send desktop message
+    async function sendDesktopMessage() {
+      const input = document.getElementById('desktopMessageInput');
+      const message = input.value.trim();
+
+      if (!message || !desktopCurrentChat) return;
+
+      input.value = '';
+      adjustTextarea(input);
+
+      // Add message immediately to UI
+      const tempMessage = {
+        sender: currentUser.nickname,
+        content: message,
+        timestamp: new Date().toISOString(),
+        type: 'text'
+      };
+      addDesktopMessage(tempMessage);
+
+      // Send via socket
+      if (socket) {
+        socket.emit('sendMessage', {
+          receiver: desktopCurrentChat,
+          content: message,
+          type: 'text'
+        });
+      }
+    }
+
+    // Desktop search function
+    function desktopSearch() {
+      const searchInput = document.getElementById('desktopSearchInput');
+      searchInput.focus();
+    }
+
+    // Desktop search implementation
+    async function performDesktopSearch(query) {
+      // Implement search functionality
+      console.log('Searching for:', query);
+    }
+
+    // Desktop action functions
+    async function desktopSummarizeChat() {
+      if (!desktopCurrentChat) return;
+
+      const messages = Array.from(document.querySelectorAll('#desktopMessages .message'))
+        .map(el => ({
+          sender: el.classList.contains('own') ? currentUser.nickname : desktopCurrentChat,
+          content: el.querySelector('.message-text').textContent,
+          time: new Date().toISOString()
+        }));
+
+      if (messages.length === 0) {
+        showToast('No messages to summarize', 'info');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/ai/summarize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser.token}`,
+            'X-Nickname': currentUser.nickname
+          },
+          body: JSON.stringify({ messages })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Add summary as AI message
+          const summaryMessage = {
+            sender: 'pAI',
+            content: `📊 **Conversation Summary:**\n\n${data.summary}`,
+            timestamp: new Date().toISOString(),
+            type: 'text'
+          };
+          addDesktopMessage(summaryMessage);
+          showToast('Summary generated', 'success');
+        }
+      } catch (error) {
+        console.error('Summarize error:', error);
+        showToast('Failed to generate summary', 'error');
+      }
+    }
+
+    function desktopMoreActions() {
+      showToast('More actions coming soon!', 'info');
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (currentUser && currentUser.token) {
+        if (isDesktop() && document.querySelector('.desktop-layout').style.display === 'none') {
+          showDesktopLayout();
+        } else if (!isDesktop() && document.querySelector('.desktop-layout').style.display === 'flex') {
+          document.querySelector('.desktop-layout').style.display = 'none';
+          document.querySelector('.app > .screen.active').style.display = 'block';
+        }
+      }
+    });
+
+    // Update socket listeners for desktop
+    function setupDesktopSocketListeners() {
+      if (!socket) return;
+
+      socket.on('newMessage', (message) => {
+        if (isDesktop() && message.sender === desktopCurrentChat) {
+          addDesktopMessage(message);
+        }
+      });
+
+      socket.on('messageDelivered', (data) => {
+        if (isDesktop() && data.receiver === desktopCurrentChat) {
+          // Handle message delivered status
+        }
+      });
+    }
+
+    // Initialize desktop features
+    document.addEventListener('DOMContentLoaded', () => {
+      setupDesktopSocketListeners();
+
+      // Handle desktop search input
+      const searchInput = document.getElementById('desktopSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          performDesktopSearch(e.target.value);
+        });
       }
     });
 

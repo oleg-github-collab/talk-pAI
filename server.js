@@ -200,6 +200,10 @@ function generateSalt() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+// In-memory storage for demo when no database
+const memoryUsers = new Map();
+const memorySessions = new Map();
+
 // Auth middleware
 async function authenticateToken(req, res, next) {
   try {
@@ -208,6 +212,19 @@ async function authenticateToken(req, res, next) {
 
     if (!token || !nickname) {
       return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Use memory storage for demo
+      const sessionKey = `${nickname}:${token}`;
+      if (!memorySessions.has(sessionKey)) {
+        return res.status(401).json({ error: 'Invalid or expired session' });
+      }
+
+      req.user = { nickname, token };
+      next();
+      return;
     }
 
     const session = await db.validateSession(nickname, token);
@@ -228,11 +245,6 @@ async function authenticateToken(req, res, next) {
 // Registration
 app.post('/api/auth/register', async (req, res) => {
   try {
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      return res.status(503).json({ error: 'Database not configured. Please add PostgreSQL service on Railway.' });
-    }
-
     const { nickname, password, avatar } = req.body;
 
     if (!nickname || !password) {
@@ -253,7 +265,42 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'This nickname is reserved' });
     }
     
-    // Check if user exists
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Use memory storage for demo
+      if (memoryUsers.has(nickname)) {
+        return res.status(400).json({ error: 'This nickname is already taken' });
+      }
+
+      const salt = generateSalt();
+      const hashedPassword = hashPassword(password, salt);
+      const token = generateToken();
+
+      // Store user in memory
+      memoryUsers.set(nickname, {
+        nickname,
+        password: hashedPassword,
+        salt,
+        avatar: avatar || '👤'
+      });
+
+      // Create session
+      const sessionKey = `${nickname}:${token}`;
+      memorySessions.set(sessionKey, {
+        nickname,
+        token,
+        createdAt: new Date()
+      });
+
+      return res.json({
+        success: true,
+        message: 'Registration successful',
+        user: { nickname, avatar: avatar || '👤', token },
+        demo: true
+      });
+    }
+
+    // Database version
     const existingUser = await db.getUserByNickname(nickname);
     if (existingUser) {
       return res.status(400).json({ error: 'This nickname is already taken' });
@@ -316,17 +363,45 @@ Say something like "Subscribe me to daily tech news" or "Give me the latest head
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      return res.status(503).json({ error: 'Database not configured. Please add PostgreSQL service on Railway.' });
-    }
-
     const { nickname, password } = req.body;
 
     if (!nickname || !password) {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
-    
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Use memory storage for demo
+      const user = memoryUsers.get(nickname);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid nickname or password' });
+      }
+
+      const hashedInput = hashPassword(password, user.salt);
+      if (hashedInput !== user.password) {
+        return res.status(401).json({ error: 'Invalid nickname or password' });
+      }
+
+      const token = generateToken();
+      const sessionKey = `${nickname}:${token}`;
+      memorySessions.set(sessionKey, {
+        nickname,
+        token,
+        createdAt: new Date()
+      });
+
+      return res.json({
+        success: true,
+        nickname: user.nickname,
+        avatar: user.avatar || '👤',
+        theme: 'auto',
+        token,
+        message: '🔐 Welcome back!',
+        demo: true
+      });
+    }
+
+    // Database version
     const user = await db.getUserByNickname(nickname);
     if (!user) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
@@ -340,7 +415,7 @@ app.post('/api/auth/login', async (req, res) => {
     const token = generateToken();
     await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
     await db.updateLastSeen(nickname);
-    
+
     res.json({
       success: true,
       nickname: user.nickname,
@@ -531,6 +606,43 @@ app.get('/api/typing', authenticateToken, (req, res) => {
 app.get('/api/contacts', authenticateToken, async (req, res) => {
   try {
     const nickname = req.user.nickname;
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      // Return default contacts when database is not available
+      const defaultContacts = [
+        {
+          nickname: 'pAI',
+          avatar: '🤖',
+          display_name: 'pAI Assistant',
+          custom_name: null,
+          group_name: 'AI Assistants',
+          blocked: false,
+          muted: false,
+          favorite: true,
+          last_seen: new Date(),
+          online: true
+        },
+        {
+          nickname: 'Sage',
+          avatar: '📰',
+          display_name: 'Sage News Agent',
+          custom_name: null,
+          group_name: 'AI Assistants',
+          blocked: false,
+          muted: false,
+          favorite: true,
+          last_seen: new Date(),
+          online: true
+        }
+      ];
+
+      return res.json({
+        success: true,
+        contacts: defaultContacts
+      });
+    }
+
     const contacts = await db.getContacts(nickname);
 
     // Ensure contacts is an array
@@ -542,12 +654,12 @@ app.get('/api/contacts', authenticateToken, async (req, res) => {
       online: activeUsers.has(contact.nickname),
       lastSeen: contact.lastSeen
     }));
-    
+
     res.json({
       success: true,
       contacts: contactsWithStatus
     });
-    
+
   } catch (error) {
     console.error('Get contacts error:', error);
     res.status(500).json({ error: 'Failed to get contacts' });
