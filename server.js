@@ -29,7 +29,6 @@ function initializeDirectories() {
     dirs.forEach(dir => {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
-        console.log(`✅ Created directory: ${dir}`);
       }
     });
 
@@ -141,7 +140,6 @@ const socketUsers = new Map();
 const activeUsers = new Set();
 
 io.on('connection', (socket) => {
-  console.log('New connection:', socket.id);
 
   socket.on('authenticate', async (data) => {
     if (data.nickname && data.token) {
