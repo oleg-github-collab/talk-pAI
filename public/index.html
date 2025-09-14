@@ -2049,10 +2049,13 @@
             <input type="password" id="loginPassword" placeholder=" " required>
             <label>Password</label>
           </div>
-          <button class="btn btn-primary" onclick="login()">
-            <span>Sign In</span>
+          <button class="btn btn-primary" onclick="login()" onmousedown="console.log('Login button pressed')">
+            <span>🔐 Sign In</span>
           </button>
-          <button class="btn btn-text" onclick="showRegister()">Create Account</button>
+          <button class="btn btn-text" onclick="showRegister()" onmousedown="console.log('Register button pressed')">Create Account</button>
+          <button class="btn btn-secondary" onclick="alert('Test button works!')" style="margin-top: 10px;">
+            <span>🧪 Test Button</span>
+          </button>
         </div>
 
         <div id="registerForm" class="auth-form" style="display:none">
@@ -2311,12 +2314,43 @@
     let newsCategories = ['technology', 'business', 'science', 'world', 'health', 'entertainment'];
 
     // Initialize app with enhanced animations
+    // Debug: Ensure DOM is ready and functions work
+    function debugLog(message) {
+      console.log(`[DEBUG] ${message}`);
+      // Show debug info visually if needed
+    }
+
+    // Emergency fallback if checkAuth fails
+    function forceAuthScreen() {
+      debugLog('Forcing auth screen');
+      const authScreen = document.getElementById('authScreen');
+      if (authScreen) {
+        // Force show auth screen
+        document.querySelectorAll('.screen').forEach(s => {
+          s.classList.remove('active');
+          s.style.display = 'none';
+        });
+        authScreen.classList.add('active');
+        authScreen.style.display = 'flex';
+        authScreen.style.pointerEvents = 'all';
+        authScreen.style.opacity = '1';
+        authScreen.style.transform = 'translateX(0)';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
-      setupSocketListeners();
-      adjustViewportHeight();
-      initializeNewsCategories();
-      setupIntersectionObserver();
+      debugLog('DOM Content Loaded');
+      try {
+        checkAuth();
+        setupSocketListeners();
+        adjustViewportHeight();
+        initializeNewsCategories();
+        setupIntersectionObserver();
+      } catch (error) {
+        debugLog('Error in initialization: ' + error.message);
+        // Force auth screen as fallback
+        forceAuthScreen();
+      }
     });
 
     // Performance optimization with intersection observer
@@ -2391,10 +2425,14 @@
     }
 
     async function login() {
+      debugLog('Login function called');
       const nickname = document.getElementById('loginNickname').value.trim();
       const password = document.getElementById('loginPassword').value;
 
+      debugLog(`Login attempt: ${nickname}`);
+
       if (!nickname || !password) {
+        debugLog('Missing credentials');
         showToast('Please fill in all fields', 'error');
         return;
       }

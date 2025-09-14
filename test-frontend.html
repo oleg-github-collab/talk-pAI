@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Test</title>
+    <style>
+        button { padding: 20px; margin: 10px; font-size: 16px; }
+        .result { margin: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Test</h1>
+    <button onclick="testClick()">Test Click</button>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result" class="result">Ready for testing...</div>
+
+    <script>
+        function testClick() {
+            document.getElementById('result').innerHTML = 'Button clicked successfully!';
+            console.log('Button click works');
+        }
+
+        async function testAPI() {
+            try {
+                const response = await fetch('/api/contacts');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `API response: ${JSON.stringify(data)}`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `API Error: ${error.message}`;
+            }
+        }
+
+        console.log('Test script loaded');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+        });
+    </script>
+</body>
+</html>

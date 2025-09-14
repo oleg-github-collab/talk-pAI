@@ -72,14 +72,44 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 // Middleware
+// Production-ready security configuration
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "wss:", "ws:"]
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static('public'));
+// Static files with caching headers for production
+app.use(express.static('public', {
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : '0',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Cache static assets aggressively in production
+    if (process.env.NODE_ENV === 'production') {
+      if (path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+        res.set('Cache-Control', 'public, max-age=31536000'); // 1 year
+      } else if (path.match(/\.html$/)) {
+        res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+      }
+    }
+  }
+}));
 // Serve uploads from the correct directory
 app.use('/uploads', express.static(global.UPLOAD_DIR));
 
@@ -94,10 +124,22 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Production-grade rate limiting
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts. Please try again later.'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { error: 'Too many authentication attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Message sending rate limiting
+const messageLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // limit to 30 messages per minute
+  message: { error: 'Too many messages, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.use('/api/', limiter);
@@ -452,7 +494,7 @@ app.post('/api/auth/keepalive', authenticateToken, (req, res) => {
 });
 
 // Send message
-app.post('/api/messages/send', authenticateToken, async (req, res) => {
+app.post('/api/messages/send', messageLimiter, authenticateToken, async (req, res) => {
   try {
     const { receiver, type, content, replyTo } = req.body;
     const sender = req.user.nickname;
@@ -1482,6 +1524,8 @@ app.get('/api/contacts/search', authenticateToken, async (req, res) => {
 
 server.listen(PORT, async () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
+console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);
   console.log(`📁 Audio Upload: ${process.env.GAS_AUDIO_UPLOAD_URL ? 'Connected' : 'Not configured'}`);
 
