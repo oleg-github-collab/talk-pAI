@@ -2038,6 +2038,11 @@
           <div class="logo-icon">🤖</div>
           <h1 data-text="Talk pAI">Talk pAI</h1>
           <p>🌌 Next-Generation AI Messenger 🚀</p>
+          <div id="debugInfo" style="margin: 1rem 0; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: none;">
+            💡 Debug mode: Check browser console (F12) for detailed authentication logs
+            <br><button onclick="window.login && window.login(); console.log('Manual login called')" style="margin: 0.5rem 0.5rem 0 0; padding: 0.25rem 0.5rem; font-size: 0.7rem;">Test Login Function</button>
+            <button onclick="console.log('Functions available:', {login: typeof window.login, register: typeof window.register})" style="margin: 0.5rem 0; padding: 0.25rem 0.5rem; font-size: 0.7rem;">Check Functions</button>
+          </div>
         </div>
 
         <div id="loginForm" class="auth-form">
@@ -2049,7 +2054,7 @@
             <input type="password" id="loginPassword" placeholder=" " required>
             <label>Password</label>
           </div>
-          <button class="btn btn-primary" onclick="login()">
+          <button class="btn btn-primary" id="loginSubmitBtn" onclick="login()" type="button">
             <span>🔐 Sign In</span>
           </button>
           <button class="btn btn-text" onclick="showRegister()">Create Account</button>
@@ -2064,7 +2069,7 @@
             <input type="password" id="regPassword" placeholder=" " required>
             <label>Password (min 6 chars)</label>
           </div>
-          <button class="btn btn-primary" onclick="register()">
+          <button class="btn btn-primary" id="registerSubmitBtn" onclick="register()" type="button">
             <span>Create Account</span>
           </button>
           <button class="btn btn-text" onclick="showLogin()">Back to Sign In</button>
@@ -2310,8 +2315,48 @@
     let typingTimeout = null;
     let newsCategories = ['technology', 'business', 'science', 'world', 'health', 'entertainment'];
 
-    // Initialize app with enhanced animations
-    // Debug: Ensure DOM is ready and functions work
+    // ===== ПОТУЖНА СИСТЕМА ЛОГУВАННЯ =====
+    window.DEBUG_MODE = true;
+
+    function superLog(action, data = {}, error = null) {
+      const timestamp = new Date().toISOString();
+      const logObj = {
+        timestamp,
+        action,
+        data,
+        error: error ? error.message : null,
+        stack: error ? error.stack : null
+      };
+
+      console.log(`🔥 [${timestamp}] ${action}:`, logObj);
+
+      // Візуальний debug toast
+      if (window.DEBUG_MODE) {
+        const debugToast = document.createElement('div');
+        debugToast.style.cssText = `
+          position: fixed; top: 10px; right: 10px;
+          background: #000; color: #0f0; padding: 5px 10px;
+          font-family: monospace; font-size: 11px; z-index: 99999;
+          border: 1px solid #0f0; max-width: 400px;
+        `;
+        debugToast.textContent = `${action}: ${JSON.stringify(data)}`;
+        document.body.appendChild(debugToast);
+        setTimeout(() => debugToast.remove(), 3000);
+      }
+
+      return logObj;
+    }
+
+    // Window error handler
+    window.onerror = function(msg, url, line, col, error) {
+      superLog('WINDOW_ERROR', { msg, url, line, col }, error);
+      return false;
+    };
+
+    window.addEventListener('unhandledrejection', function(event) {
+      superLog('UNHANDLED_PROMISE_REJECTION', { reason: event.reason });
+    });
+
     function forceAuthScreen() {
       const authScreen = document.getElementById('authScreen');
       if (authScreen) {
@@ -2338,13 +2383,163 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('🔥 DOM: Content loaded, initializing...');
+
       try {
+        // Initialize core functions first
         checkAuth();
         setupSocketListeners();
         adjustViewportHeight();
         initializeNewsCategories();
         setupIntersectionObserver();
+
+        // Add backup event listeners for authentication buttons
+        console.log('🔥 DOM: Setting up backup button event listeners...');
+
+        // Enhanced backup event listeners with multiple selectors
+        const loginBtn = document.getElementById('loginSubmitBtn') ||
+                         document.querySelector('button[onclick="login()"]') ||
+                         document.querySelector('.btn-primary');
+
+        if (loginBtn) {
+          console.log('🔥 DOM: Found login button, adding multiple listeners');
+
+          // Multiple event listeners for maximum compatibility
+          ['click', 'touchend', 'pointerup'].forEach(eventType => {
+            loginBtn.addEventListener(eventType, (e) => {
+              console.log(`🔥 DOM: Login button ${eventType} via event listener`);
+              e.preventDefault();
+              e.stopPropagation();
+
+              // Ensure we're on the login form
+              const loginForm = document.getElementById('loginForm');
+              if (loginForm && loginForm.style.display !== 'none') {
+                if (window.login) {
+                  window.login();
+                } else {
+                  console.error('🔥 DOM: login function not found!');
+                }
+              }
+            }, { passive: false });
+          });
+        } else {
+          console.warn('🔥 DOM: Login button not found!');
+        }
+
+        const regBtn = document.getElementById('registerSubmitBtn') ||
+                       document.querySelector('button[onclick="register()"]');
+
+        if (regBtn) {
+          console.log('🔥 DOM: Found register button, adding multiple listeners');
+
+          // Multiple event listeners for maximum compatibility
+          ['click', 'touchend', 'pointerup'].forEach(eventType => {
+            regBtn.addEventListener(eventType, (e) => {
+              console.log(`🔥 DOM: Register button ${eventType} via event listener`);
+              e.preventDefault();
+              e.stopPropagation();
+
+              // Ensure we're on the register form
+              const regForm = document.getElementById('registerForm');
+              if (regForm && regForm.style.display !== 'none') {
+                if (window.register) {
+                  window.register();
+                } else {
+                  console.error('🔥 DOM: register function not found!');
+                }
+              }
+            }, { passive: false });
+          });
+        } else {
+          console.warn('🔥 DOM: Register button not found!');
+        }
+
+        // Add Enter key handlers for auth forms
+        const loginNickname = document.getElementById('loginNickname');
+        const loginPassword = document.getElementById('loginPassword');
+        const regNickname = document.getElementById('regNickname');
+        const regPassword = document.getElementById('regPassword');
+
+        [loginNickname, loginPassword].forEach(input => {
+          if (input) {
+            input.addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') {
+                console.log('🔥 DOM: Enter pressed in login form');
+                e.preventDefault();
+                if (window.login) window.login();
+              }
+            });
+          }
+        });
+
+        [regNickname, regPassword].forEach(input => {
+          if (input) {
+            input.addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') {
+                console.log('🔥 DOM: Enter pressed in register form');
+                e.preventDefault();
+                if (window.register) window.register();
+              }
+            });
+          }
+        });
+
+        // Test functions are available
+        console.log('🔥 DOM: Function availability check:', {
+          login: typeof window.login,
+          register: typeof window.register,
+          showToast: typeof showToast
+        });
+
+        console.log('🔥 DOM: Initialization completed successfully');
+
+        // Enable debug mode if there are any console errors
+        setTimeout(() => {
+          const debugInfo = document.getElementById('debugInfo');
+          const hasConsoleErrors = console.error.toString().includes('[native code]');
+
+          // Show debug info if functions might not be working or if user presses Ctrl+D
+          if (debugInfo) {
+            window.addEventListener('keydown', (e) => {
+              if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+                console.log('🔥 DEBUG: Debug mode toggled');
+              }
+            });
+          }
+        }, 1000);
+
+        // Global click tracker for debugging
+        document.body.addEventListener('click', (e) => {
+          const target = e.target;
+          const isButton = target.tagName === 'BUTTON';
+          const hasOnclick = target.hasAttribute('onclick');
+          const onclickValue = target.getAttribute('onclick');
+
+          if (isButton || hasOnclick) {
+            console.log('🔥 CLICK: Button clicked', {
+              tagName: target.tagName,
+              className: target.className,
+              onclick: onclickValue,
+              textContent: target.textContent?.trim(),
+              id: target.id
+            });
+
+            // Special tracking for auth buttons
+            if (onclickValue === 'login()' || onclickValue === 'register()') {
+              console.log('🔥 CLICK: AUTH BUTTON DETECTED!', onclickValue);
+
+              // Add a small delay to see if the onclick works
+              setTimeout(() => {
+                console.log('🔥 CLICK: Checking if onclick executed...', onclickValue);
+              }, 100);
+            }
+          }
+        }, true); // Use capture phase to catch everything
+
       } catch (error) {
+        console.error('🔥 DOM: Initialization error:', error);
         forceAuthScreen();
       }
     });
@@ -2421,102 +2616,195 @@
     }
 
     window.login = async function login() {
-      const nickname = document.getElementById('loginNickname')?.value?.trim();
-      const password = document.getElementById('loginPassword')?.value;
+      console.log('🔥 LOGIN: Function called');
+
+      // Enhanced element detection with debugging
+      const nicknameEl = document.getElementById('loginNickname');
+      const passwordEl = document.getElementById('loginPassword');
+
+      console.log('🔥 LOGIN: Elements found:', {
+        nicknameEl: !!nicknameEl,
+        passwordEl: !!passwordEl,
+        nicknameVal: nicknameEl?.value,
+        passwordVal: passwordEl?.value?.length ? '[HIDDEN]' : 'EMPTY'
+      });
+
+      if (!nicknameEl || !passwordEl) {
+        console.error('🔥 LOGIN: Missing form elements');
+        showToast('Login form not found - please refresh the page', 'error');
+        return;
+      }
+
+      const nickname = nicknameEl.value?.trim();
+      const password = passwordEl.value;
 
       if (!nickname || !password) {
+        console.log('🔥 LOGIN: Empty fields detected');
         showToast('Please fill in all fields', 'error');
         return;
       }
 
+      console.log('🔥 LOGIN: Starting authentication request for:', nickname);
+
       try {
         showToast('Logging in...', 'info');
+
+        const requestData = { nickname, password };
+        console.log('🔥 LOGIN: Sending request to /api/auth/login');
+
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nickname, password })
+          body: JSON.stringify(requestData)
         });
 
+        console.log('🔥 LOGIN: Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const data = await response.json();
+        console.log('🔥 LOGIN: Response data:', { success: data.success, demo: data.demo, message: data.message });
 
         if (data.success) {
+          console.log('🔥 LOGIN: Authentication successful');
           showToast('Login successful!', 'success');
+
           currentUser = {
             nickname: data.nickname,
             token: data.token,
             avatar: data.avatar
           };
 
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('nickname', data.nickname);
-          localStorage.setItem('avatar', data.avatar);
+          // Store in localStorage with validation
+          try {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('nickname', data.nickname);
+            localStorage.setItem('avatar', data.avatar);
+            console.log('🔥 LOGIN: Data stored in localStorage');
+          } catch (storageError) {
+            console.error('🔥 LOGIN: localStorage error:', storageError);
+          }
 
+          console.log('🔥 LOGIN: Connecting socket...');
           connectSocket();
 
           if (showDesktopLayout()) {
+            console.log('🔥 LOGIN: Showing desktop layout');
             showToast(data.message, 'success');
           } else {
+            console.log('🔥 LOGIN: Showing mobile chat list');
             showScreen('chatListScreen');
             loadChats();
             showToast(data.message, 'success');
           }
         } else {
+          console.error('🔥 LOGIN: Authentication failed:', data.error);
           showToast(data.error || 'Login failed', 'error');
         }
       } catch (error) {
-        showToast('Connection error', 'error');
+        console.error('🔥 LOGIN: Network/parsing error:', error);
+        showToast(`Connection error: ${error.message}`, 'error');
       }
     }
 
     window.register = async function register() {
-      const nickname = document.getElementById('regNickname')?.value?.trim();
-      const password = document.getElementById('regPassword')?.value;
+      console.log('🔥 REGISTER: Function called');
+
+      // Enhanced element detection with debugging
+      const nicknameEl = document.getElementById('regNickname');
+      const passwordEl = document.getElementById('regPassword');
+
+      console.log('🔥 REGISTER: Elements found:', {
+        nicknameEl: !!nicknameEl,
+        passwordEl: !!passwordEl,
+        nicknameVal: nicknameEl?.value,
+        passwordVal: passwordEl?.value?.length ? '[HIDDEN]' : 'EMPTY'
+      });
+
+      if (!nicknameEl || !passwordEl) {
+        console.error('🔥 REGISTER: Missing form elements');
+        showToast('Registration form not found - please refresh the page', 'error');
+        return;
+      }
+
+      const nickname = nicknameEl.value?.trim();
+      const password = passwordEl.value;
 
       if (!nickname || nickname.length < 3) {
+        console.log('🔥 REGISTER: Nickname validation failed:', nickname);
         showToast('Nickname must be at least 3 characters', 'error');
         return;
       }
 
-      if (password.length < 6) {
+      if (!password || password.length < 6) {
+        console.log('🔥 REGISTER: Password validation failed');
         showToast('Password must be at least 6 characters', 'error');
         return;
       }
 
+      console.log('🔥 REGISTER: Starting registration request for:', nickname);
+
       try {
         showToast('Creating account...', 'info');
+
+        const requestData = { nickname, password };
+        console.log('🔥 REGISTER: Sending request to /api/auth/register');
+
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nickname, password })
+          body: JSON.stringify(requestData)
         });
 
+        console.log('🔥 REGISTER: Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const data = await response.json();
+        console.log('🔥 REGISTER: Response data:', { success: data.success, demo: data.demo, message: data.message });
 
         if (data.success) {
+          console.log('🔥 REGISTER: Registration successful');
+
           currentUser = {
-            nickname: data.nickname,
-            token: data.token,
-            avatar: '👤'
+            nickname: data.nickname || data.user?.nickname,
+            token: data.token || data.user?.token,
+            avatar: data.avatar || data.user?.avatar || '👤'
           };
 
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('nickname', data.nickname);
-          localStorage.setItem('avatar', '👤');
+          // Store in localStorage with validation
+          try {
+            localStorage.setItem('token', currentUser.token);
+            localStorage.setItem('nickname', currentUser.nickname);
+            localStorage.setItem('avatar', currentUser.avatar);
+            console.log('🔥 REGISTER: Data stored in localStorage');
+          } catch (storageError) {
+            console.error('🔥 REGISTER: localStorage error:', storageError);
+          }
 
+          console.log('🔥 REGISTER: Connecting socket...');
           connectSocket();
 
           if (showDesktopLayout()) {
+            console.log('🔥 REGISTER: Showing desktop layout');
             showToast(data.message, 'success');
           } else {
+            console.log('🔥 REGISTER: Showing mobile chat list');
             showScreen('chatListScreen');
             loadChats();
             showToast(data.message, 'success');
           }
         } else {
+          console.error('🔥 REGISTER: Registration failed:', data.error);
           showToast(data.error || 'Registration failed', 'error');
         }
       } catch (error) {
-        showToast('Connection error', 'error');
+        console.error('🔥 REGISTER: Network/parsing error:', error);
+        showToast(`Connection error: ${error.message}`, 'error');
       }
     }
 
