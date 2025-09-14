@@ -100,7 +100,8 @@ async function processMessage(sender, content, type) {
     validateInput(sender, content, type);
 
     if (!openai) {
-      return "🤖 I'm currently offline. Please ask the admin to configure the OpenAI API key.";
+      // Demo mode - provide helpful fallback responses
+      return await handleDemoMode(sender, content);
     }
 
     // Check if this is a news request - if so, route to Sage news agent
@@ -798,6 +799,94 @@ async function handleResearchCommand(sender, content) {
     console.error('Research Mode error:', error);
     return "🔬 Research mode is temporarily unavailable. Please try again or use regular chat.";
   }
+}
+
+// Demo mode handler when OpenAI API is not available
+async function handleDemoMode(sender, content) {
+  const lowerContent = content.toLowerCase();
+
+  // Provide helpful demo responses
+  if (lowerContent.includes('hello') || lowerContent.includes('hi') || lowerContent.includes('hey')) {
+    return "👋 Hello! I'm pAI, your AI assistant. Currently running in demo mode (OpenAI API key not configured). I can still help with basic questions and provide useful information!";
+  }
+
+  if (lowerContent.includes('help') || lowerContent.includes('what can you do')) {
+    return `🤖 **pAI Demo Mode Features:**
+
+🔹 Basic conversation and greetings
+🔹 Information about Talk pAI features
+🔹 Help with messenger functionality
+🔹 Time and date information
+🔹 Basic calculations
+
+💡 **To unlock full AI capabilities:**
+- Ask your admin to configure the OpenAI API key
+- Access advanced features like creative writing, code analysis, and more
+
+How can I help you today?`;
+  }
+
+  if (lowerContent.includes('time') || lowerContent.includes('date')) {
+    const now = new Date();
+    return `⏰ Current time: ${now.toLocaleTimeString()}\n📅 Date: ${now.toLocaleDateString()}`;
+  }
+
+  if (lowerContent.includes('calculate') || lowerContent.includes('math') || /\d+\s*[\+\-\*\/]\s*\d+/.test(content)) {
+    try {
+      const mathMatch = content.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)/);
+      if (mathMatch) {
+        const [, a, op, b] = mathMatch;
+        const num1 = parseFloat(a);
+        const num2 = parseFloat(b);
+        let result;
+
+        switch (op) {
+          case '+': result = num1 + num2; break;
+          case '-': result = num1 - num2; break;
+          case '*': result = num1 * num2; break;
+          case '/': result = num2 !== 0 ? num1 / num2 : 'Cannot divide by zero'; break;
+        }
+
+        return `🔢 **Calculation Result:**\n${num1} ${op} ${num2} = ${result}`;
+      }
+    } catch (error) {
+      return "🔢 I can help with basic math! Try something like '5 + 3' or '10 * 2'";
+    }
+  }
+
+  if (lowerContent.includes('features') || lowerContent.includes('talk pai')) {
+    return `✨ **Talk pAI Features:**
+
+💬 **Messaging:**
+- Real-time chat with Socket.io
+- Contact management with custom names
+- Telegram-style desktop interface
+
+🤖 **AI Assistants:**
+- pAI: Your general AI assistant
+- Sage: News and information agent
+
+🔧 **Technical:**
+- PostgreSQL database support
+- Railway deployment ready
+- Responsive design for all devices
+
+🎨 **Interface:**
+- Smooth hardware-accelerated animations
+- Dark/light theme support
+- Professional, calm design`;
+  }
+
+  // Default helpful response
+  return `🤖 I'm pAI in demo mode! I understand you said "${content}".
+
+While I can't provide full AI responses without the OpenAI API key configured, I can help with:
+- Basic information about Talk pAI
+- Simple calculations
+- Time and date
+- General help and guidance
+
+Ask me about "features", "help", or try a simple math problem!`;
 }
 
 module.exports = {

@@ -342,8 +342,8 @@ Say something like "Subscribe me to daily tech news" or "Give me the latest head
 
 🗞️ Stay informed, stay ahead. Let's make news personal.`;
 
-    db.createMessage('pAI', nickname, 'text', paiWelcomeMessage);
-    db.createMessage('Sage', nickname, 'text', sageWelcomeMessage);
+    await db.createMessage('pAI', nickname, 'text', paiWelcomeMessage);
+    await db.createMessage('Sage', nickname, 'text', sageWelcomeMessage);
     
     res.json({
       success: true,
@@ -469,13 +469,13 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
       }
     }
     
-    const messageId = db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
+    const messageId = await db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
     
     // Clear typing status
     db.clearTypingStatus(sender);
     
     // Get message details
-    const message = db.getMessageById(messageId);
+    const message = await db.getMessageById(messageId);
     
     // Emit via Socket.io for real-time delivery
     if (receiver === 'all') {
@@ -487,24 +487,68 @@ app.post('/api/messages/send', authenticateToken, async (req, res) => {
     
     // Handle AI assistant messages
     if (receiver === 'pAI') {
-      aiAssistant.processMessage(sender, content, type).then(aiResponse => {
+      // Show AI typing indicator
+      io.to(`user:${sender}`).emit('userTyping', {
+        sender: 'pAI',
+        receiver: sender,
+        isTyping: true
+      });
+
+      aiAssistant.processMessage(sender, content, type).then(async aiResponse => {
+        // Hide AI typing indicator
+        io.to(`user:${sender}`).emit('userTyping', {
+          sender: 'pAI',
+          receiver: sender,
+          isTyping: false
+        });
+
         if (aiResponse) {
-          const aiMessageId = db.createMessage('pAI', sender, 'text', aiResponse);
-          const aiMessage = db.getMessageById(aiMessageId);
+          const aiMessageId = await db.createMessage('pAI', sender, 'text', aiResponse);
+          const aiMessage = await db.getMessageById(aiMessageId);
           io.to(`user:${sender}`).emit('newMessage', aiMessage);
         }
-      }).catch(console.error);
+      }).catch(error => {
+        console.error('AI Assistant error:', error);
+        // Hide AI typing indicator on error
+        io.to(`user:${sender}`).emit('userTyping', {
+          sender: 'pAI',
+          receiver: sender,
+          isTyping: false
+        });
+      });
     }
 
     // Handle Sage news agent messages
     if (receiver === 'Sage') {
-      newsAgent.processNewsInteraction(sender, content).then(newsResponse => {
+      // Show Sage typing indicator
+      io.to(`user:${sender}`).emit('userTyping', {
+        sender: 'Sage',
+        receiver: sender,
+        isTyping: true
+      });
+
+      newsAgent.processNewsInteraction(sender, content).then(async newsResponse => {
+        // Hide Sage typing indicator
+        io.to(`user:${sender}`).emit('userTyping', {
+          sender: 'Sage',
+          receiver: sender,
+          isTyping: false
+        });
+
         if (newsResponse) {
-          const newsMessageId = db.createMessage('Sage', sender, 'text', newsResponse);
-          const newsMessage = db.getMessageById(newsMessageId);
+          const newsMessageId = await db.createMessage('Sage', sender, 'text', newsResponse);
+          const newsMessage = await db.getMessageById(newsMessageId);
           io.to(`user:${sender}`).emit('newMessage', newsMessage);
         }
-      }).catch(console.error);
+      }).catch(error => {
+        console.error('Sage News Agent error:', error);
+        // Hide Sage typing indicator on error
+        io.to(`user:${sender}`).emit('userTyping', {
+          sender: 'Sage',
+          receiver: sender,
+          isTyping: false
+        });
+      });
     }
     
     res.json({
@@ -529,8 +573,9 @@ app.get('/api/messages', authenticateToken, (req, res) => {
       ? db.getConversationMessages(nickname, conversation, parseInt(lastId))
       : db.getNewMessages(nickname, parseInt(lastId));
     
-    // Mark messages as read
-    messages.forEach(msg => {
+    // Ensure messages is an array and mark messages as read
+    const messageArray = Array.isArray(messages) ? messages : [];
+    messageArray.forEach(msg => {
       if (msg.receiver === nickname && !msg.read) {
         db.markMessageAsRead(msg.id);
       }
@@ -721,8 +766,8 @@ app.post('/api/contacts/add', authenticateToken, async (req, res) => {
     
     // Notify the contact
     const notificationMsg = `${owner} added you to their contacts! 👋`;
-    const msgId = db.createMessage('system', contact, 'text', notificationMsg);
-    const message = db.getMessageById(msgId);
+    const msgId = await db.createMessage('system', contact, 'text', notificationMsg);
+    const message = await db.getMessageById(msgId);
     io.to(`user:${contact}`).emit('newMessage', message);
     
     res.json({
@@ -1114,6 +1159,249 @@ app.get('*', (req, res) => {
 });
 
 // Start server - Railway expects only PORT, no host binding
+// === ПОТУЖНІ API ENDPOINTS ДЛЯ УПРАВЛІННЯ КОНТАКТАМИ ===
+
+// Update contact with advanced features
+app.put('/api/contacts/update', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+    const { contact, customName, groupName, favorite } = req.body;
+
+    if (!contact) {
+      return res.status(400).json({ error: 'Contact nickname is required' });
+    }
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      return res.json({ success: true, message: 'Contact updated (demo mode)' });
+    }
+
+    const updatedContact = await db.updateContactInfo(owner, contact, customName, groupName, favorite);
+
+    if (updatedContact) {
+      res.json({
+        success: true,
+        message: `Updated contact ${customName || contact}`,
+        contact: updatedContact
+      });
+    } else {
+      res.status(404).json({ error: 'Contact not found' });
+    }
+  } catch (error) {
+    console.error('Update contact error:', error);
+    res.status(500).json({ error: 'Failed to update contact' });
+  }
+});
+
+// Remove contact
+app.delete('/api/contacts/remove', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+    const { contact } = req.body;
+
+    if (!contact) {
+      return res.status(400).json({ error: 'Contact nickname is required' });
+    }
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      return res.json({ success: true, message: 'Contact removed (demo mode)' });
+    }
+
+    const result = await db.query(
+      'DELETE FROM contacts WHERE owner = $1 AND contact = $2',
+      [owner, contact]
+    );
+
+    res.json({
+      success: true,
+      message: `Removed contact ${contact}`
+    });
+  } catch (error) {
+    console.error('Remove contact error:', error);
+    res.status(500).json({ error: 'Failed to remove contact' });
+  }
+});
+
+// Get contacts by group
+app.get('/api/contacts/groups/:groupName', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+    const { groupName } = req.params;
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      const defaultContacts = [
+        { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites', favorite: true },
+        { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work', favorite: false }
+      ].filter(c => c.group_name === groupName);
+
+      return res.json({ success: true, contacts: defaultContacts });
+    }
+
+    const contacts = await db.getContactsByGroup(owner, groupName);
+
+    res.json({
+      success: true,
+      contacts: contacts || []
+    });
+  } catch (error) {
+    console.error('Get contacts by group error:', error);
+    res.status(500).json({ error: 'Failed to get contacts by group' });
+  }
+});
+
+// Get all contact groups
+app.get('/api/contacts/groups', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      return res.json({
+        success: true,
+        groups: [
+          { group_name: 'Favorites', count: 1 },
+          { group_name: 'Work', count: 1 },
+          { group_name: 'General', count: 0 }
+        ]
+      });
+    }
+
+    const groups = await db.getContactGroups(owner);
+
+    res.json({
+      success: true,
+      groups: groups || []
+    });
+  } catch (error) {
+    console.error('Get contact groups error:', error);
+    res.status(500).json({ error: 'Failed to get contact groups' });
+  }
+});
+
+// Export contacts
+app.get('/api/contacts/export', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      const exportData = {
+        contacts: [
+          { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites' },
+          { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work' }
+        ],
+        groups: ['Favorites', 'Work', 'General'],
+        exportDate: new Date().toISOString(),
+        version: '2.0'
+      };
+
+      res.setHeader('Content-Disposition', `attachment; filename="talk-pai-contacts-${new Date().toISOString().split('T')[0]}.json"`);
+      res.setHeader('Content-Type', 'application/json');
+      return res.json(exportData);
+    }
+
+    const contacts = await db.getContacts(owner);
+    const groups = await db.getContactGroups(owner);
+
+    const exportData = {
+      contacts: contacts || [],
+      groups: (groups || []).map(g => g.group_name),
+      exportDate: new Date().toISOString(),
+      version: '2.0'
+    };
+
+    res.setHeader('Content-Disposition', `attachment; filename="talk-pai-contacts-${new Date().toISOString().split('T')[0]}.json"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(exportData);
+  } catch (error) {
+    console.error('Export contacts error:', error);
+    res.status(500).json({ error: 'Failed to export contacts' });
+  }
+});
+
+// Search contacts with advanced filtering
+app.get('/api/contacts/search', authenticateToken, async (req, res) => {
+  try {
+    const owner = req.user.nickname;
+    const { q: query, group, favorite } = req.query;
+
+    // Check if we have database available
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
+      let contacts = [
+        { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites', favorite: true },
+        { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work', favorite: false }
+      ];
+
+      // Filter by query
+      if (query) {
+        contacts = contacts.filter(c =>
+          c.nickname.toLowerCase().includes(query.toLowerCase()) ||
+          c.display_name.toLowerCase().includes(query.toLowerCase()) ||
+          c.group_name.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+
+      // Filter by group
+      if (group) {
+        contacts = contacts.filter(c => c.group_name === group);
+      }
+
+      // Filter by favorite
+      if (favorite === 'true') {
+        contacts = contacts.filter(c => c.favorite);
+      }
+
+      return res.json({ success: true, contacts });
+    }
+
+    // Build dynamic query based on filters
+    let queryText = `
+      SELECT u.nickname, u.avatar, u.last_seen,
+             c.custom_name, c.group_name, c.blocked, c.muted, c.favorite,
+             COALESCE(c.custom_name, u.nickname) as display_name
+      FROM contacts c
+      JOIN users u ON c.contact = u.nickname
+      WHERE c.owner = $1
+    `;
+
+    const queryParams = [owner];
+    let paramIndex = 2;
+
+    // Add search filter
+    if (query) {
+      queryText += ` AND (u.nickname ILIKE $${paramIndex} OR c.custom_name ILIKE $${paramIndex} OR c.group_name ILIKE $${paramIndex})`;
+      queryParams.push(`%${query}%`);
+      paramIndex++;
+    }
+
+    // Add group filter
+    if (group) {
+      queryText += ` AND c.group_name = $${paramIndex}`;
+      queryParams.push(group);
+      paramIndex++;
+    }
+
+    // Add favorite filter
+    if (favorite === 'true') {
+      queryText += ' AND c.favorite = true';
+    }
+
+    queryText += ' ORDER BY c.favorite DESC, display_name';
+
+    const result = await db.query(queryText, queryParams);
+
+    res.json({
+      success: true,
+      contacts: result.rows || []
+    });
+  } catch (error) {
+    console.error('Search contacts error:', error);
+    res.status(500).json({ error: 'Failed to search contacts' });
+  }
+});
+
 server.listen(PORT, async () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);

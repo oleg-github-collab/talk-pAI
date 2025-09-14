@@ -336,7 +336,7 @@ To get started, just say something like:
           const summary = await this.getLatestNews(userId, prefs);
 
           // Send via the main message system
-          const messageId = this.db.createMessage('Sage', userId, 'text', summary);
+          const messageId = await this.db.createMessage('Sage', userId, 'text', summary);
 
           // Update last sent time
           prefs.lastSent = new Date();

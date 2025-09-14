@@ -117,36 +117,67 @@
       background: var(--bg);
     }
 
+    /* Performance Optimization for Smooth Animations on All Devices */
+    * {
+      /* Hardware acceleration for better performance */
+      -webkit-transform: translate3d(0, 0, 0);
+      -moz-transform: translate3d(0, 0, 0);
+      -ms-transform: translate3d(0, 0, 0);
+      -o-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      -webkit-perspective: 1000;
+      perspective: 1000;
+    }
+
+    /* Optimized easing functions for 60fps */
+    :root {
+      --timing-fast: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --timing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --timing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    /* Reduce animations for users with motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* Ultra Enhanced Animations */
     @keyframes slideInRight {
-      from {
-        transform: translateX(100%) scale(0.95);
+      0% {
+        transform: translate3d(100%, 0, 0) scale3d(0.95, 0.95, 1);
         opacity: 0;
       }
-      to {
-        transform: translateX(0) scale(1);
+      100% {
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
       }
     }
 
     @keyframes slideInLeft {
-      from {
-        transform: translateX(-100%) scale(0.95);
+      0% {
+        transform: translate3d(-100%, 0, 0) scale3d(0.95, 0.95, 1);
         opacity: 0;
       }
-      to {
-        transform: translateX(0) scale(1);
+      100% {
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
       }
     }
 
     @keyframes slideInUp {
-      from {
-        transform: translateY(30px) scale(0.95);
+      0% {
+        transform: translate3d(0, 30px, 0) scale3d(0.95, 0.95, 1);
         opacity: 0;
       }
-      to {
-        transform: translateY(0) scale(1);
+      100% {
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
       }
     }
@@ -174,8 +205,14 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.05); }
+      0%, 100% {
+        opacity: 1;
+        transform: scale3d(1, 1, 1);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale3d(1.05, 1.05, 1);
+      }
     }
 
     @keyframes shimmer {
@@ -184,8 +221,8 @@
     }
 
     @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-10px) rotate(1deg); }
+      0%, 100% { transform: translate3d(0, 0, 0) rotate3d(0, 0, 1, 0deg); }
+      50% { transform: translate3d(0, -10px, 0) rotate3d(0, 0, 1, 1deg); }
     }
 
     @keyframes glow {
@@ -242,7 +279,7 @@
       opacity: 0;
       pointer-events: none;
       transform: translateX(100%);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s var(--timing-smooth);
       will-change: transform, opacity;
     }
 
@@ -337,7 +374,7 @@
       color: var(--text);
       font-size: 1.1rem;
       font-weight: 500;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s var(--timing-smooth);
       backdrop-filter: blur(20px);
       box-shadow: var(--shadow);
       position: relative;
@@ -399,7 +436,7 @@
       transform: translateY(-50%);
       color: var(--text-secondary);
       pointer-events: none;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s var(--timing-smooth);
       background: var(--surface);
       padding: 0 0.75rem;
       font-weight: 600;
@@ -429,7 +466,7 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s var(--timing-smooth);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -576,7 +613,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       font-size: 1.25rem;
       backdrop-filter: blur(10px);
     }
@@ -611,7 +648,7 @@
       padding: 1.25rem;
       gap: 1rem;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       position: relative;
       border-radius: var(--radius);
       margin-bottom: 0.5rem;
@@ -869,7 +906,7 @@
       align-items: flex-end;
       padding: 0.75rem;
       gap: 0.75rem;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       backdrop-filter: blur(10px);
     }
 
@@ -912,7 +949,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       font-size: 1.25rem;
       backdrop-filter: blur(10px);
     }
@@ -972,7 +1009,7 @@
       gap: 0.25rem;
       padding: 0.75rem;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       color: var(--text-secondary);
       border-radius: var(--radius);
       position: relative;
@@ -1056,7 +1093,7 @@
       padding: 1.5rem 1rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       border: 2px solid var(--border);
       backdrop-filter: blur(10px);
     }
@@ -1100,7 +1137,7 @@
       color: var(--text);
       font-size: 1rem;
       font-weight: 500;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       backdrop-filter: blur(10px);
     }
 
@@ -1143,7 +1180,7 @@
       border-radius: var(--radius);
       margin-bottom: 0.75rem;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       border: 2px solid var(--border-light);
       backdrop-filter: blur(10px);
     }
@@ -1172,7 +1209,7 @@
       background: var(--surface-2);
       border-radius: 999px;
       position: relative;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       cursor: pointer;
       border: 2px solid var(--border);
     }
@@ -1190,7 +1227,7 @@
       position: absolute;
       top: 2px;
       left: 2px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s var(--timing-smooth);
       box-shadow: var(--shadow);
     }
 
@@ -1670,6 +1707,325 @@
         --text-secondary: #cbd5e1;
       }
     }
+
+    /* === СТИЛІ ДЛЯ ПОТУЖНОГО УПРАВЛІННЯ КОНТАКТАМИ === */
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-2xl);
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow: hidden;
+      animation: modalSlideIn 0.4s ease;
+    }
+
+    .modal-header {
+      background: var(--gradient-primary);
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-content {
+      padding: 24px;
+      max-height: calc(90vh - 80px);
+      overflow-y: auto;
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .emoji-selector {
+      margin: 16px 0;
+    }
+
+    .emoji-selector label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .avatar-options {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .avatar-btn {
+      width: 48px;
+      height: 48px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-btn:hover {
+      border-color: var(--primary);
+      transform: scale(1.1);
+    }
+
+    .avatar-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .contact-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-small:hover {
+      background: var(--surface-hover);
+      border-color: var(--primary);
+    }
+
+    .btn-small.danger {
+      color: var(--error);
+      border-color: var(--error);
+    }
+
+    .btn-small.danger:hover {
+      background: var(--error);
+      color: white;
+    }
+
+    .group-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .group-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .group-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .group-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .add-group-form {
+      padding: 20px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .favorite-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      padding: 12px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      transition: background 0.2s ease;
+    }
+
+    .favorite-toggle:hover {
+      background: var(--surface-hover);
+    }
+
+    .favorite-toggle input[type="checkbox"] {
+      margin: 0;
+    }
+
+    .group-filter {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+
+    .group-filter:hover,
+    .group-filter.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .contact-filters {
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .contact-filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Покращення для мобільних пристроїв */
+    @media (max-width: 768px) {
+      .modal {
+        width: 95%;
+        max-height: 95vh;
+      }
+
+      .avatar-options {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .avatar-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+      }
+
+      .contact-actions {
+        flex-direction: column;
+      }
+
+      .add-group-form {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    /* Покращення доступності */
+    .modal:focus-within {
+      outline: 2px solid var(--primary);
+      outline-offset: 4px;
+    }
+
+    .avatar-btn:focus,
+    .btn-small:focus,
+    .favorite-toggle:focus-within {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* Анімації для елементів списку */
+    .group-item {
+      animation: slideInFromLeft 0.3s ease;
+    }
+
+    .group-item:nth-child(2n) {
+      animation-delay: 0.1s;
+    }
+
+    .group-item:nth-child(3n) {
+      animation-delay: 0.2s;
+    }
+
+    @keyframes slideInFromLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
   </style>
   <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -2016,10 +2372,22 @@
         currentUser = { token, nickname };
         const keepAliveResult = await keepAlive();
 
-        if (keepAliveResult && showDesktopLayout()) {
-          return; // Desktop layout shown, don't show mobile
+        if (keepAliveResult) {
+          // Check if desktop layout should be shown
+          if (showDesktopLayout()) {
+            return; // Desktop layout shown, don't show mobile
+          }
+
+          // Show mobile interface
+          showScreen('chatListScreen');
+          loadChats();
+          connectSocket();
+          return;
         }
       }
+
+      // Show auth screen if not authenticated
+      showScreen('authScreen');
     }
 
     async function login() {
@@ -2120,7 +2488,7 @@
     }
 
     async function keepAlive() {
-      if (!currentUser) return;
+      if (!currentUser) return false;
 
       try {
         const response = await fetch(`${API_URL}/auth/keepalive`, {
@@ -2138,15 +2506,10 @@
           localStorage.setItem('token', data.token);
         }
 
-        if (data.success) {
-          connectSocket();
-          showScreen('chatListScreen');
-          loadChats();
-        } else {
-          showScreen('authScreen');
-        }
+        return data.success;
       } catch (error) {
-        showScreen('authScreen');
+        console.error('Keep alive failed:', error);
+        return false;
       }
     }
 
@@ -2629,7 +2992,7 @@
             border-radius: var(--radius);
             padding: 1.5rem;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s var(--timing-smooth);
             border: 2px solid var(--border-light);
             backdrop-filter: blur(10px);
             animation: slideInUp 0.4s ease-out both;
@@ -3370,6 +3733,378 @@
         });
       });
     }
+    // === POTУЖНИЙ ФУНКЦІОНАЛ УПРАВЛІННЯ КОНТАКТАМИ ===
+
+    // Контакти з групами та кастомними назвами
+    let contactGroups = ['Favorites', 'Work', 'Family', 'Friends', 'General'];
+    let allContacts = [];
+
+    // Створити новий контакт з детальною інформацією
+    async function createAdvancedContact() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal advanced-contact-modal">
+          <div class="modal-header">
+            <h3>🆕 Add New Contact</h3>
+            <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="contact-form">
+              <div class="input-group">
+                <input type="text" id="contactNickname" placeholder=" " required>
+                <label>Nickname *</label>
+              </div>
+
+              <div class="input-group">
+                <input type="text" id="contactDisplayName" placeholder=" ">
+                <label>Custom Display Name</label>
+              </div>
+
+              <div class="input-group">
+                <select id="contactGroup">
+                  <option value="General">General</option>
+                  <option value="Work">Work</option>
+                  <option value="Family">Family</option>
+                  <option value="Friends">Friends</option>
+                  <option value="Favorites">⭐ Favorites</option>
+                </select>
+                <label>Group</label>
+              </div>
+
+              <div class="emoji-selector">
+                <label>Choose Avatar:</label>
+                <div class="avatar-options">
+                  ${['👤', '👨', '👩', '🧑', '👶', '🧓', '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🔬', '👩‍🔬'].map(emoji =>
+                    `<button type="button" class="avatar-btn" onclick="selectAvatar('${emoji}')">${emoji}</button>`
+                  ).join('')}
+                </div>
+              </div>
+
+              <div class="contact-actions">
+                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveAdvancedContact()">💾 Add Contact</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      document.getElementById('contactNickname').focus();
+    }
+
+    // Вибрати аватар
+    function selectAvatar(emoji) {
+      document.querySelectorAll('.avatar-btn').forEach(btn => btn.classList.remove('selected'));
+      event.target.classList.add('selected');
+      event.target.setAttribute('data-selected', 'true');
+    }
+
+    // Зберегти контакт з розширеними даними
+    async function saveAdvancedContact() {
+      const nickname = document.getElementById('contactNickname').value.trim();
+      const displayName = document.getElementById('contactDisplayName').value.trim();
+      const group = document.getElementById('contactGroup').value;
+      const selectedAvatar = document.querySelector('.avatar-btn[data-selected="true"]');
+
+      if (!nickname) {
+        showToast('Please enter nickname', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(\`\${API_URL}/contacts/add\`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': \`Bearer \${currentUser.token}\`,
+            'X-Nickname': currentUser.nickname
+          },
+          body: JSON.stringify({
+            contact: nickname,
+            customName: displayName || null,
+            groupName: group,
+            avatar: selectedAvatar ? selectedAvatar.textContent : '👤'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(\`✅ Added \${displayName || nickname} to \${group}\`, 'success');
+          document.querySelector('.modal-overlay').remove();
+          loadChats();
+          loadDesktopContacts();
+        } else {
+          showToast(data.error || 'Failed to add contact', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding contact:', error);
+        showToast('Connection error', 'error');
+      }
+    }
+
+    // Управління групами контактів
+    function showGroupManagement() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = \`
+        <div class="modal group-management-modal">
+          <div class="modal-header">
+            <h3>📁 Manage Contact Groups</h3>
+            <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="group-list">
+              \${contactGroups.map(group => \`
+                <div class="group-item">
+                  <span class="group-name">\${group}</span>
+                  <div class="group-actions">
+                    <button class="btn-small" onclick="renameGroup('\${group}')">✏️ Rename</button>
+                    \${group !== 'General' ? \`<button class="btn-small danger" onclick="deleteGroup('\${group}')">🗑️ Delete</button>\` : ''}
+                  </div>
+                </div>
+              \`).join('')}
+            </div>
+
+            <div class="add-group-form">
+              <div class="input-group">
+                <input type="text" id="newGroupName" placeholder=" " maxlength="20">
+                <label>New Group Name</label>
+              </div>
+              <button class="btn btn-primary" onclick="addNewGroup()">➕ Add Group</button>
+            </div>
+          </div>
+        </div>
+      \`;
+
+      document.body.appendChild(modal);
+    }
+
+    // Додати нову групу
+    async function addNewGroup() {
+      const groupName = document.getElementById('newGroupName').value.trim();
+
+      if (!groupName) {
+        showToast('Please enter group name', 'error');
+        return;
+      }
+
+      if (contactGroups.includes(groupName)) {
+        showToast('Group already exists', 'error');
+        return;
+      }
+
+      contactGroups.push(groupName);
+      showToast(\`✅ Created group: \${groupName}\`, 'success');
+      showGroupManagement(); // Refresh modal
+    }
+
+    // Редагувати контакт
+    async function editContact(nickname) {
+      try {
+        const contact = allContacts.find(c => c.nickname === nickname);
+        if (!contact) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = \`
+          <div class="modal edit-contact-modal">
+            <div class="modal-header">
+              <h3>✏️ Edit Contact: \${contact.nickname}</h3>
+              <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
+            </div>
+            <div class="modal-content">
+              <div class="contact-form">
+                <div class="input-group">
+                  <input type="text" id="editDisplayName" value="\${contact.display_name || contact.nickname}" placeholder=" ">
+                  <label>Display Name</label>
+                </div>
+
+                <div class="input-group">
+                  <select id="editContactGroup">
+                    \${contactGroups.map(group =>
+                      \`<option value="\${group}" \${contact.group_name === group ? 'selected' : ''}>\${group}</option>\`
+                    ).join('')}
+                  </select>
+                  <label>Group</label>
+                </div>
+
+                <div class="contact-actions">
+                  <label class="favorite-toggle">
+                    <input type="checkbox" id="editFavorite" \${contact.favorite ? 'checked' : ''}>
+                    <span>⭐ Add to Favorites</span>
+                  </label>
+                </div>
+
+                <div class="contact-actions">
+                  <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                  <button class="btn btn-primary" onclick="updateContact('\${nickname}')">💾 Save Changes</button>
+                  <button class="btn btn-danger" onclick="removeContact('\${nickname}')">🗑️ Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        \`;
+
+        document.body.appendChild(modal);
+      } catch (error) {
+        console.error('Error editing contact:', error);
+      }
+    }
+
+    // Оновити контакт
+    async function updateContact(nickname) {
+      const displayName = document.getElementById('editDisplayName').value.trim();
+      const group = document.getElementById('editContactGroup').value;
+      const favorite = document.getElementById('editFavorite').checked;
+
+      try {
+        const response = await fetch(\`\${API_URL}/contacts/update\`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': \`Bearer \${currentUser.token}\`,
+            'X-Nickname': currentUser.nickname
+          },
+          body: JSON.stringify({
+            contact: nickname,
+            customName: displayName,
+            groupName: group,
+            favorite: favorite
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast('✅ Contact updated successfully', 'success');
+          document.querySelector('.modal-overlay').remove();
+          loadChats();
+          loadDesktopContacts();
+        } else {
+          showToast(data.error || 'Failed to update contact', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating contact:', error);
+        showToast('Connection error', 'error');
+      }
+    }
+
+    // Видалити контакт
+    async function removeContact(nickname) {
+      if (!confirm(\`Are you sure you want to remove \${nickname}?\`)) return;
+
+      try {
+        const response = await fetch(\`\${API_URL}/contacts/remove\`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': \`Bearer \${currentUser.token}\`,
+            'X-Nickname': currentUser.nickname
+          },
+          body: JSON.stringify({ contact: nickname })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(\`🗑️ Removed \${nickname}\`, 'success');
+          document.querySelector('.modal-overlay').remove();
+          loadChats();
+          loadDesktopContacts();
+        } else {
+          showToast(data.error || 'Failed to remove contact', 'error');
+        }
+      } catch (error) {
+        console.error('Error removing contact:', error);
+        showToast('Connection error', 'error');
+      }
+    }
+
+    // Фільтрувати контакти по групах
+    function filterContactsByGroup(groupName) {
+      const filteredContacts = allContacts.filter(c => c.group_name === groupName);
+      displayChatList(filteredContacts);
+
+      // Update UI to show current filter
+      document.querySelectorAll('.group-filter').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(\`[data-group="\${groupName}"]\`)?.classList.add('active');
+    }
+
+    // Пошук контактів з розширеними можливостями
+    function advancedSearchContacts(query) {
+      const searchResults = allContacts.filter(contact =>
+        contact.nickname.toLowerCase().includes(query.toLowerCase()) ||
+        (contact.display_name && contact.display_name.toLowerCase().includes(query.toLowerCase())) ||
+        contact.group_name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      displayChatList(searchResults);
+    }
+
+    // Імпорт/Експорт контактів
+    function exportContacts() {
+      const contactsData = {
+        contacts: allContacts,
+        groups: contactGroups,
+        exportDate: new Date().toISOString(),
+        version: '2.0'
+      };
+
+      const blob = new Blob([JSON.stringify(contactsData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = \`talk-pai-contacts-\${new Date().toISOString().split('T')[0]}.json\`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showToast('📥 Contacts exported successfully', 'success');
+    }
+
+    function importContacts() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = handleContactImport;
+      input.click();
+    }
+
+    async function handleContactImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (data.contacts && Array.isArray(data.contacts)) {
+          // Add contacts one by one
+          let imported = 0;
+          for (const contact of data.contacts) {
+            if (contact.nickname && contact.nickname !== currentUser.nickname) {
+              try {
+                await addContact(contact.nickname, contact.display_name, contact.group_name);
+                imported++;
+              } catch (error) {
+                console.warn(\`Failed to import \${contact.nickname}:\`, error);
+              }
+            }
+          }
+
+          showToast(\`📥 Imported \${imported} contacts successfully\`, 'success');
+          loadChats();
+        } else {
+          showToast('Invalid contacts file format', 'error');
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        showToast('Failed to import contacts', 'error');
+      }
+    }
+
   </script>
 </body>
 </html>
