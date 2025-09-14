@@ -2028,6 +2028,7 @@
 
   </style>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/auth-fix.js"></script>
 </head>
 <body data-theme="light">
   <div class="app">
@@ -2054,10 +2055,10 @@
             <input type="password" id="loginPassword" placeholder=" " required>
             <label>Password</label>
           </div>
-          <button class="btn btn-primary" id="loginSubmitBtn" onclick="login()" type="button">
+          <button class="btn btn-primary" id="loginSubmitBtn" onclick="window.login ? window.login() : alert('Login function not loaded')" type="button">
             <span>🔐 Sign In</span>
           </button>
-          <button class="btn btn-text" onclick="showRegister()">Create Account</button>
+          <button class="btn btn-text" onclick="window.showRegister ? window.showRegister() : alert('Form function not loaded')">Create Account</button>
         </div>
 
         <div id="registerForm" class="auth-form" style="display:none">
@@ -2069,10 +2070,10 @@
             <input type="password" id="regPassword" placeholder=" " required>
             <label>Password (min 6 chars)</label>
           </div>
-          <button class="btn btn-primary" id="registerSubmitBtn" onclick="register()" type="button">
+          <button class="btn btn-primary" id="registerSubmitBtn" onclick="window.register ? window.register() : alert('Register function not loaded')" type="button">
             <span>Create Account</span>
           </button>
-          <button class="btn btn-text" onclick="showLogin()">Back to Sign In</button>
+          <button class="btn btn-text" onclick="window.showLogin ? window.showLogin() : alert('Form function not loaded')">Back to Sign In</button>
         </div>
       </div>
     </div>
