@@ -11,44 +11,9 @@ const OpenAI = require('openai');
 require('dotenv').config();
 
 // ✅ CRITICAL: Define PORT — Railway injects it via process.env.PORT
-const PORT = process.env.PORT || 3000; // Development default port
+const PORT = process.env.PORT || 8080; // 👈 THIS WAS MISSING!
 
-// Initialize only writable directories in /tmp for Railway
-const fs = require('fs');
-
-function initializeDirectories() {
-  try {
-    // Use /tmp for writable directories on Railway
-    const tmpDir = process.env.NODE_ENV === 'production' ? '/tmp' : '.';
-    const dirs = [
-      path.join(tmpDir, 'uploads'),
-      path.join(tmpDir, 'uploads/images'),
-      path.join(tmpDir, 'uploads/audio')
-    ];
-
-    dirs.forEach(dir => {
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    });
-
-    // Set upload paths for later use
-    global.UPLOAD_DIR = path.join(tmpDir, 'uploads');
-    global.UPLOAD_IMAGES_DIR = path.join(tmpDir, 'uploads/images');
-    global.UPLOAD_AUDIO_DIR = path.join(tmpDir, 'uploads/audio');
-
-  } catch (error) {
-    console.warn('⚠️ Could not create directories:', error.message);
-    // Fallback: use /tmp directly if mkdir fails
-    global.UPLOAD_DIR = '/tmp';
-    global.UPLOAD_IMAGES_DIR = '/tmp';
-    global.UPLOAD_AUDIO_DIR = '/tmp';
-  }
-}
-
-initializeDirectories();
-
-const db = require('./database-pg');
+const db = require('./database');
 const aiAssistant = require('./ai-assistant');
 const NewsAgent = require('./news-agent');
 
@@ -71,37 +36,15 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 // Middleware
-// RADICAL FIX: Completely disable CSP to allow onclick handlers
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  }
+  crossOriginEmbedderPolicy: false
 }));
 app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-// Static files with caching headers for production
-app.use(express.static('public', {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : '0',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Cache static assets aggressively in production
-    if (process.env.NODE_ENV === 'production') {
-      if (path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-        res.set('Cache-Control', 'public, max-age=31536000'); // 1 year
-      } else if (path.match(/\.html$/)) {
-        res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
-      }
-    }
-  }
-}));
-// Serve uploads from the correct directory
-app.use('/uploads', express.static(global.UPLOAD_DIR));
+app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
 
 // Trust proxy for Railway
 app.set('trust proxy', 1);
@@ -114,22 +57,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Production-grade rate limiting
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: { error: 'Too many authentication attempts, please try again later' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Message sending rate limiting
-const messageLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // limit to 30 messages per minute
-  message: { error: 'Too many messages, please slow down' },
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts. Please try again later.'
 });
 
 app.use('/api/', limiter);
@@ -140,6 +71,7 @@ const socketUsers = new Map();
 const activeUsers = new Set();
 
 io.on('connection', (socket) => {
+  console.log('New connection:', socket.id);
 
   socket.on('authenticate', async (data) => {
     if (data.nickname && data.token) {
@@ -231,44 +163,22 @@ function generateSalt() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-// In-memory storage for demo when no database
-const memoryUsers = new Map();
-const memorySessions = new Map();
-
 // Auth middleware
-async function authenticateToken(req, res, next) {
-  try {
-    const token = req.headers['authorization']?.split(' ')[1];
-    const nickname = req.headers['x-nickname'];
-
-    if (!token || !nickname) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      const sessionKey = `${nickname}:${token}`;
-      if (!memorySessions.has(sessionKey)) {
-        return res.status(401).json({ error: 'Invalid or expired session' });
-      }
-
-      req.user = { nickname, token };
-      next();
-      return;
-    }
-
-    const session = await db.validateSession(nickname, token);
-    if (!session) {
-      return res.status(401).json({ error: 'Invalid or expired session' });
-    }
-
-    req.user = { nickname, token };
-    next();
-  } catch (error) {
-    console.error('Authentication error:', error);
-    return res.status(500).json({ error: 'Authentication failed' });
+function authenticateToken(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1];
+  const nickname = req.headers['x-nickname'];
+  
+  if (!token || !nickname) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
+  
+  const session = db.validateSession(nickname, token);
+  if (!session) {
+    return res.status(401).json({ error: 'Invalid or expired session' });
+  }
+  
+  req.user = { nickname, token };
+  next();
 }
 
 // API Routes
@@ -277,7 +187,7 @@ async function authenticateToken(req, res, next) {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { nickname, password, avatar } = req.body;
-
+    
     if (!nickname || !password) {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
@@ -296,58 +206,23 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'This nickname is reserved' });
     }
     
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      if (memoryUsers.has(nickname)) {
-        return res.status(400).json({ error: 'This nickname is already taken' });
-      }
-
-      const salt = generateSalt();
-      const hashedPassword = hashPassword(password, salt);
-      const token = generateToken();
-
-      // Store user in memory
-      memoryUsers.set(nickname, {
-        nickname,
-        password: hashedPassword,
-        salt,
-        avatar: avatar || '👤'
-      });
-
-      // Create session
-      const sessionKey = `${nickname}:${token}`;
-      memorySessions.set(sessionKey, {
-        nickname,
-        token,
-        createdAt: new Date()
-      });
-
-      return res.json({
-        success: true,
-        message: 'Registration successful',
-        user: { nickname, avatar: avatar || '👤', token },
-        demo: true
-      });
-    }
-
-    // Database version
-    const existingUser = await db.getUserByNickname(nickname);
+    // Check if user exists
+    const existingUser = db.getUserByNickname(nickname);
     if (existingUser) {
       return res.status(400).json({ error: 'This nickname is already taken' });
     }
-
+    
     // Create user
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
     const token = generateToken();
-
-    await db.createUser(nickname, hashedPassword, salt, avatar || '👤');
-    await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
-
+    
+    db.createUser(nickname, hashedPassword, salt, avatar || '👤');
+    db.createSession(nickname, token);
+    
     // Add pAI and Sage as default contacts
-    await db.addContact(nickname, 'pAI');
-    await db.addContact(nickname, 'Sage');
+    db.addContact(nickname, 'pAI');
+    db.addContact(nickname, 'Sage');
     
     // Send welcome messages from pAI and Sage
     const paiWelcomeMessage = `Hi ${nickname}! 👋 I'm pAI, your personal AI assistant. I can help you with:
@@ -373,8 +248,8 @@ Say something like "Subscribe me to daily tech news" or "Give me the latest head
 
 🗞️ Stay informed, stay ahead. Let's make news personal.`;
 
-    await db.createMessage('pAI', nickname, 'text', paiWelcomeMessage);
-    await db.createMessage('Sage', nickname, 'text', sageWelcomeMessage);
+    db.createMessage('pAI', nickname, 'text', paiWelcomeMessage);
+    db.createMessage('Sage', nickname, 'text', sageWelcomeMessage);
     
     res.json({
       success: true,
@@ -395,58 +270,25 @@ Say something like "Subscribe me to daily tech news" or "Give me the latest head
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { nickname, password } = req.body;
-
+    
     if (!nickname || !password) {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      const user = memoryUsers.get(nickname);
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid nickname or password' });
-      }
-
-      const hashedInput = hashPassword(password, user.salt);
-      if (hashedInput !== user.password) {
-        return res.status(401).json({ error: 'Invalid nickname or password' });
-      }
-
-      const token = generateToken();
-      const sessionKey = `${nickname}:${token}`;
-      memorySessions.set(sessionKey, {
-        nickname,
-        token,
-        createdAt: new Date()
-      });
-
-      return res.json({
-        success: true,
-        nickname: user.nickname,
-        avatar: user.avatar || '👤',
-        theme: 'auto',
-        token,
-        message: '🔐 Welcome back!',
-        demo: true
-      });
-    }
-
-    // Database version
-    const user = await db.getUserByNickname(nickname);
+    
+    const user = db.getUserByNickname(nickname);
     if (!user) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
     }
-
+    
     const hashedInput = hashPassword(password, user.salt);
     if (hashedInput !== user.password) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
     }
-
+    
     const token = generateToken();
-    await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
-    await db.updateLastSeen(nickname);
-
+    db.createSession(nickname, token);
+    db.updateUserActivity(nickname);
+    
     res.json({
       success: true,
       nickname: user.nickname,
@@ -483,7 +325,7 @@ app.post('/api/auth/keepalive', authenticateToken, (req, res) => {
 });
 
 // Send message
-app.post('/api/messages/send', messageLimiter, authenticateToken, async (req, res) => {
+app.post('/api/messages/send', authenticateToken, async (req, res) => {
   try {
     const { receiver, type, content, replyTo } = req.body;
     const sender = req.user.nickname;
@@ -500,44 +342,13 @@ app.post('/api/messages/send', messageLimiter, authenticateToken, async (req, re
       }
     }
     
-    let messageId;
-    let message;
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Demo mode - create a mock message
-      messageId = Date.now();
-      message = {
-        id: messageId,
-        sender,
-        receiver: receiver || 'all',
-        type: type || 'text',
-        content,
-        timestamp: new Date().toISOString(),
-        read: false,
-        reply_to: replyTo
-      };
-    } else {
-      try {
-        messageId = await db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
-      } catch (dbError) {
-        console.error('Error creating message:', dbError);
-        return res.status(500).json({ error: 'Failed to create message' });
-      }
-    }
+    const messageId = db.createMessage(sender, receiver || 'all', type || 'text', content, replyTo);
     
     // Clear typing status
     db.clearTypingStatus(sender);
     
-    // Get message details (if not already created in demo mode)
-    if (!message) {
-      try {
-        message = await db.getMessageById(messageId);
-      } catch (dbError) {
-        console.error('Error retrieving message:', dbError);
-        return res.status(500).json({ error: 'Failed to retrieve message' });
-      }
-    }
+    // Get message details
+    const message = db.getMessageById(messageId);
     
     // Emit via Socket.io for real-time delivery
     if (receiver === 'all') {
@@ -549,80 +360,24 @@ app.post('/api/messages/send', messageLimiter, authenticateToken, async (req, re
     
     // Handle AI assistant messages
     if (receiver === 'pAI') {
-      // Show AI typing indicator
-      io.to(`user:${sender}`).emit('userTyping', {
-        sender: 'pAI',
-        receiver: sender,
-        isTyping: true
-      });
-
-      aiAssistant.processMessage(sender, content, type).then(async aiResponse => {
-        // Hide AI typing indicator
-        io.to(`user:${sender}`).emit('userTyping', {
-          sender: 'pAI',
-          receiver: sender,
-          isTyping: false
-        });
-
+      aiAssistant.processMessage(sender, content, type).then(aiResponse => {
         if (aiResponse) {
-          try {
-            const aiMessageId = await db.createMessage('pAI', sender, 'text', aiResponse);
-            const aiMessage = await db.getMessageById(aiMessageId);
-            if (aiMessage) {
-              io.to(`user:${sender}`).emit('newMessage', aiMessage);
-            }
-          } catch (dbError) {
-            console.error('Error saving AI message:', dbError);
-          }
+          const aiMessageId = db.createMessage('pAI', sender, 'text', aiResponse);
+          const aiMessage = db.getMessageById(aiMessageId);
+          io.to(`user:${sender}`).emit('newMessage', aiMessage);
         }
-      }).catch(error => {
-        console.error('AI Assistant error:', error);
-        // Hide AI typing indicator on error
-        io.to(`user:${sender}`).emit('userTyping', {
-          sender: 'pAI',
-          receiver: sender,
-          isTyping: false
-        });
-      });
+      }).catch(console.error);
     }
 
     // Handle Sage news agent messages
     if (receiver === 'Sage') {
-      // Show Sage typing indicator
-      io.to(`user:${sender}`).emit('userTyping', {
-        sender: 'Sage',
-        receiver: sender,
-        isTyping: true
-      });
-
-      newsAgent.processNewsInteraction(sender, content).then(async newsResponse => {
-        // Hide Sage typing indicator
-        io.to(`user:${sender}`).emit('userTyping', {
-          sender: 'Sage',
-          receiver: sender,
-          isTyping: false
-        });
-
+      newsAgent.processNewsInteraction(sender, content).then(newsResponse => {
         if (newsResponse) {
-          try {
-            const newsMessageId = await db.createMessage('Sage', sender, 'text', newsResponse);
-            const newsMessage = await db.getMessageById(newsMessageId);
-            if (newsMessage) {
-              io.to(`user:${sender}`).emit('newMessage', newsMessage);
-            }
-          } catch (dbError) {
-            console.error('Error saving Sage message:', dbError);
-          }
+          const newsMessageId = db.createMessage('Sage', sender, 'text', newsResponse);
+          const newsMessage = db.getMessageById(newsMessageId);
+          io.to(`user:${sender}`).emit('newMessage', newsMessage);
         }
-      }).catch(error => {
-        console.error('Sage News Agent error:', error);
-        // Hide Sage typing indicator on error
-        io.to(`user:${sender}`).emit('userTyping', {
-          sender: 'Sage',
-          receiver: sender,
-          isTyping: false
-        });
-      });
+      }).catch(console.error);
     }
     
     res.json({
@@ -638,55 +393,29 @@ app.post('/api/messages/send', messageLimiter, authenticateToken, async (req, re
 });
 
 // Get messages
-app.get('/api/messages', authenticateToken, async (req, res) => {
+app.get('/api/messages', authenticateToken, (req, res) => {
   try {
     const { lastId = 0, conversation } = req.query;
-    const nickname = req.user?.nickname;
-
-    if (!nickname) {
-      return res.status(401).json({ error: 'Invalid authentication' });
-    }
-
-    let messages;
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Return empty messages for demo mode
-      messages = [];
-    } else {
-      try {
-        messages = conversation
-          ? await db.getConversationMessages(nickname, conversation, parseInt(lastId))
-          : await db.getNewMessages(nickname, parseInt(lastId));
-      } catch (dbError) {
-        console.error('Database query error in /api/messages:', dbError);
-        return res.status(500).json({ error: 'Database error' });
-      }
-    }
-
-    // Ensure messages is an array and mark messages as read
-    const messageArray = Array.isArray(messages) ? messages : [];
-    for (const msg of messageArray) {
+    const nickname = req.user.nickname;
+    
+    const messages = conversation 
+      ? db.getConversationMessages(nickname, conversation, parseInt(lastId))
+      : db.getNewMessages(nickname, parseInt(lastId));
+    
+    // Mark messages as read
+    messages.forEach(msg => {
       if (msg.receiver === nickname && !msg.read) {
-        // Skip marking as read in demo mode
-        if (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DB_URL || process.env.POSTGRESQL_URL) {
-          try {
-            await db.markMessageAsRead(msg.id);
-          } catch (markError) {
-            console.error('Error marking message as read:', markError);
-            // Continue processing other messages
-          }
-        }
+        db.markMessageAsRead(msg.id);
       }
-    }
-
-    const maxId = messageArray.length > 0
-      ? Math.max(...messageArray.map(m => m.id))
+    });
+    
+    const maxId = messages.length > 0 
+      ? Math.max(...messages.map(m => m.id))
       : parseInt(lastId);
     
     res.json({
       success: true,
-      messages: messageArray,
+      messages,
       lastId: maxId
     });
     
@@ -700,22 +429,12 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
 app.post('/api/messages/summarize', authenticateToken, async (req, res) => {
   try {
     const { conversation, hours = 24 } = req.body;
-    const nickname = req.user?.nickname;
-
-    if (!nickname || !conversation) {
-      return res.status(400).json({ error: 'Nickname and conversation are required' });
-    }
+    const nickname = req.user.nickname;
     
     // Get messages from the specified timeframe
-    let messages;
-    try {
-      messages = await db.getConversationHistory(nickname, conversation, hours);
-    } catch (dbError) {
-      console.error('Database error in summarize:', dbError);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (!messages || messages.length === 0) {
+    const messages = db.getConversationHistory(nickname, conversation, hours);
+    
+    if (messages.length === 0) {
       return res.json({ 
         success: true, 
         summary: 'No messages found in the specified timeframe.' 
@@ -757,63 +476,23 @@ app.get('/api/typing', authenticateToken, (req, res) => {
 });
 
 // Get contacts
-app.get('/api/contacts', authenticateToken, async (req, res) => {
+app.get('/api/contacts', authenticateToken, (req, res) => {
   try {
     const nickname = req.user.nickname;
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Return default contacts when database is not available
-      const defaultContacts = [
-        {
-          nickname: 'pAI',
-          avatar: '🤖',
-          display_name: 'pAI Assistant',
-          custom_name: null,
-          group_name: 'AI Assistants',
-          blocked: false,
-          muted: false,
-          favorite: true,
-          last_seen: new Date(),
-          online: true
-        },
-        {
-          nickname: 'Sage',
-          avatar: '📰',
-          display_name: 'Sage News Agent',
-          custom_name: null,
-          group_name: 'AI Assistants',
-          blocked: false,
-          muted: false,
-          favorite: true,
-          last_seen: new Date(),
-          online: true
-        }
-      ];
-
-      return res.json({
-        success: true,
-        contacts: defaultContacts
-      });
-    }
-
-    const contacts = await db.getContacts(nickname);
-
-    // Ensure contacts is an array
-    const contactsArray = Array.isArray(contacts) ? contacts : [];
-
+    const contacts = db.getContacts(nickname);
+    
     // Add online status
-    const contactsWithStatus = contactsArray.map(contact => ({
+    const contactsWithStatus = contacts.map(contact => ({
       ...contact,
       online: activeUsers.has(contact.nickname),
       lastSeen: contact.lastSeen
     }));
-
+    
     res.json({
       success: true,
       contacts: contactsWithStatus
     });
-
+    
   } catch (error) {
     console.error('Get contacts error:', error);
     res.status(500).json({ error: 'Failed to get contacts' });
@@ -850,33 +529,33 @@ app.get('/api/users/search', authenticateToken, (req, res) => {
 });
 
 // Add contact
-app.post('/api/contacts/add', authenticateToken, async (req, res) => {
+app.post('/api/contacts/add', authenticateToken, (req, res) => {
   try {
-    const { contact, customName, groupName } = req.body;
+    const { contact } = req.body;
     const owner = req.user.nickname;
-
+    
     if (!contact) {
       return res.status(400).json({ error: 'Contact nickname is required' });
     }
-
+    
     // Check if contact exists
-    const contactUser = await db.getUserByNickname(contact);
+    const contactUser = db.getUserByNickname(contact);
     if (!contactUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-
+    
     // Check if already a contact
-    const existingContact = await db.getContact(owner, contact);
+    const existingContact = db.getContact(owner, contact);
     if (existingContact) {
       return res.status(400).json({ error: 'Already in contacts' });
     }
-
-    await db.addContact(owner, contact, customName || null, groupName || 'General');
+    
+    db.addContact(owner, contact);
     
     // Notify the contact
     const notificationMsg = `${owner} added you to their contacts! 👋`;
-    const msgId = await db.createMessage('system', contact, 'text', notificationMsg);
-    const message = await db.getMessageById(msgId);
+    const msgId = db.createMessage('system', contact, 'text', notificationMsg);
+    const message = db.getMessageById(msgId);
     io.to(`user:${contact}`).emit('newMessage', message);
     
     res.json({
@@ -1165,28 +844,14 @@ app.get('/api/news/summary', authenticateToken, async (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
   console.log('✅ Health check called');
-
-  let dbStatus = 'unknown';
-  try {
-    if (process.env.DATABASE_URL && pool) {
-      await db.query('SELECT 1');
-      dbStatus = 'connected';
-    } else {
-      dbStatus = 'not_configured';
-    }
-  } catch (error) {
-    dbStatus = 'error';
-  }
-
   res.status(200).json({
     status: 'healthy',
     timestamp: Date.now(),
     uptime: process.uptime(),
     activeUsers: activeUsers.size,
     memory: process.memoryUsage(),
-    database: dbStatus,
     version: require('./package.json').version
   });
 });
@@ -1201,330 +866,17 @@ app.get('/ready', (req, res) => {
   });
 });
 
-// Update contact info
-app.put('/api/contacts/:contact', authenticateToken, async (req, res) => {
-  try {
-    const { contact } = req.params;
-    const { customName, groupName, favorite } = req.body;
-    const owner = req.user.nickname;
-
-    const result = await db.updateContactInfo(owner, contact, customName, groupName, favorite);
-
-    if (!result) {
-      return res.status(404).json({ error: 'Contact not found' });
-    }
-
-    res.json({
-      success: true,
-      contact: result
-    });
-
-  } catch (error) {
-    console.error('Update contact error:', error);
-    res.status(500).json({ error: 'Failed to update contact' });
-  }
-});
-
-// Get contact groups
-app.get('/api/contacts/groups', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-    const groups = await db.getContactGroups(owner);
-
-    res.json({
-      success: true,
-      groups
-    });
-
-  } catch (error) {
-    console.error('Get groups error:', error);
-    res.status(500).json({ error: 'Failed to get contact groups' });
-  }
-});
-
-// Get contacts by group
-app.get('/api/contacts/groups/:groupName', authenticateToken, async (req, res) => {
-  try {
-    const { groupName } = req.params;
-    const owner = req.user.nickname;
-
-    const contacts = await db.getContactsByGroup(owner, decodeURIComponent(groupName));
-
-    res.json({
-      success: true,
-      contacts,
-      groupName
-    });
-
-  } catch (error) {
-    console.error('Get contacts by group error:', error);
-    res.status(500).json({ error: 'Failed to get contacts by group' });
-  }
-});
-
 // Serve frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server - Railway expects only PORT, no host binding
-// === ПОТУЖНІ API ENDPOINTS ДЛЯ УПРАВЛІННЯ КОНТАКТАМИ ===
-
-// Update contact with advanced features
-app.put('/api/contacts/update', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-    const { contact, customName, groupName, favorite } = req.body;
-
-    if (!contact) {
-      return res.status(400).json({ error: 'Contact nickname is required' });
-    }
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      return res.json({ success: true, message: 'Contact updated (demo mode)' });
-    }
-
-    const updatedContact = await db.updateContactInfo(owner, contact, customName, groupName, favorite);
-
-    if (updatedContact) {
-      res.json({
-        success: true,
-        message: `Updated contact ${customName || contact}`,
-        contact: updatedContact
-      });
-    } else {
-      res.status(404).json({ error: 'Contact not found' });
-    }
-  } catch (error) {
-    console.error('Update contact error:', error);
-    res.status(500).json({ error: 'Failed to update contact' });
-  }
-});
-
-// Remove contact
-app.delete('/api/contacts/remove', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-    const { contact } = req.body;
-
-    if (!contact) {
-      return res.status(400).json({ error: 'Contact nickname is required' });
-    }
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      return res.json({ success: true, message: 'Contact removed (demo mode)' });
-    }
-
-    const result = await db.query(
-      'DELETE FROM contacts WHERE owner = $1 AND contact = $2',
-      [owner, contact]
-    );
-
-    res.json({
-      success: true,
-      message: `Removed contact ${contact}`
-    });
-  } catch (error) {
-    console.error('Remove contact error:', error);
-    res.status(500).json({ error: 'Failed to remove contact' });
-  }
-});
-
-// Get contacts by group
-app.get('/api/contacts/groups/:groupName', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-    const { groupName } = req.params;
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      const defaultContacts = [
-        { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites', favorite: true },
-        { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work', favorite: false }
-      ].filter(c => c.group_name === groupName);
-
-      return res.json({ success: true, contacts: defaultContacts });
-    }
-
-    const contacts = await db.getContactsByGroup(owner, groupName);
-
-    res.json({
-      success: true,
-      contacts: contacts || []
-    });
-  } catch (error) {
-    console.error('Get contacts by group error:', error);
-    res.status(500).json({ error: 'Failed to get contacts by group' });
-  }
-});
-
-// Get all contact groups
-app.get('/api/contacts/groups', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      return res.json({
-        success: true,
-        groups: [
-          { group_name: 'Favorites', count: 1 },
-          { group_name: 'Work', count: 1 },
-          { group_name: 'General', count: 0 }
-        ]
-      });
-    }
-
-    const groups = await db.getContactGroups(owner);
-
-    res.json({
-      success: true,
-      groups: groups || []
-    });
-  } catch (error) {
-    console.error('Get contact groups error:', error);
-    res.status(500).json({ error: 'Failed to get contact groups' });
-  }
-});
-
-// Export contacts
-app.get('/api/contacts/export', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      const exportData = {
-        contacts: [
-          { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites' },
-          { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work' }
-        ],
-        groups: ['Favorites', 'Work', 'General'],
-        exportDate: new Date().toISOString(),
-        version: '2.0'
-      };
-
-      res.setHeader('Content-Disposition', `attachment; filename="talk-pai-contacts-${new Date().toISOString().split('T')[0]}.json"`);
-      res.setHeader('Content-Type', 'application/json');
-      return res.json(exportData);
-    }
-
-    const contacts = await db.getContacts(owner);
-    const groups = await db.getContactGroups(owner);
-
-    const exportData = {
-      contacts: contacts || [],
-      groups: (groups || []).map(g => g.group_name),
-      exportDate: new Date().toISOString(),
-      version: '2.0'
-    };
-
-    res.setHeader('Content-Disposition', `attachment; filename="talk-pai-contacts-${new Date().toISOString().split('T')[0]}.json"`);
-    res.setHeader('Content-Type', 'application/json');
-    res.json(exportData);
-  } catch (error) {
-    console.error('Export contacts error:', error);
-    res.status(500).json({ error: 'Failed to export contacts' });
-  }
-});
-
-// Search contacts with advanced filtering
-app.get('/api/contacts/search', authenticateToken, async (req, res) => {
-  try {
-    const owner = req.user.nickname;
-    const { q: query, group, favorite } = req.query;
-
-    // Check if we have database available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      let contacts = [
-        { nickname: 'pAI', avatar: '🤖', display_name: 'pAI Assistant', group_name: 'Favorites', favorite: true },
-        { nickname: 'Sage', avatar: '📰', display_name: 'Sage News Agent', group_name: 'Work', favorite: false }
-      ];
-
-      // Filter by query
-      if (query) {
-        contacts = contacts.filter(c =>
-          c.nickname.toLowerCase().includes(query.toLowerCase()) ||
-          c.display_name.toLowerCase().includes(query.toLowerCase()) ||
-          c.group_name.toLowerCase().includes(query.toLowerCase())
-        );
-      }
-
-      // Filter by group
-      if (group) {
-        contacts = contacts.filter(c => c.group_name === group);
-      }
-
-      // Filter by favorite
-      if (favorite === 'true') {
-        contacts = contacts.filter(c => c.favorite);
-      }
-
-      return res.json({ success: true, contacts });
-    }
-
-    // Build dynamic query based on filters
-    let queryText = `
-      SELECT u.nickname, u.avatar, u.last_seen,
-             c.custom_name, c.group_name, c.blocked, c.muted, c.favorite,
-             COALESCE(c.custom_name, u.nickname) as display_name
-      FROM contacts c
-      JOIN users u ON c.contact = u.nickname
-      WHERE c.owner = $1
-    `;
-
-    const queryParams = [owner];
-    let paramIndex = 2;
-
-    // Add search filter
-    if (query) {
-      queryText += ` AND (u.nickname ILIKE $${paramIndex} OR c.custom_name ILIKE $${paramIndex} OR c.group_name ILIKE $${paramIndex})`;
-      queryParams.push(`%${query}%`);
-      paramIndex++;
-    }
-
-    // Add group filter
-    if (group) {
-      queryText += ` AND c.group_name = $${paramIndex}`;
-      queryParams.push(group);
-      paramIndex++;
-    }
-
-    // Add favorite filter
-    if (favorite === 'true') {
-      queryText += ' AND c.favorite = true';
-    }
-
-    queryText += ' ORDER BY c.favorite DESC, display_name';
-
-    const result = await db.query(queryText, queryParams);
-
-    res.json({
-      success: true,
-      contacts: result.rows || []
-    });
-  } catch (error) {
-    console.error('Search contacts error:', error);
-    res.status(500).json({ error: 'Failed to search contacts' });
-  }
-});
-
-server.listen(PORT, async () => {
+// Start server
+server.listen(PORT, () => {
   console.log(`🚀 Talk pAI server running on port ${PORT}`);
-console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-console.log(`📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
   console.log(`🤖 AI Assistant: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured'}`);
   console.log(`📁 Audio Upload: ${process.env.GAS_AUDIO_UPLOAD_URL ? 'Connected' : 'Not configured'}`);
-
-  // Initialize database after server is ready
-  try {
-    await db.initialize();
-    console.log('🗄️ Database ready');
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
-  }
+  db.initialize();
 });
 
 // Graceful shutdown

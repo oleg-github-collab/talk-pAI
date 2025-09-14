@@ -11,24 +11,24 @@
   <title>Talk pAI - AI-Powered Messenger</title>
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-light: #6366f1;
-      --primary-dark: #3730a3;
-      --secondary: #06b6d4;
-      --accent: #10b981;
-      --success: #059669;
-      --warning: #d97706;
-      --error: #dc2626;
-      --ai: #8b5cf6;
-      --news: #f59e0b;
+      --primary: #667eea;
+      --primary-light: #7c3aed;
+      --primary-dark: #4f46e5;
+      --secondary: #f093fb;
+      --accent: #4ade80;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --ai: #06b6d4;
+      --news: #f97316;
 
-      --bg: #f8fafc;
-      --bg-secondary: #f1f5f9;
+      --bg: #ffffff;
+      --bg-secondary: #fafbff;
       --surface: #ffffff;
       --surface-hover: #f8fafc;
       --surface-2: #f1f5f9;
       --surface-elevated: #ffffff;
-      --text: #1e293b;
+      --text: #0f172a;
       --text-secondary: #64748b;
       --text-muted: #94a3b8;
       --border: #e2e8f0;
@@ -37,22 +37,20 @@
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-      --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 
-      --radius: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
       --header-height: 64px;
       --bottom-bar-height: 76px;
       --safe-area-top: env(safe-area-inset-top);
       --safe-area-bottom: env(safe-area-inset-bottom);
 
-      --gradient-primary: linear-gradient(135deg, #4f46e5, #6366f1);
-      --gradient-secondary: linear-gradient(135deg, #06b6d4, #3b82f6);
-      --gradient-ai: linear-gradient(135deg, #8b5cf6, #a855f7);
-      --gradient-news: linear-gradient(135deg, #f59e0b, #f97316);
-      --gradient-success: linear-gradient(135deg, #059669, #10b981);
-      --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+      --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-light));
+      --gradient-secondary: linear-gradient(135deg, var(--secondary), var(--primary));
+      --gradient-ai: linear-gradient(135deg, var(--ai), var(--primary-light));
+      --gradient-news: linear-gradient(135deg, var(--news), var(--secondary));
+      --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
     }
 
     [data-theme="dark"] {
@@ -84,8 +82,6 @@
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
-      background-image: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      background-attachment: fixed;
       color: var(--text);
       height: 100vh;
       overflow: hidden;
@@ -98,17 +94,6 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.02) 0%, rgba(99, 102, 241, 0.01) 100%);
-      z-index: -1;
-    }
-
     .app {
       height: 100%;
       display: flex;
@@ -117,154 +102,64 @@
       background: var(--bg);
     }
 
-    /* Performance Optimization for Smooth Animations on All Devices */
-    * {
-      /* Hardware acceleration for better performance */
-      -webkit-transform: translate3d(0, 0, 0);
-      -moz-transform: translate3d(0, 0, 0);
-      -ms-transform: translate3d(0, 0, 0);
-      -o-transform: translate3d(0, 0, 0);
-      transform: translate3d(0, 0, 0);
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      -webkit-perspective: 1000;
-      perspective: 1000;
-    }
-
-    /* Optimized easing functions for 60fps */
-    :root {
-      --timing-fast: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      --timing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-      --timing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    }
-
-    /* Reduce animations for users with motion preference */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-      }
-    }
-
-    /* Ultra Enhanced Animations */
+    /* Enhanced Animations */
     @keyframes slideInRight {
-      0% {
-        transform: translate3d(100%, 0, 0) scale3d(0.95, 0.95, 1);
+      from {
+        transform: translateX(100%);
         opacity: 0;
       }
-      100% {
-        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+      to {
+        transform: translateX(0);
         opacity: 1;
       }
     }
 
     @keyframes slideInLeft {
-      0% {
-        transform: translate3d(-100%, 0, 0) scale3d(0.95, 0.95, 1);
+      from {
+        transform: translateX(-100%);
         opacity: 0;
       }
-      100% {
-        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+      to {
+        transform: translateX(0);
         opacity: 1;
       }
     }
 
     @keyframes slideInUp {
-      0% {
-        transform: translate3d(0, 30px, 0) scale3d(0.95, 0.95, 1);
+      from {
+        transform: translateY(20px);
         opacity: 0;
       }
-      100% {
-        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+      to {
+        transform: translateY(0);
         opacity: 1;
       }
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.98);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     @keyframes scaleIn {
       from {
-        transform: scale(0.9) rotate(-3deg);
+        transform: scale(0.95);
         opacity: 0;
       }
       to {
-        transform: scale(1) rotate(0deg);
+        transform: scale(1);
         opacity: 1;
       }
     }
 
     @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-        transform: scale3d(1, 1, 1);
-      }
-      50% {
-        opacity: 0.8;
-        transform: scale3d(1.05, 1.05, 1);
-      }
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
     @keyframes shimmer {
-      0% { transform: translateX(-100%) rotate(-5deg); }
-      100% { transform: translateX(100%) rotate(5deg); }
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translate3d(0, 0, 0) rotate3d(0, 0, 1, 0deg); }
-      50% { transform: translate3d(0, -10px, 0) rotate3d(0, 0, 1, 1deg); }
-    }
-
-    @keyframes glow {
-      0%, 100% {
-        box-shadow: 0 0 30px rgba(124, 58, 237, 0.4), 0 0 60px rgba(124, 58, 237, 0.2);
-        filter: brightness(1);
-      }
-      50% {
-        box-shadow: 0 0 60px rgba(124, 58, 237, 0.8), 0 0 100px rgba(236, 72, 153, 0.4), 0 0 140px rgba(0, 245, 255, 0.2);
-        filter: brightness(1.2);
-      }
-    }
-
-    @keyframes gentleGlow {
-      0%, 100% {
-        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.1);
-      }
-      50% {
-        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15);
-      }
-    }
-
-    @keyframes slideUp {
-      0% {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes textFade {
-      0% {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
     }
 
     /* Screens */
@@ -279,7 +174,7 @@
       opacity: 0;
       pointer-events: none;
       transform: translateX(100%);
-      transition: all 0.4s var(--timing-smooth);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       will-change: transform, opacity;
     }
 
@@ -318,33 +213,17 @@
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.3));
-      animation: float 3s ease-in-out infinite;
-      display: inline-block;
+      filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
     }
 
     .logo h1 {
-      font-size: 2.8rem;
-      font-weight: 900;
+      font-size: 2.5rem;
+      font-weight: 800;
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 0.5rem;
       letter-spacing: -0.02em;
-      animation: textFade 0.8s ease-out;
-      position: relative;
-    }
-
-    .logo h1::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0;
-      left: 0;
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(99, 102, 241, 0.1));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      opacity: 0.2;
-      animation: none;
     }
 
     .logo p {
@@ -367,98 +246,47 @@
 
     .input-group input {
       width: 100%;
-      padding: 1.5rem 2rem;
+      padding: 1.25rem 1.5rem;
       border: 2px solid var(--border);
       border-radius: var(--radius);
       background: var(--surface);
       color: var(--text);
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 500;
-      transition: all 0.4s var(--timing-smooth);
-      backdrop-filter: blur(20px);
-      box-shadow: var(--shadow);
-      position: relative;
-      z-index: 1;
-    }
-
-    .input-group input::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius);
-      padding: 2px;
-      background: var(--gradient-primary);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: xor;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
     }
 
     .input-group input:focus {
       outline: none;
-      border-color: transparent;
-      background: var(--surface-elevated);
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: var(--shadow-2xl);
-      animation: glow 2s ease-in-out infinite;
-    }
-
-    .input-group input:focus::before {
-      opacity: 1;
-    }
-
-    .input-group input:hover {
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: var(--shadow-lg);
       border-color: var(--primary);
-    }
-
-    .input-group::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: var(--radius);
-      background: var(--gradient-primary);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 0;
-    }
-
-    .input-group:focus-within::before {
-      opacity: 0.3;
-      animation: glow 2s ease-in-out infinite;
+      background: var(--surface-elevated);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg), 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
 
     .input-group label {
       position: absolute;
-      left: 2rem;
+      left: 1.5rem;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
       pointer-events: none;
-      transition: all 0.4s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       background: var(--surface);
-      padding: 0 0.75rem;
-      font-weight: 600;
-      font-size: 1rem;
-      z-index: 2;
-      border-radius: 8px;
+      padding: 0 0.5rem;
+      font-weight: 500;
     }
 
     .input-group input:focus + label,
     .input-group input:not(:placeholder-shown) + label {
-      top: -8px;
+      top: 0;
       font-size: 0.875rem;
       color: var(--primary);
-      font-weight: 700;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
-      transform: translateY(0) scale(0.95);
+      font-weight: 600;
     }
 
-    /* Ultra Enhanced Buttons */
+    /* Enhanced Buttons */
     .btn {
       padding: 1.25rem 2rem;
       border: none;
@@ -466,15 +294,14 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.4s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.75rem;
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(20px);
-      letter-spacing: 0.025em;
+      backdrop-filter: blur(10px);
     }
 
     .btn::before {
@@ -484,81 +311,49 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      transition: left 0.6s ease;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
     }
 
     .btn:hover::before {
       left: 100%;
     }
 
-    .btn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius);
-      padding: 2px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.1));
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: xor;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .btn:hover::after {
-      opacity: 1;
-    }
-
     .btn-primary {
       background: var(--gradient-primary);
       color: white;
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow);
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: var(--shadow-lg);
-      animation: gentleGlow 2s ease-in-out infinite;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
     }
 
     .btn-primary:active {
-      transform: translateY(-1px) scale(1.01);
+      transform: translateY(0);
     }
 
     .btn-secondary {
-      background: var(--surface);
+      background: var(--surface-2);
       color: var(--text);
       border: 2px solid var(--border);
-      box-shadow: var(--shadow);
     }
 
     .btn-secondary:hover {
       background: var(--surface-hover);
       border-color: var(--primary);
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
     }
 
     .btn-ai {
       background: var(--gradient-ai);
       color: white;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .btn-ai:hover {
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: var(--shadow-lg);
     }
 
     .btn-news {
       background: var(--gradient-news);
       color: white;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .btn-news:hover {
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: var(--shadow-lg);
     }
 
     .btn-text {
@@ -566,18 +361,47 @@
       color: var(--primary);
       padding: 1rem;
       font-weight: 600;
-      position: relative;
-    }
-
-    .btn-text::before {
-      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
     }
 
     .btn-text:hover {
-      background: rgba(99, 102, 241, 0.1);
-      transform: translateY(-1px);
+      background: rgba(102, 126, 234, 0.1);
     }
 
+    /* Enhanced Avatar Grid */
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .avatar-option {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+    }
+
+    .avatar-option:hover {
+      transform: translateY(-2px) scale(1.05);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-option.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+      transform: scale(1.1);
+      box-shadow: var(--shadow-xl), 0 0 0 4px rgba(102, 126, 234, 0.2);
+    }
 
     /* Enhanced Header */
     .header {
@@ -613,14 +437,14 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 1.25rem;
       backdrop-filter: blur(10px);
     }
 
     .header-btn:hover {
       background: var(--surface-2);
-      transform: scale(1.05);
+      transform: scale(1.1);
       box-shadow: var(--shadow);
     }
 
@@ -648,7 +472,7 @@
       padding: 1.25rem;
       gap: 1rem;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       border-radius: var(--radius);
       margin-bottom: 0.5rem;
@@ -906,7 +730,7 @@
       align-items: flex-end;
       padding: 0.75rem;
       gap: 0.75rem;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       backdrop-filter: blur(10px);
     }
 
@@ -949,14 +773,14 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 1.25rem;
       backdrop-filter: blur(10px);
     }
 
     .input-btn:hover {
       background: var(--surface-2);
-      transform: scale(1.05);
+      transform: scale(1.1);
     }
 
     .input-btn:active {
@@ -970,8 +794,8 @@
     }
 
     .send-btn:hover {
-      transform: scale(1.05);
-      box-shadow: var(--shadow);
+      transform: scale(1.1);
+      box-shadow: var(--shadow-lg);
     }
 
     .record-btn {
@@ -1009,7 +833,7 @@
       gap: 0.25rem;
       padding: 0.75rem;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       color: var(--text-secondary);
       border-radius: var(--radius);
       position: relative;
@@ -1032,11 +856,11 @@
 
     .nav-item.active {
       color: var(--primary);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
     .nav-item:hover {
-      transform: translateY(-0.5px);
+      transform: translateY(-1px);
       color: var(--primary);
     }
 
@@ -1047,7 +871,7 @@
     }
 
     .nav-item.active .nav-icon {
-      transform: scale(1.05);
+      transform: scale(1.1);
     }
 
     .nav-label {
@@ -1093,7 +917,7 @@
       padding: 1.5rem 1rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border: 2px solid var(--border);
       backdrop-filter: blur(10px);
     }
@@ -1137,7 +961,7 @@
       color: var(--text);
       font-size: 1rem;
       font-weight: 500;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       backdrop-filter: blur(10px);
     }
 
@@ -1180,7 +1004,7 @@
       border-radius: var(--radius);
       margin-bottom: 0.75rem;
       cursor: pointer;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border: 2px solid var(--border-light);
       backdrop-filter: blur(10px);
     }
@@ -1209,7 +1033,7 @@
       background: var(--surface-2);
       border-radius: 999px;
       position: relative;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       border: 2px solid var(--border);
     }
@@ -1227,7 +1051,7 @@
       position: absolute;
       top: 2px;
       left: 2px;
-      transition: all 0.3s var(--timing-smooth);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: var(--shadow);
     }
 
@@ -1303,360 +1127,26 @@
     }
 
     /* Responsive Design */
-    /* Mobile First - Small phones */
-    @media (max-width: 375px) {
-      .auth-container { padding: 1rem; max-width: 90%; }
-      .logo h1 { font-size: 2.2rem; }
-      .logo p { font-size: 0.9rem; }
-      .input-group { margin-bottom: 1rem; }
-      .btn { padding: 1rem 1.5rem; font-size: 0.95rem; }
-      .header-title { font-size: 1.1rem; }
-      .nav-label { font-size: 0.7rem; }
-      .message { max-width: 95%; font-size: 0.9rem; }
-      .chat-item { padding: 0.75rem; }
-    }
-
-    /* Mobile - Standard phones */
-    @media (min-width: 376px) and (max-width: 640px) {
+    @media (max-width: 640px) {
       .message { max-width: 90%; }
-      .auth-container { padding: 1.5rem; max-width: 400px; }
+      .auth-container { padding: 1.5rem; }
       .header { padding: 0 1rem; }
       .message-input-container { padding: 1rem; }
-      .logo h1 { font-size: 2.5rem; }
-      .input-group input { font-size: 1rem; }
-      .btn { min-height: 52px; }
     }
 
-    /* Tablet - Portrait */
-    @media (min-width: 641px) and (max-width: 768px) {
+    @media (min-width: 640px) {
       .app {
-        max-width: 600px;
+        max-width: 480px;
         margin: 0 auto;
         border-left: 1px solid var(--border);
         border-right: 1px solid var(--border);
         box-shadow: var(--shadow-xl);
       }
-      .auth-container { max-width: 480px; padding: 2rem; }
-      .message { max-width: 75%; }
-      .bottom-nav { max-width: 600px; left: 50%; transform: translateX(-50%); }
-    }
 
-    /* Tablet - Landscape & Small Desktop */
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .app {
-        max-width: 700px;
-        margin: 0 auto;
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
-        box-shadow: var(--shadow-2xl);
-      }
-      .auth-container { max-width: 520px; padding: 2.5rem; }
-      .logo h1 { font-size: 3rem; }
-      .message { max-width: 70%; }
-      .bottom-nav { max-width: 700px; left: 50%; transform: translateX(-50%); }
-      .header { padding: 0 2rem; }
-      .message-input-container { padding: 1.5rem 2rem; }
-    }
-
-    /* Desktop Telegram-style Layout */
-    @media (min-width: 1025px) {
-      body {
-        overflow: hidden;
-        background: var(--bg);
-      }
-
-      .app {
-        display: flex;
-        height: 100vh;
-        max-width: none;
-        margin: 0;
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
-        overflow: hidden;
-      }
-
-      /* Desktop Sidebar */
-      .desktop-sidebar {
-        width: 420px;
-        background: var(--surface);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-      }
-
-      .sidebar-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border-light);
-        background: var(--surface-elevated);
-      }
-
-      .sidebar-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        background: var(--gradient-primary);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-      }
-
-      .sidebar-search {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border-light);
-      }
-
-      .sidebar-search input {
-        width: 100%;
-        padding: 1rem 1.5rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        background: var(--bg);
-        color: var(--text);
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
-      }
-
-      .sidebar-search input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-      }
-
-      .sidebar-chats {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0;
-      }
-
-      .sidebar-chat-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem 2rem;
-        border-bottom: 1px solid var(--border-light);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: var(--surface);
-      }
-
-      .sidebar-chat-item:hover {
-        background: var(--surface-hover);
-      }
-
-      .sidebar-chat-item.active {
-        background: var(--primary);
-        color: white;
-      }
-
-      .sidebar-chat-item.active .chat-preview,
-      .sidebar-chat-item.active .chat-time {
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .sidebar-chat-avatar {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-right: 1rem;
-        flex-shrink: 0;
-        background: var(--gradient-primary);
-      }
-
-      .sidebar-chat-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .sidebar-chat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.25rem;
-      }
-
-      .sidebar-chat-name {
-        font-weight: 600;
-        font-size: 1rem;
-        color: var(--text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .sidebar-chat-time {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        flex-shrink: 0;
-      }
-
-      .sidebar-chat-preview {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.3;
-      }
-
-      .sidebar-unread {
-        background: var(--primary);
-        color: white;
-        border-radius: 50%;
-        width: 22px;
-        height: 22px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 0.5rem;
-        flex-shrink: 0;
-      }
-
-      /* Desktop Main Chat Area */
-      .desktop-main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        background: var(--bg);
-        height: 100vh;
-      }
-
-      .desktop-chat-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border-light);
-        background: var(--surface);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .desktop-chat-info {
-        display: flex;
-        align-items: center;
-      }
-
-      .desktop-chat-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3rem;
-        margin-right: 1rem;
-        background: var(--gradient-secondary);
-      }
-
-      .desktop-chat-details h2 {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0;
-        color: var(--text);
-      }
-
-      .desktop-chat-status {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        margin: 0.2rem 0 0 0;
-      }
-
-      .desktop-chat-actions {
-        display: flex;
-        gap: 1rem;
-      }
-
-      .desktop-action-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: var(--surface-hover);
-        color: var(--text-secondary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        transition: all 0.2s ease;
-      }
-
-      .desktop-action-btn:hover {
-        background: var(--primary);
-        color: white;
-        transform: translateY(-1px);
-      }
-
-      .desktop-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 2rem;
-        background: var(--bg);
-      }
-
-      .desktop-message-input {
-        padding: 2rem;
-        border-top: 1px solid var(--border-light);
-        background: var(--surface);
-      }
-
-      /* Hide mobile elements on desktop */
-      .header,
-      .bottom-nav,
-      #chatListScreen,
-      #chatScreen,
-      #newsScreen,
-      #searchScreen {
-        display: none;
-      }
-
-      /* Show desktop layout */
-      .desktop-layout {
-        display: flex;
-      }
-
-      /* Auth container adjustments */
-      .auth-container {
-        max-width: 600px;
-        padding: 3rem;
-        margin: auto;
-      }
-      .logo h1 { font-size: 3.5rem; }
-      .logo p { font-size: 1.2rem; }
-      .btn { font-size: 1.1rem; padding: 1.25rem 2.5rem; }
-
-      /* Welcome screen for desktop */
-      .desktop-welcome {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: var(--text-secondary);
-        text-align: center;
-      }
-
-      .desktop-welcome-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        opacity: 0.6;
-      }
-
-      .desktop-welcome h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text);
-      }
-
-      .desktop-welcome p {
-        font-size: 1rem;
-        opacity: 0.8;
-        max-width: 400px;
+      .bottom-nav {
+        max-width: 480px;
+        left: 50%;
+        transform: translateX(-50%);
       }
     }
 
@@ -1670,25 +1160,6 @@
     }
 
     /* Accessibility */
-    /* Touch devices optimization */
-    @media (hover: none) and (pointer: coarse) {
-      .btn, .header-btn, .input-btn, .nav-item {
-        min-height: 44px;
-        min-width: 44px;
-      }
-      .input-group input, .search-input {
-        min-height: 48px;
-      }
-    }
-
-    /* High DPI screens */
-    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-      .logo-icon {
-        font-size: 3.5rem;
-      }
-    }
-
-    /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       * {
         animation-duration: 0.01ms !important;
@@ -1696,354 +1167,18 @@
         transition-duration: 0.01ms !important;
       }
     }
-
-    /* Dark mode preference */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a;
-        --surface: #1e293b;
-        --surface-elevated: #334155;
-        --text: #f8fafc;
-        --text-secondary: #cbd5e1;
-      }
-    }
-
-    /* === СТИЛІ ДЛЯ ПОТУЖНОГО УПРАВЛІННЯ КОНТАКТАМИ === */
-
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      backdrop-filter: blur(8px);
-      animation: fadeIn 0.3s ease;
-    }
-
-    .modal {
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-2xl);
-      width: 90%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow: hidden;
-      animation: modalSlideIn 0.4s ease;
-    }
-
-    .modal-header {
-      background: var(--gradient-primary);
-      color: white;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s ease;
-    }
-
-    .modal-close:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .modal-content {
-      padding: 24px;
-      max-height: calc(90vh - 80px);
-      overflow-y: auto;
-    }
-
-    .contact-form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .emoji-selector {
-      margin: 16px 0;
-    }
-
-    .emoji-selector label {
-      display: block;
-      margin-bottom: 12px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .avatar-options {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
-    }
-
-    .avatar-btn {
-      width: 48px;
-      height: 48px;
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .avatar-btn:hover {
-      border-color: var(--primary);
-      transform: scale(1.1);
-    }
-
-    .avatar-btn.selected {
-      border-color: var(--primary);
-      background: var(--primary);
-      color: white;
-      transform: scale(1.1);
-    }
-
-    .contact-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-      margin-top: 20px;
-    }
-
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-small:hover {
-      background: var(--surface-hover);
-      border-color: var(--primary);
-    }
-
-    .btn-small.danger {
-      color: var(--error);
-      border-color: var(--error);
-    }
-
-    .btn-small.danger:hover {
-      background: var(--error);
-      color: white;
-    }
-
-    .group-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .group-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px;
-      background: var(--surface-2);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-    }
-
-    .group-name {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .group-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .add-group-form {
-      padding: 20px;
-      background: var(--surface-2);
-      border-radius: var(--radius);
-      border: 2px dashed var(--border);
-      display: flex;
-      gap: 12px;
-      align-items: end;
-    }
-
-    .favorite-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      padding: 12px;
-      background: var(--surface-2);
-      border-radius: var(--radius);
-      transition: background 0.2s ease;
-    }
-
-    .favorite-toggle:hover {
-      background: var(--surface-hover);
-    }
-
-    .favorite-toggle input[type="checkbox"] {
-      margin: 0;
-    }
-
-    .group-filter {
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 14px;
-    }
-
-    .group-filter:hover,
-    .group-filter.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .contact-filters {
-      display: flex;
-      gap: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .contact-filters::-webkit-scrollbar {
-      display: none;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes modalSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-50px) scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    /* Покращення для мобільних пристроїв */
-    @media (max-width: 768px) {
-      .modal {
-        width: 95%;
-        max-height: 95vh;
-      }
-
-      .avatar-options {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .avatar-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-      }
-
-      .contact-actions {
-        flex-direction: column;
-      }
-
-      .add-group-form {
-        flex-direction: column;
-        align-items: stretch;
-      }
-    }
-
-    /* Покращення доступності */
-    .modal:focus-within {
-      outline: 2px solid var(--primary);
-      outline-offset: 4px;
-    }
-
-    .avatar-btn:focus,
-    .btn-small:focus,
-    .favorite-toggle:focus-within {
-      outline: 2px solid var(--primary);
-      outline-offset: 2px;
-    }
-
-    /* Анімації для елементів списку */
-    .group-item {
-      animation: slideInFromLeft 0.3s ease;
-    }
-
-    .group-item:nth-child(2n) {
-      animation-delay: 0.1s;
-    }
-
-    .group-item:nth-child(3n) {
-      animation-delay: 0.2s;
-    }
-
-    @keyframes slideInFromLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
   </style>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/auth-fix.js"></script>
 </head>
 <body data-theme="light">
   <div class="app">
     <!-- Auth Screen -->
-    <div id="authScreen" class="screen active" style="display: flex !important; opacity: 1 !important; pointer-events: all !important; transform: translateX(0) !important; z-index: 9999 !important;">
+    <div id="authScreen" class="screen active">
       <div class="auth-container">
         <div class="logo">
           <div class="logo-icon">🤖</div>
-          <h1 data-text="Talk pAI">Talk pAI</h1>
-          <p>🌌 Next-Generation AI Messenger 🚀</p>
-          <div id="debugInfo" style="margin: 1rem 0; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: none;">
-            💡 Debug mode: Check browser console (F12) for detailed authentication logs
-            <br><button onclick="window.login && window.login(); console.log('Manual login called')" style="margin: 0.5rem 0.5rem 0 0; padding: 0.25rem 0.5rem; font-size: 0.7rem;">Test Login Function</button>
-            <button onclick="console.log('Functions available:', {login: typeof window.login, register: typeof window.register})" style="margin: 0.5rem 0; padding: 0.25rem 0.5rem; font-size: 0.7rem;">Check Functions</button>
-          </div>
+          <h1>Talk pAI</h1>
+          <p>Next-Generation AI Messenger</p>
         </div>
 
         <div id="loginForm" class="auth-form">
@@ -2055,10 +1190,10 @@
             <input type="password" id="loginPassword" placeholder=" " required>
             <label>Password</label>
           </div>
-          <button class="btn btn-primary" id="loginSubmitBtn" onclick="window.login ? window.login() : alert('Login function not loaded')" type="button">
-            <span>🔐 Sign In</span>
+          <button class="btn btn-primary" onclick="login()">
+            <span>Sign In</span>
           </button>
-          <button class="btn btn-text" onclick="window.showRegister ? window.showRegister() : alert('Form function not loaded')">Create Account</button>
+          <button class="btn btn-text" onclick="showRegister()">Create Account</button>
         </div>
 
         <div id="registerForm" class="auth-form" style="display:none">
@@ -2070,10 +1205,20 @@
             <input type="password" id="regPassword" placeholder=" " required>
             <label>Password (min 6 chars)</label>
           </div>
-          <button class="btn btn-primary" id="registerSubmitBtn" onclick="window.register ? window.register() : alert('Register function not loaded')" type="button">
+          <div class="avatar-grid">
+            <div class="avatar-option selected" data-avatar="👤" onclick="selectAvatar(this)">👤</div>
+            <div class="avatar-option" data-avatar="🦊" onclick="selectAvatar(this)">🦊</div>
+            <div class="avatar-option" data-avatar="🐼" onclick="selectAvatar(this)">🐼</div>
+            <div class="avatar-option" data-avatar="🦄" onclick="selectAvatar(this)">🦄</div>
+            <div class="avatar-option" data-avatar="🐙" onclick="selectAvatar(this)">🐙</div>
+            <div class="avatar-option" data-avatar="🦉" onclick="selectAvatar(this)">🦉</div>
+            <div class="avatar-option" data-avatar="🐲" onclick="selectAvatar(this)">🐲</div>
+            <div class="avatar-option" data-avatar="🎭" onclick="selectAvatar(this)">🎭</div>
+          </div>
+          <button class="btn btn-primary" onclick="register()">
             <span>Create Account</span>
           </button>
-          <button class="btn btn-text" onclick="window.showLogin ? window.showLogin() : alert('Form function not loaded')">Back to Sign In</button>
+          <button class="btn btn-text" onclick="showLogin()">Back to Sign In</button>
         </div>
       </div>
     </div>
@@ -2273,33 +1418,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Desktop Layout (shown only on desktop) -->
-    <div class="desktop-layout" style="display: none;">
-      <!-- Desktop Sidebar -->
-      <div class="desktop-sidebar">
-        <div class="sidebar-header">
-          <h1>Talk pAI</h1>
-        </div>
-
-        <div class="sidebar-search">
-          <input type="text" placeholder="Search conversations..." id="desktopSearchInput" oninput="desktopSearch()">
-        </div>
-
-        <div class="sidebar-chats" id="desktopChatList">
-          <!-- Chat items will be populated here -->
-        </div>
-      </div>
-
-      <!-- Desktop Main Chat Area -->
-      <div class="desktop-main" id="desktopMain">
-        <div class="desktop-welcome">
-          <div class="desktop-welcome-icon">💬</div>
-          <h2>Welcome to Talk pAI</h2>
-          <p>Select a conversation from the sidebar to start chatting with AI assistants and your contacts.</p>
-        </div>
-      </div>
-    </div>
   </div>
 
   <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="uploadImage(event)">
@@ -2310,261 +1428,20 @@
     let currentUser = null;
     let currentChat = null;
     let lastMessageId = 0;
+    let selectedAvatar = '👤';
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
     let typingTimeout = null;
     let newsCategories = ['technology', 'business', 'science', 'world', 'health', 'entertainment'];
 
-    // ===== ПОТУЖНА СИСТЕМА ЛОГУВАННЯ =====
-    window.DEBUG_MODE = true;
-
-    function superLog(action, data = {}, error = null) {
-      const timestamp = new Date().toISOString();
-      const logObj = {
-        timestamp,
-        action,
-        data,
-        error: error ? error.message : null,
-        stack: error ? error.stack : null
-      };
-
-      console.log(`🔥 [${timestamp}] ${action}:`, logObj);
-
-      // Візуальний debug toast
-      if (window.DEBUG_MODE) {
-        const debugToast = document.createElement('div');
-        debugToast.style.cssText = `
-          position: fixed; top: 10px; right: 10px;
-          background: #000; color: #0f0; padding: 5px 10px;
-          font-family: monospace; font-size: 11px; z-index: 99999;
-          border: 1px solid #0f0; max-width: 400px;
-        `;
-        debugToast.textContent = `${action}: ${JSON.stringify(data)}`;
-        document.body.appendChild(debugToast);
-        setTimeout(() => debugToast.remove(), 3000);
-      }
-
-      return logObj;
-    }
-
-    // Window error handler
-    window.onerror = function(msg, url, line, col, error) {
-      superLog('WINDOW_ERROR', { msg, url, line, col }, error);
-      return false;
-    };
-
-    window.addEventListener('unhandledrejection', function(event) {
-      superLog('UNHANDLED_PROMISE_REJECTION', { reason: event.reason });
-    });
-
-    function forceAuthScreen() {
-      const authScreen = document.getElementById('authScreen');
-      if (authScreen) {
-        document.querySelectorAll('.screen').forEach(s => {
-          s.classList.remove('active');
-          s.style.display = 'none';
-        });
-        authScreen.classList.add('active');
-        authScreen.style.display = 'flex';
-        authScreen.style.pointerEvents = 'all';
-        authScreen.style.opacity = '1';
-        authScreen.style.transform = 'translateX(0)';
-      }
-    }
-
-    // Global functions for onclick handlers
-    window.showRegister = function showRegister() {
-      console.log('🔥 FORM: Showing register form');
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('registerForm').style.display = 'flex';
-    }
-
-    window.showLogin = function showLogin() {
-      console.log('🔥 FORM: Showing login form');
-      document.getElementById('registerForm').style.display = 'none';
-      document.getElementById('loginForm').style.display = 'flex';
-    }
-
+    // Initialize app with enhanced animations
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🔥 DOM: Content loaded, initializing...');
-
-      try {
-        // Initialize core functions first
-        checkAuth();
-        setupSocketListeners();
-        adjustViewportHeight();
-        initializeNewsCategories();
-        setupIntersectionObserver();
-
-        // Add backup event listeners for authentication buttons
-        console.log('🔥 DOM: Setting up backup button event listeners...');
-
-        // Enhanced backup event listeners with multiple selectors
-        const loginBtn = document.getElementById('loginSubmitBtn') ||
-                         document.querySelector('button[onclick="login()"]') ||
-                         document.querySelector('.btn-primary');
-
-        if (loginBtn) {
-          console.log('🔥 DOM: Found login button, adding multiple listeners');
-
-          // Multiple event listeners for maximum compatibility
-          ['click', 'touchend', 'pointerup'].forEach(eventType => {
-            loginBtn.addEventListener(eventType, (e) => {
-              console.log(`🔥 DOM: Login button ${eventType} via event listener`);
-              e.preventDefault();
-              e.stopPropagation();
-
-              // Ensure we're on the login form
-              const loginForm = document.getElementById('loginForm');
-              if (loginForm && loginForm.style.display !== 'none') {
-                if (window.login) {
-                  window.login();
-                } else {
-                  console.error('🔥 DOM: login function not found!');
-                }
-              }
-            }, { passive: false });
-          });
-        } else {
-          console.warn('🔥 DOM: Login button not found!');
-        }
-
-        const regBtn = document.getElementById('registerSubmitBtn') ||
-                       document.querySelector('button[onclick="register()"]');
-
-        if (regBtn) {
-          console.log('🔥 DOM: Found register button, adding multiple listeners');
-
-          // Multiple event listeners for maximum compatibility
-          ['click', 'touchend', 'pointerup'].forEach(eventType => {
-            regBtn.addEventListener(eventType, (e) => {
-              console.log(`🔥 DOM: Register button ${eventType} via event listener`);
-              e.preventDefault();
-              e.stopPropagation();
-
-              // Ensure we're on the register form
-              const regForm = document.getElementById('registerForm');
-              if (regForm && regForm.style.display !== 'none') {
-                if (window.register) {
-                  window.register();
-                } else {
-                  console.error('🔥 DOM: register function not found!');
-                }
-              }
-            }, { passive: false });
-          });
-        } else {
-          console.warn('🔥 DOM: Register button not found!');
-        }
-
-        // Add Enter key handlers for auth forms
-        const loginNickname = document.getElementById('loginNickname');
-        const loginPassword = document.getElementById('loginPassword');
-        const regNickname = document.getElementById('regNickname');
-        const regPassword = document.getElementById('regPassword');
-
-        [loginNickname, loginPassword].forEach(input => {
-          if (input) {
-            input.addEventListener('keypress', (e) => {
-              if (e.key === 'Enter') {
-                console.log('🔥 DOM: Enter pressed in login form');
-                e.preventDefault();
-                if (window.login) window.login();
-              }
-            });
-          }
-        });
-
-        [regNickname, regPassword].forEach(input => {
-          if (input) {
-            input.addEventListener('keypress', (e) => {
-              if (e.key === 'Enter') {
-                console.log('🔥 DOM: Enter pressed in register form');
-                e.preventDefault();
-                if (window.register) window.register();
-              }
-            });
-          }
-        });
-
-        // Test ALL functions are available
-        console.log('🔥 DOM: Function availability check:', {
-          login: typeof window.login,
-          register: typeof window.register,
-          showRegister: typeof window.showRegister,
-          showLogin: typeof window.showLogin,
-          showToast: typeof showToast
-        });
-
-        // Force all functions to be available globally
-        if (typeof window.showRegister !== 'function') {
-          console.error('🔥 DOM: showRegister not found, defining now');
-          window.showRegister = function() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('registerForm').style.display = 'flex';
-          };
-        }
-
-        if (typeof window.showLogin !== 'function') {
-          console.error('🔥 DOM: showLogin not found, defining now');
-          window.showLogin = function() {
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'flex';
-          };
-        }
-
-        console.log('🔥 DOM: Initialization completed successfully');
-
-        // Enable debug mode if there are any console errors
-        setTimeout(() => {
-          const debugInfo = document.getElementById('debugInfo');
-          const hasConsoleErrors = console.error.toString().includes('[native code]');
-
-          // Show debug info if functions might not be working or if user presses Ctrl+D
-          if (debugInfo) {
-            window.addEventListener('keydown', (e) => {
-              if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
-                console.log('🔥 DEBUG: Debug mode toggled');
-              }
-            });
-          }
-        }, 1000);
-
-        // Global click tracker for debugging
-        document.body.addEventListener('click', (e) => {
-          const target = e.target;
-          const isButton = target.tagName === 'BUTTON';
-          const hasOnclick = target.hasAttribute('onclick');
-          const onclickValue = target.getAttribute('onclick');
-
-          if (isButton || hasOnclick) {
-            console.log('🔥 CLICK: Button clicked', {
-              tagName: target.tagName,
-              className: target.className,
-              onclick: onclickValue,
-              textContent: target.textContent?.trim(),
-              id: target.id
-            });
-
-            // Special tracking for auth buttons
-            if (onclickValue === 'login()' || onclickValue === 'register()') {
-              console.log('🔥 CLICK: AUTH BUTTON DETECTED!', onclickValue);
-
-              // Add a small delay to see if the onclick works
-              setTimeout(() => {
-                console.log('🔥 CLICK: Checking if onclick executed...', onclickValue);
-              }, 100);
-            }
-          }
-        }, true); // Use capture phase to catch everything
-
-      } catch (error) {
-        console.error('🔥 DOM: Initialization error:', error);
-        forceAuthScreen();
-      }
+      checkAuth();
+      setupSocketListeners();
+      adjustViewportHeight();
+      initializeNewsCategories();
+      setupIntersectionObserver();
     });
 
     // Performance optimization with intersection observer
@@ -2596,21 +1473,6 @@
       setTimeout(adjustViewportHeight, 100);
     });
 
-    // Desktop layout detection
-    function isDesktop() {
-      return window.innerWidth >= 1025;
-    }
-
-    function showDesktopLayout() {
-      if (isDesktop()) {
-        document.querySelector('.desktop-layout').style.display = 'flex';
-        document.querySelector('.app > .screen.active').style.display = 'none';
-        loadDesktopContacts();
-        return true;
-      }
-      return false;
-    }
-
     // Auth functions with enhanced animations
     async function checkAuth() {
       const token = localStorage.getItem('token');
@@ -2618,221 +1480,99 @@
 
       if (token && nickname) {
         currentUser = { token, nickname };
-        const keepAliveResult = await keepAlive();
-
-        if (keepAliveResult) {
-          // Check if desktop layout should be shown
-          if (showDesktopLayout()) {
-            return; // Desktop layout shown, don't show mobile
-          }
-
-          // Show mobile interface
-          showScreen('chatListScreen');
-          loadChats();
-          connectSocket();
-          return;
-        }
+        await keepAlive();
       }
-
-      // Show auth screen if not authenticated
-      showScreen('authScreen');
     }
 
-    window.login = async function login() {
-      console.log('🔥 LOGIN: Function called');
-
-      // Enhanced element detection with debugging
-      const nicknameEl = document.getElementById('loginNickname');
-      const passwordEl = document.getElementById('loginPassword');
-
-      console.log('🔥 LOGIN: Elements found:', {
-        nicknameEl: !!nicknameEl,
-        passwordEl: !!passwordEl,
-        nicknameVal: nicknameEl?.value,
-        passwordVal: passwordEl?.value?.length ? '[HIDDEN]' : 'EMPTY'
-      });
-
-      if (!nicknameEl || !passwordEl) {
-        console.error('🔥 LOGIN: Missing form elements');
-        showToast('Login form not found - please refresh the page', 'error');
-        return;
-      }
-
-      const nickname = nicknameEl.value?.trim();
-      const password = passwordEl.value;
+    async function login() {
+      const nickname = document.getElementById('loginNickname').value.trim();
+      const password = document.getElementById('loginPassword').value;
 
       if (!nickname || !password) {
-        console.log('🔥 LOGIN: Empty fields detected');
         showToast('Please fill in all fields', 'error');
         return;
       }
 
-      console.log('🔥 LOGIN: Starting authentication request for:', nickname);
-
       try {
-        showToast('Logging in...', 'info');
-
-        const requestData = { nickname, password };
-        console.log('🔥 LOGIN: Sending request to /api/auth/login');
-
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify({ nickname, password })
         });
 
-        console.log('🔥 LOGIN: Response status:', response.status, response.statusText);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
         const data = await response.json();
-        console.log('🔥 LOGIN: Response data:', { success: data.success, demo: data.demo, message: data.message });
 
         if (data.success) {
-          console.log('🔥 LOGIN: Authentication successful');
-          showToast('Login successful!', 'success');
-
           currentUser = {
             nickname: data.nickname,
             token: data.token,
             avatar: data.avatar
           };
 
-          // Store in localStorage with validation
-          try {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('nickname', data.nickname);
-            localStorage.setItem('avatar', data.avatar);
-            console.log('🔥 LOGIN: Data stored in localStorage');
-          } catch (storageError) {
-            console.error('🔥 LOGIN: localStorage error:', storageError);
-          }
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('nickname', data.nickname);
+          localStorage.setItem('avatar', data.avatar);
 
-          console.log('🔥 LOGIN: Connecting socket...');
           connectSocket();
-
-          if (showDesktopLayout()) {
-            console.log('🔥 LOGIN: Showing desktop layout');
-            showToast(data.message, 'success');
-          } else {
-            console.log('🔥 LOGIN: Showing mobile chat list');
-            showScreen('chatListScreen');
-            loadChats();
-            showToast(data.message, 'success');
-          }
+          showScreen('chatListScreen');
+          loadChats();
+          showToast(data.message, 'success');
         } else {
-          console.error('🔥 LOGIN: Authentication failed:', data.error);
           showToast(data.error || 'Login failed', 'error');
         }
       } catch (error) {
-        console.error('🔥 LOGIN: Network/parsing error:', error);
-        showToast(`Connection error: ${error.message}`, 'error');
+        showToast('Connection error', 'error');
       }
     }
 
-    window.register = async function register() {
-      console.log('🔥 REGISTER: Function called');
-
-      // Enhanced element detection with debugging
-      const nicknameEl = document.getElementById('regNickname');
-      const passwordEl = document.getElementById('regPassword');
-
-      console.log('🔥 REGISTER: Elements found:', {
-        nicknameEl: !!nicknameEl,
-        passwordEl: !!passwordEl,
-        nicknameVal: nicknameEl?.value,
-        passwordVal: passwordEl?.value?.length ? '[HIDDEN]' : 'EMPTY'
-      });
-
-      if (!nicknameEl || !passwordEl) {
-        console.error('🔥 REGISTER: Missing form elements');
-        showToast('Registration form not found - please refresh the page', 'error');
-        return;
-      }
-
-      const nickname = nicknameEl.value?.trim();
-      const password = passwordEl.value;
+    async function register() {
+      const nickname = document.getElementById('regNickname').value.trim();
+      const password = document.getElementById('regPassword').value;
 
       if (!nickname || nickname.length < 3) {
-        console.log('🔥 REGISTER: Nickname validation failed:', nickname);
         showToast('Nickname must be at least 3 characters', 'error');
         return;
       }
 
-      if (!password || password.length < 6) {
-        console.log('🔥 REGISTER: Password validation failed');
+      if (password.length < 6) {
         showToast('Password must be at least 6 characters', 'error');
         return;
       }
 
-      console.log('🔥 REGISTER: Starting registration request for:', nickname);
-
       try {
-        showToast('Creating account...', 'info');
-
-        const requestData = { nickname, password };
-        console.log('🔥 REGISTER: Sending request to /api/auth/register');
-
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify({ nickname, password, avatar: selectedAvatar })
         });
 
-        console.log('🔥 REGISTER: Response status:', response.status, response.statusText);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
         const data = await response.json();
-        console.log('🔥 REGISTER: Response data:', { success: data.success, demo: data.demo, message: data.message });
 
         if (data.success) {
-          console.log('🔥 REGISTER: Registration successful');
-
           currentUser = {
-            nickname: data.nickname || data.user?.nickname,
-            token: data.token || data.user?.token,
-            avatar: data.avatar || data.user?.avatar || '👤'
+            nickname: data.nickname,
+            token: data.token,
+            avatar: selectedAvatar
           };
 
-          // Store in localStorage with validation
-          try {
-            localStorage.setItem('token', currentUser.token);
-            localStorage.setItem('nickname', currentUser.nickname);
-            localStorage.setItem('avatar', currentUser.avatar);
-            console.log('🔥 REGISTER: Data stored in localStorage');
-          } catch (storageError) {
-            console.error('🔥 REGISTER: localStorage error:', storageError);
-          }
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('nickname', data.nickname);
+          localStorage.setItem('avatar', selectedAvatar);
 
-          console.log('🔥 REGISTER: Connecting socket...');
           connectSocket();
-
-          if (showDesktopLayout()) {
-            console.log('🔥 REGISTER: Showing desktop layout');
-            showToast(data.message, 'success');
-          } else {
-            console.log('🔥 REGISTER: Showing mobile chat list');
-            showScreen('chatListScreen');
-            loadChats();
-            showToast(data.message, 'success');
-          }
+          showScreen('chatListScreen');
+          loadChats();
+          showToast(data.message, 'success');
         } else {
-          console.error('🔥 REGISTER: Registration failed:', data.error);
           showToast(data.error || 'Registration failed', 'error');
         }
       } catch (error) {
-        console.error('🔥 REGISTER: Network/parsing error:', error);
-        showToast(`Connection error: ${error.message}`, 'error');
+        showToast('Connection error', 'error');
       }
     }
 
     async function keepAlive() {
-      if (!currentUser) return false;
+      if (!currentUser) return;
 
       try {
         const response = await fetch(`${API_URL}/auth/keepalive`, {
@@ -2850,10 +1590,15 @@
           localStorage.setItem('token', data.token);
         }
 
-        return data.success;
+        if (data.success) {
+          connectSocket();
+          showScreen('chatListScreen');
+          loadChats();
+        } else {
+          showScreen('authScreen');
+        }
       } catch (error) {
-        console.error('Keep alive failed:', error);
-        return false;
+        showScreen('authScreen');
       }
     }
 
@@ -2901,7 +1646,7 @@
 
       socket.on('userTyping', (data) => {
         if (currentChat === data.sender) {
-          showTypingIndicator(data.isTyping);
+          showTypingIndicator();
         }
       });
 
@@ -2948,7 +1693,26 @@
       }
     }
 
+    function showLogin() {
+      document.getElementById('loginForm').style.display = 'flex';
+      document.getElementById('registerForm').style.display = 'none';
+    }
 
+    function showRegister() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'flex';
+    }
+
+    function selectAvatar(el) {
+      document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedAvatar = el.dataset.avatar;
+
+      // Add haptic feedback if supported
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
 
     // Enhanced toast with types
     function showToast(message, type = 'info') {
@@ -3327,7 +2091,7 @@
             border-radius: var(--radius);
             padding: 1.5rem;
             cursor: pointer;
-            transition: all 0.3s var(--timing-smooth);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 2px solid var(--border-light);
             backdrop-filter: blur(10px);
             animation: slideInUp 0.4s ease-out both;
@@ -3417,25 +2181,13 @@
       }, 2000);
     }
 
-    let typingTimer;
-
-    function showTypingIndicator(isTyping) {
+    function showTypingIndicator() {
       const indicator = document.getElementById('typingIndicator');
+      indicator.style.display = 'flex';
 
-      if (isTyping) {
-        indicator.style.display = 'flex';
-
-        // Clear existing timer
-        clearTimeout(typingTimer);
-
-        // Auto-hide after 3 seconds of no typing updates
-        typingTimer = setTimeout(() => {
-          indicator.style.display = 'none';
-        }, 3000);
-      } else {
+      setTimeout(() => {
         indicator.style.display = 'none';
-        clearTimeout(typingTimer);
-      }
+      }, 3000);
     }
 
     function backToList() {
@@ -3733,333 +2485,6 @@
       }
     });
 
-    // ==================== DESKTOP FUNCTIONS ====================
-
-    let desktopCurrentChat = null;
-    let desktopMessages = [];
-
-    // Load contacts for desktop sidebar
-    async function loadDesktopContacts() {
-      try {
-        const response = await fetch(`${API_URL}/contacts`, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          populateDesktopSidebar(data.contacts);
-        }
-      } catch (error) {
-        console.error('Error loading desktop contacts:', error);
-      }
-    }
-
-    // Populate desktop sidebar with contacts
-    function populateDesktopSidebar(contacts) {
-      const container = document.getElementById('desktopChatList');
-
-      let html = `
-        <div class="sidebar-chat-item" onclick="openDesktopChat('pAI')">
-          <div class="sidebar-chat-avatar">🤖</div>
-          <div class="sidebar-chat-info">
-            <div class="sidebar-chat-header">
-              <div class="sidebar-chat-name">pAI Assistant</div>
-              <div class="sidebar-chat-time">online</div>
-            </div>
-            <div class="sidebar-chat-preview">Your personal AI assistant</div>
-          </div>
-        </div>
-
-        <div class="sidebar-chat-item" onclick="openDesktopChat('Sage')">
-          <div class="sidebar-chat-avatar">📰</div>
-          <div class="sidebar-chat-info">
-            <div class="sidebar-chat-header">
-              <div class="sidebar-chat-name">Sage News Agent</div>
-              <div class="sidebar-chat-time">online</div>
-            </div>
-            <div class="sidebar-chat-preview">Personalized news briefings</div>
-          </div>
-        </div>
-      `;
-
-      // Add other contacts
-      contacts.filter(c => c.nickname !== 'pAI' && c.nickname !== 'Sage').forEach(contact => {
-        const lastSeen = contact.online ? 'online' : 'last seen recently';
-        html += `
-          <div class="sidebar-chat-item" onclick="openDesktopChat('${contact.nickname}')">
-            <div class="sidebar-chat-avatar">${contact.avatar || '👤'}</div>
-            <div class="sidebar-chat-info">
-              <div class="sidebar-chat-header">
-                <div class="sidebar-chat-name">${contact.display_name || contact.nickname}</div>
-                <div class="sidebar-chat-time">${lastSeen}</div>
-              </div>
-              <div class="sidebar-chat-preview">Start a conversation</div>
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML = html;
-    }
-
-    // Open desktop chat
-    async function openDesktopChat(nickname) {
-      desktopCurrentChat = nickname;
-
-      // Update active chat in sidebar
-      document.querySelectorAll('.sidebar-chat-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      event.currentTarget.classList.add('active');
-
-      // Update main chat area
-      const mainArea = document.getElementById('desktopMain');
-      const avatar = nickname === 'pAI' ? '🤖' : nickname === 'Sage' ? '📰' : '👤';
-      const displayName = nickname === 'pAI' ? 'pAI Assistant' :
-                          nickname === 'Sage' ? 'Sage News Agent' : nickname;
-      const status = nickname === 'pAI' || nickname === 'Sage' ? 'online' : 'last seen recently';
-
-      mainArea.innerHTML = `
-        <div class="desktop-chat-header">
-          <div class="desktop-chat-info">
-            <div class="desktop-chat-avatar">${avatar}</div>
-            <div class="desktop-chat-details">
-              <h2>${displayName}</h2>
-              <div class="desktop-chat-status">${status}</div>
-            </div>
-          </div>
-          <div class="desktop-chat-actions">
-            <button class="desktop-action-btn" onclick="desktopSummarizeChat()">📊</button>
-            <button class="desktop-action-btn" onclick="desktopSearch()">🔍</button>
-            <button class="desktop-action-btn" onclick="desktopMoreActions()">⋯</button>
-          </div>
-        </div>
-
-        <div class="desktop-messages" id="desktopMessages">
-          <!-- Messages will be loaded here -->
-        </div>
-
-        <div class="desktop-message-input">
-          <div class="input-wrapper">
-            <textarea
-              id="desktopMessageInput"
-              class="message-input"
-              placeholder="Type a message..."
-              rows="1"
-              onkeypress="handleDesktopKeyPress(event)"
-              oninput="adjustTextarea(this)"></textarea>
-            <div class="input-actions">
-              <button class="input-btn" onclick="attachImage()">📷</button>
-              <button class="input-btn" onclick="startDesktopRecording()">🎙️</button>
-            </div>
-          </div>
-          <button class="input-btn send-btn" onclick="sendDesktopMessage()">➤</button>
-        </div>
-      `;
-
-      // Load messages for this chat
-      await loadDesktopMessages();
-    }
-
-    // Load messages for desktop chat
-    async function loadDesktopMessages() {
-      if (!desktopCurrentChat) return;
-
-      try {
-        const response = await fetch(`${API_URL}/messages?conversation=${desktopCurrentChat}&lastId=${lastMessageId}`, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          const container = document.getElementById('desktopMessages');
-          container.innerHTML = '';
-
-          data.messages.reverse().forEach(message => {
-            addDesktopMessage(message);
-          });
-
-          container.scrollTop = container.scrollHeight;
-        }
-      } catch (error) {
-        console.error('Error loading desktop messages:', error);
-      }
-    }
-
-    // Add message to desktop chat
-    function addDesktopMessage(message) {
-      const container = document.getElementById('desktopMessages');
-      if (!container) return;
-
-      const messageEl = document.createElement('div');
-      const isOwn = message.sender === currentUser.nickname;
-      const isAI = message.sender === 'pAI';
-      const isSage = message.sender === 'Sage';
-
-      messageEl.className = `message ${isOwn ? 'own' : 'other'} ${isAI ? 'ai' : ''} ${isSage ? 'news' : ''}`;
-
-      const avatarEmoji = isOwn ? '👤' :
-                         isAI ? '🤖' :
-                         isSage ? '📰' : '👤';
-
-      messageEl.innerHTML = `
-        <div class="message-avatar">${avatarEmoji}</div>
-        <div class="message-content">
-          <div class="message-text">${escapeHtml(message.content).replace(/\n/g, '<br>')}</div>
-          <div class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</div>
-        </div>
-      `;
-
-      container.appendChild(messageEl);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    // Handle desktop enter key
-    function handleDesktopKeyPress(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendDesktopMessage();
-      }
-    }
-
-    // Send desktop message
-    async function sendDesktopMessage() {
-      const input = document.getElementById('desktopMessageInput');
-      const message = input.value.trim();
-
-      if (!message || !desktopCurrentChat) return;
-
-      input.value = '';
-      adjustTextarea(input);
-
-      // Add message immediately to UI
-      const tempMessage = {
-        sender: currentUser.nickname,
-        content: message,
-        timestamp: new Date().toISOString(),
-        type: 'text'
-      };
-      addDesktopMessage(tempMessage);
-
-      // Send via socket
-      if (socket) {
-        socket.emit('sendMessage', {
-          receiver: desktopCurrentChat,
-          content: message,
-          type: 'text'
-        });
-      }
-    }
-
-    // Desktop search function
-    function desktopSearch() {
-      const searchInput = document.getElementById('desktopSearchInput');
-      searchInput.focus();
-    }
-
-    // Desktop search implementation
-    async function performDesktopSearch(query) {
-      // Implement search functionality
-      console.log('Searching for:', query);
-    }
-
-    // Desktop action functions
-    async function desktopSummarizeChat() {
-      if (!desktopCurrentChat) return;
-
-      const messages = Array.from(document.querySelectorAll('#desktopMessages .message'))
-        .map(el => ({
-          sender: el.classList.contains('own') ? currentUser.nickname : desktopCurrentChat,
-          content: el.querySelector('.message-text').textContent,
-          time: new Date().toISOString()
-        }));
-
-      if (messages.length === 0) {
-        showToast('No messages to summarize', 'info');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/ai/summarize`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          },
-          body: JSON.stringify({ messages })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Add summary as AI message
-          const summaryMessage = {
-            sender: 'pAI',
-            content: `📊 **Conversation Summary:**\n\n${data.summary}`,
-            timestamp: new Date().toISOString(),
-            type: 'text'
-          };
-          addDesktopMessage(summaryMessage);
-          showToast('Summary generated', 'success');
-        }
-      } catch (error) {
-        console.error('Summarize error:', error);
-        showToast('Failed to generate summary', 'error');
-      }
-    }
-
-    function desktopMoreActions() {
-      showToast('More actions coming soon!', 'info');
-    }
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      if (currentUser && currentUser.token) {
-        if (isDesktop() && document.querySelector('.desktop-layout').style.display === 'none') {
-          showDesktopLayout();
-        } else if (!isDesktop() && document.querySelector('.desktop-layout').style.display === 'flex') {
-          document.querySelector('.desktop-layout').style.display = 'none';
-          document.querySelector('.app > .screen.active').style.display = 'block';
-        }
-      }
-    });
-
-    // Update socket listeners for desktop
-    function setupDesktopSocketListeners() {
-      if (!socket) return;
-
-      socket.on('newMessage', (message) => {
-        if (isDesktop() && message.sender === desktopCurrentChat) {
-          addDesktopMessage(message);
-        }
-      });
-
-      socket.on('messageDelivered', (data) => {
-        if (isDesktop() && data.receiver === desktopCurrentChat) {
-          // Handle message delivered status
-        }
-      });
-    }
-
-    // Initialize desktop features
-    document.addEventListener('DOMContentLoaded', () => {
-      setupDesktopSocketListeners();
-
-      // Handle desktop search input
-      const searchInput = document.getElementById('desktopSearchInput');
-      if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-          performDesktopSearch(e.target.value);
-        });
-      }
-    });
-
     // Service Worker registration for PWA functionality
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -4068,378 +2493,6 @@
         });
       });
     }
-    // === POTУЖНИЙ ФУНКЦІОНАЛ УПРАВЛІННЯ КОНТАКТАМИ ===
-
-    // Контакти з групами та кастомними назвами
-    let contactGroups = ['Favorites', 'Work', 'Family', 'Friends', 'General'];
-    let allContacts = [];
-
-    // Створити новий контакт з детальною інформацією
-    async function createAdvancedContact() {
-      const modal = document.createElement('div');
-      modal.className = 'modal-overlay';
-      modal.innerHTML = `
-        <div class="modal advanced-contact-modal">
-          <div class="modal-header">
-            <h3>🆕 Add New Contact</h3>
-            <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
-          </div>
-          <div class="modal-content">
-            <div class="contact-form">
-              <div class="input-group">
-                <input type="text" id="contactNickname" placeholder=" " required>
-                <label>Nickname *</label>
-              </div>
-
-              <div class="input-group">
-                <input type="text" id="contactDisplayName" placeholder=" ">
-                <label>Custom Display Name</label>
-              </div>
-
-              <div class="input-group">
-                <select id="contactGroup">
-                  <option value="General">General</option>
-                  <option value="Work">Work</option>
-                  <option value="Family">Family</option>
-                  <option value="Friends">Friends</option>
-                  <option value="Favorites">⭐ Favorites</option>
-                </select>
-                <label>Group</label>
-              </div>
-
-              <div class="emoji-selector">
-                <label>Choose Avatar:</label>
-                <div class="avatar-options">
-                  ${['👤', '👨', '👩', '🧑', '👶', '🧓', '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🔬', '👩‍🔬'].map(emoji =>
-                    `<button type="button" class="avatar-btn" onclick="selectAvatar('${emoji}')">${emoji}</button>`
-                  ).join('')}
-                </div>
-              </div>
-
-              <div class="contact-actions">
-                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveAdvancedContact()">💾 Add Contact</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-      document.getElementById('contactNickname').focus();
-    }
-
-    // Вибрати аватар
-    function selectAvatar(emoji) {
-      document.querySelectorAll('.avatar-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.classList.add('selected');
-      event.target.setAttribute('data-selected', 'true');
-    }
-
-    // Зберегти контакт з розширеними даними
-    async function saveAdvancedContact() {
-      const nickname = document.getElementById('contactNickname').value.trim();
-      const displayName = document.getElementById('contactDisplayName').value.trim();
-      const group = document.getElementById('contactGroup').value;
-      const selectedAvatar = document.querySelector('.avatar-btn[data-selected="true"]');
-
-      if (!nickname) {
-        showToast('Please enter nickname', 'error');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/contacts/add`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          },
-          body: JSON.stringify({
-            contact: nickname,
-            customName: displayName || null,
-            groupName: group,
-            avatar: selectedAvatar ? selectedAvatar.textContent : '👤'
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showToast(`✅ Added \${displayName || nickname} to \${group}`, 'success');
-          document.querySelector('.modal-overlay').remove();
-          loadChats();
-          loadDesktopContacts();
-        } else {
-          showToast(data.error || 'Failed to add contact', 'error');
-        }
-      } catch (error) {
-        console.error('Error adding contact:', error);
-        showToast('Connection error', 'error');
-      }
-    }
-
-    // Управління групами контактів
-    function showGroupManagement() {
-      const modal = document.createElement('div');
-      modal.className = 'modal-overlay';
-      modal.innerHTML = `
-        <div class="modal group-management-modal">
-          <div class="modal-header">
-            <h3>📁 Manage Contact Groups</h3>
-            <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
-          </div>
-          <div class="modal-content">
-            <div class="group-list">
-              \${contactGroups.map(group => `
-                <div class="group-item">
-                  <span class="group-name">\${group}</span>
-                  <div class="group-actions">
-                    <button class="btn-small" onclick="renameGroup('\${group}')">✏️ Rename</button>
-                    \${group !== 'General' ? `<button class="btn-small danger" onclick="deleteGroup('\${group}')">🗑️ Delete</button>` : ''}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-
-            <div class="add-group-form">
-              <div class="input-group">
-                <input type="text" id="newGroupName" placeholder=" " maxlength="20">
-                <label>New Group Name</label>
-              </div>
-              <button class="btn btn-primary" onclick="addNewGroup()">➕ Add Group</button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-    }
-
-    // Додати нову групу
-    async function addNewGroup() {
-      const groupName = document.getElementById('newGroupName').value.trim();
-
-      if (!groupName) {
-        showToast('Please enter group name', 'error');
-        return;
-      }
-
-      if (contactGroups.includes(groupName)) {
-        showToast('Group already exists', 'error');
-        return;
-      }
-
-      contactGroups.push(groupName);
-      showToast(`✅ Created group: \${groupName}`, 'success');
-      showGroupManagement(); // Refresh modal
-    }
-
-    // Редагувати контакт
-    async function editContact(nickname) {
-      try {
-        const contact = allContacts.find(c => c.nickname === nickname);
-        if (!contact) return;
-
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-          <div class="modal edit-contact-modal">
-            <div class="modal-header">
-              <h3>✏️ Edit Contact: \${contact.nickname}</h3>
-              <button onclick="this.closest('.modal-overlay').remove()" class="modal-close">×</button>
-            </div>
-            <div class="modal-content">
-              <div class="contact-form">
-                <div class="input-group">
-                  <input type="text" id="editDisplayName" value="\${contact.display_name || contact.nickname}" placeholder=" ">
-                  <label>Display Name</label>
-                </div>
-
-                <div class="input-group">
-                  <select id="editContactGroup">
-                    \${contactGroups.map(group =>
-                      `<option value="\${group}" \${contact.group_name === group ? 'selected' : ''}>\${group}</option>`
-                    ).join('')}
-                  </select>
-                  <label>Group</label>
-                </div>
-
-                <div class="contact-actions">
-                  <label class="favorite-toggle">
-                    <input type="checkbox" id="editFavorite" \${contact.favorite ? 'checked' : ''}>
-                    <span>⭐ Add to Favorites</span>
-                  </label>
-                </div>
-
-                <div class="contact-actions">
-                  <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                  <button class="btn btn-primary" onclick="updateContact('\${nickname}')">💾 Save Changes</button>
-                  <button class="btn btn-danger" onclick="removeContact('\${nickname}')">🗑️ Remove</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-
-        document.body.appendChild(modal);
-      } catch (error) {
-        console.error('Error editing contact:', error);
-      }
-    }
-
-    // Оновити контакт
-    async function updateContact(nickname) {
-      const displayName = document.getElementById('editDisplayName').value.trim();
-      const group = document.getElementById('editContactGroup').value;
-      const favorite = document.getElementById('editFavorite').checked;
-
-      try {
-        const response = await fetch(`${API_URL}/contacts/update`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          },
-          body: JSON.stringify({
-            contact: nickname,
-            customName: displayName,
-            groupName: group,
-            favorite: favorite
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showToast('✅ Contact updated successfully', 'success');
-          document.querySelector('.modal-overlay').remove();
-          loadChats();
-          loadDesktopContacts();
-        } else {
-          showToast(data.error || 'Failed to update contact', 'error');
-        }
-      } catch (error) {
-        console.error('Error updating contact:', error);
-        showToast('Connection error', 'error');
-      }
-    }
-
-    // Видалити контакт
-    async function removeContact(nickname) {
-      if (!confirm(`Are you sure you want to remove ${nickname}?`)) return;
-
-      try {
-        const response = await fetch(`${API_URL}/contacts/remove`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser.token}`,
-            'X-Nickname': currentUser.nickname
-          },
-          body: JSON.stringify({ contact: nickname })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showToast(`🗑️ Removed \${nickname}`, 'success');
-          document.querySelector('.modal-overlay').remove();
-          loadChats();
-          loadDesktopContacts();
-        } else {
-          showToast(data.error || 'Failed to remove contact', 'error');
-        }
-      } catch (error) {
-        console.error('Error removing contact:', error);
-        showToast('Connection error', 'error');
-      }
-    }
-
-    // Фільтрувати контакти по групах
-    function filterContactsByGroup(groupName) {
-      const filteredContacts = allContacts.filter(c => c.group_name === groupName);
-      displayChatList(filteredContacts);
-
-      // Update UI to show current filter
-      document.querySelectorAll('.group-filter').forEach(btn => btn.classList.remove('active'));
-      document.querySelector(`[data-group="\${groupName}"]`)?.classList.add('active');
-    }
-
-    // Пошук контактів з розширеними можливостями
-    function advancedSearchContacts(query) {
-      const searchResults = allContacts.filter(contact =>
-        contact.nickname.toLowerCase().includes(query.toLowerCase()) ||
-        (contact.display_name && contact.display_name.toLowerCase().includes(query.toLowerCase())) ||
-        contact.group_name.toLowerCase().includes(query.toLowerCase())
-      );
-
-      displayChatList(searchResults);
-    }
-
-    // Імпорт/Експорт контактів
-    function exportContacts() {
-      const contactsData = {
-        contacts: allContacts,
-        groups: contactGroups,
-        exportDate: new Date().toISOString(),
-        version: '2.0'
-      };
-
-      const blob = new Blob([JSON.stringify(contactsData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `talk-pai-contacts-\${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      showToast('📥 Contacts exported successfully', 'success');
-    }
-
-    function importContacts() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = handleContactImport;
-      input.click();
-    }
-
-    async function handleContactImport(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        if (data.contacts && Array.isArray(data.contacts)) {
-          // Add contacts one by one
-          let imported = 0;
-          for (const contact of data.contacts) {
-            if (contact.nickname && contact.nickname !== currentUser.nickname) {
-              try {
-                await addContact(contact.nickname, contact.display_name, contact.group_name);
-                imported++;
-              } catch (error) {
-                console.warn(`Failed to import ${contact.nickname}:`, error);
-              }
-            }
-          }
-
-          showToast(`📥 Imported \${imported} contacts successfully`, 'success');
-          loadChats();
-        } else {
-          showToast('Invalid contacts file format', 'error');
-        }
-      } catch (error) {
-        console.error('Import error:', error);
-        showToast('Failed to import contacts', 'error');
-      }
-    }
-
   </script>
 </body>
 </html>
