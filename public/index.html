@@ -2049,7 +2049,7 @@
             <input type="password" id="loginPassword" placeholder=" " required>
             <label>Password</label>
           </div>
-          <button class="btn btn-primary" onclick="login()" onmousedown="console.log('Login button pressed')">
+          <button class="btn btn-primary" onclick="testLogin()" onmousedown="console.log('Login button pressed')">
             <span>🔐 Sign In</span>
           </button>
           <button class="btn btn-text" onclick="showRegister()" onmousedown="console.log('Register button pressed')">Create Account</button>
@@ -2070,7 +2070,7 @@
             <input type="password" id="regPassword" placeholder=" " required>
             <label>Password (min 6 chars)</label>
           </div>
-          <button class="btn btn-primary" onclick="register()">
+          <button class="btn btn-primary" onclick="testRegister()">
             <span>Create Account</span>
           </button>
           <button class="btn btn-text" onclick="showLogin()">Back to Sign In</button>
@@ -2339,6 +2339,104 @@
         authScreen.style.opacity = '1';
         authScreen.style.transform = 'translateX(0)';
       }
+    }
+
+    // RADICAL FIX: Simple working login function
+    async function testLogin() {
+      console.log('🚀 TEST LOGIN CALLED');
+      alert('🔥 Login function working!');
+
+      const nickname = document.getElementById('loginNickname')?.value?.trim();
+      const password = document.getElementById('loginPassword')?.value;
+
+      console.log('Values:', { nickname, password });
+
+      if (!nickname || !password) {
+        alert('❌ Please fill in both fields!');
+        return;
+      }
+
+      try {
+        console.log('🌐 Making API call...');
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, password })
+        });
+
+        const data = await response.json();
+        console.log('📡 API Response:', data);
+
+        if (data.success) {
+          alert('✅ Login successful!');
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('nickname', data.nickname);
+          location.reload(); // Simple page reload to enter app
+        } else {
+          alert('❌ Login failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('💥 Login error:', error);
+        alert('💥 Network error: ' + error.message);
+      }
+    }
+
+    // RADICAL FIX: Simple working register function
+    async function testRegister() {
+      console.log('🚀 TEST REGISTER CALLED');
+      alert('🔥 Register function working!');
+
+      const nickname = document.getElementById('regNickname')?.value?.trim();
+      const password = document.getElementById('regPassword')?.value;
+
+      console.log('Register Values:', { nickname, password });
+
+      if (!nickname || !password) {
+        alert('❌ Please fill in both fields!');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('❌ Password must be at least 6 characters!');
+        return;
+      }
+
+      try {
+        console.log('🌐 Making register API call...');
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, password })
+        });
+
+        const data = await response.json();
+        console.log('📡 Register API Response:', data);
+
+        if (data.success) {
+          alert('✅ Registration successful!');
+          localStorage.setItem('token', data.user.token);
+          localStorage.setItem('nickname', data.user.nickname);
+          location.reload(); // Simple page reload to enter app
+        } else {
+          alert('❌ Registration failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('💥 Register error:', error);
+        alert('💥 Network error: ' + error.message);
+      }
+    }
+
+    // Simple showRegister and showLogin functions
+    function showRegister() {
+      console.log('🔄 Showing register form');
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'flex';
+    }
+
+    function showLogin() {
+      console.log('🔄 Showing login form');
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'flex';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
