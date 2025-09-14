@@ -2372,12 +2372,15 @@
       }
     }
 
-    function showRegister() {
+    // Global functions for onclick handlers
+    window.showRegister = function showRegister() {
+      console.log('🔥 FORM: Showing register form');
       document.getElementById('loginForm').style.display = 'none';
       document.getElementById('registerForm').style.display = 'flex';
     }
 
-    function showLogin() {
+    window.showLogin = function showLogin() {
+      console.log('🔥 FORM: Showing login form');
       document.getElementById('registerForm').style.display = 'none';
       document.getElementById('loginForm').style.display = 'flex';
     }
@@ -2484,12 +2487,31 @@
           }
         });
 
-        // Test functions are available
+        // Test ALL functions are available
         console.log('🔥 DOM: Function availability check:', {
           login: typeof window.login,
           register: typeof window.register,
+          showRegister: typeof window.showRegister,
+          showLogin: typeof window.showLogin,
           showToast: typeof showToast
         });
+
+        // Force all functions to be available globally
+        if (typeof window.showRegister !== 'function') {
+          console.error('🔥 DOM: showRegister not found, defining now');
+          window.showRegister = function() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'flex';
+          };
+        }
+
+        if (typeof window.showLogin !== 'function') {
+          console.error('🔥 DOM: showLogin not found, defining now');
+          window.showLogin = function() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'flex';
+          };
+        }
 
         console.log('🔥 DOM: Initialization completed successfully');
 
@@ -4126,11 +4148,11 @@
       }
 
       try {
-        const response = await fetch(\`\${API_URL}/contacts/add\`, {
+        const response = await fetch(`${API_URL}/contacts/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer \${currentUser.token}\`,
+            'Authorization': `Bearer ${currentUser.token}`,
             'X-Nickname': currentUser.nickname
           },
           body: JSON.stringify({
@@ -4401,7 +4423,7 @@
                 await addContact(contact.nickname, contact.display_name, contact.group_name);
                 imported++;
               } catch (error) {
-                console.warn(\`Failed to import \${contact.nickname}:\`, error);
+                console.warn(`Failed to import ${contact.nickname}:`, error);
               }
             }
           }
