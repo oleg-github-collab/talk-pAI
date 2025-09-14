@@ -72,18 +72,9 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 // Middleware
-// Production-ready security configuration
+// RADICAL FIX: Completely disable CSP to allow onclick handlers
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "ws:"]
-    }
-  },
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000,

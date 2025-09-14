@@ -2032,7 +2032,7 @@
 <body data-theme="light">
   <div class="app">
     <!-- Auth Screen -->
-    <div id="authScreen" class="screen active">
+    <div id="authScreen" class="screen active" style="display: flex !important; opacity: 1 !important; pointer-events: all !important; transform: translateX(0) !important; z-index: 9999 !important;">
       <div class="auth-container">
         <div class="logo">
           <div class="logo-icon">🤖</div>
@@ -2053,8 +2053,11 @@
             <span>🔐 Sign In</span>
           </button>
           <button class="btn btn-text" onclick="showRegister()" onmousedown="console.log('Register button pressed')">Create Account</button>
-          <button class="btn btn-secondary" onclick="alert('Test button works!')" style="margin-top: 10px;">
-            <span>🧪 Test Button</span>
+          <button class="btn btn-secondary" onclick="alert('🎉 УСПІХ! JavaScript працює!')" style="margin-top: 10px; background: #28a745;">
+            <span>🧪 JavaScript Test</span>
+          </button>
+          <button class="btn btn-secondary" onclick="window.open('/test-clicks.html')" style="margin-top: 10px; background: #17a2b8;">
+            <span>🔧 Full Test Page</span>
           </button>
         </div>
 
