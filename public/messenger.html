@@ -266,7 +266,7 @@
     }
 
     /* AI and Audio Buttons */
-    .ai-btn, .audio-btn {
+    .ai-btn, .audio-btn, .suggestion-btn, .tone-btn {
       background: #f7fafc;
       border: 1px solid #e1e8ed;
       border-radius: 50%;
@@ -281,9 +281,21 @@
       margin-right: 8px;
     }
 
-    .ai-btn:hover, .audio-btn:hover {
+    .ai-btn:hover, .audio-btn:hover, .suggestion-btn:hover, .tone-btn:hover {
       background: #e2e8f0;
       transform: scale(1.05);
+    }
+
+    .suggestion-btn {
+      background: linear-gradient(135deg, #ffd93d 0%, #f7b801 100%);
+      color: white;
+      border: 1px solid #f7b801;
+    }
+
+    .tone-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: 1px solid #667eea;
     }
 
     .ai-btn.active {
@@ -415,6 +427,74 @@
       align-items: center;
       justify-content: center;
       font-size: 14px;
+    }
+
+    /* AI Suggestions */
+    .ai-suggestions-container {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .suggestions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #ffd93d;
+      color: #856404;
+      font-weight: 600;
+    }
+
+    .suggestions-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #856404;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .suggestions-list {
+      padding: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .suggestion-item {
+      background: white;
+      border: 1px solid #ffd93d;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-item:hover {
+      background: #ffd93d;
+      color: #5d4e04;
+      transform: translateY(-1px);
+    }
+
+    .suggestion-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .suggestion-tone {
+      font-size: 12px;
+      font-weight: 600;
+      color: #856404;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .suggestion-content {
+      color: #333;
+      line-height: 1.4;
     }
 
     /* Welcome Screen */
@@ -622,9 +702,20 @@
         </div>
 
         <div class="message-input-container">
+          <div class="ai-suggestions-container" id="aiSuggestionsContainer" style="display: none;">
+            <div class="suggestions-header">
+              <span class="suggestions-title">💡 AI Suggestions</span>
+              <button class="suggestions-close" onclick="hideSuggestions()">×</button>
+            </div>
+            <div class="suggestions-list" id="suggestionsList">
+              <!-- AI suggestions will appear here -->
+            </div>
+          </div>
           <div class="message-input-box">
             <button class="ai-btn" id="aiBtn" onclick="toggleAIMode()" title="AI Assistant">🤖</button>
             <button class="audio-btn" id="audioBtn" onclick="toggleAudioRecording()" title="Voice Message">🎤</button>
+            <button class="suggestion-btn" id="suggestionBtn" onclick="getMessageSuggestions()" title="Get AI Writing Suggestions">✨</button>
+            <button class="tone-btn" id="toneBtn" onclick="analyzeTone()" title="Analyze Message Tone">📊</button>
             <textarea class="message-input" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
           </div>
@@ -1273,6 +1364,260 @@
         await originalSendMessage();
       }
     };
+    // AI Suggestions and Tone Analysis Functions
+    async function getMessageSuggestions() {
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value.trim();
+
+      if (!message) {
+        alert('Please enter a message to get suggestions');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: message,
+            context: getRecentMessages(3)
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showSuggestions(data.suggestions);
+        } else {
+          alert('Failed to get suggestions: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Error getting suggestions:', error);
+        alert('Failed to get suggestions. Please check your connection.');
+      }
+    }
+
+    async function analyzeTone() {
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value.trim();
+
+      if (!message) {
+        alert('Please enter a message to analyze');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/ai/analyze/tone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: message,
+            context: getRecentMessages(3)
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToneAnalysis(data.analysis);
+        } else {
+          alert('Failed to analyze tone: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Error analyzing tone:', error);
+        alert('Failed to analyze tone. Please check your connection.');
+      }
+    }
+
+    function showSuggestions(suggestions) {
+      const container = document.getElementById('aiSuggestionsContainer');
+      const suggestionsList = document.getElementById('suggestionsList');
+
+      suggestionsList.innerHTML = '';
+
+      suggestions.forEach(suggestion => {
+        const suggestionDiv = document.createElement('div');
+        suggestionDiv.className = 'suggestion-item';
+        suggestionDiv.innerHTML = `
+          <div class="suggestion-tone">${suggestion.tone}</div>
+          <div class="suggestion-content">${suggestion.content}</div>
+        `;
+
+        suggestionDiv.addEventListener('click', () => {
+          applySuggestion(suggestion);
+        });
+
+        suggestionsList.appendChild(suggestionDiv);
+      });
+
+      container.style.display = 'block';
+
+      // Scroll to suggestions
+      container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function applySuggestion(suggestion) {
+      const messageInput = document.getElementById('messageInput');
+      messageInput.value = suggestion.content;
+      messageInput.focus();
+
+      // Auto-resize textarea
+      messageInput.style.height = 'auto';
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
+
+      // Hide suggestions
+      hideSuggestions();
+
+      // Mark suggestion as used
+      markSuggestionUsed(suggestion.id);
+    }
+
+    async function markSuggestionUsed(suggestionId) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`/api/ai/suggestions/${suggestionId}/use`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      } catch (error) {
+        console.log('Failed to mark suggestion as used');
+      }
+    }
+
+    function hideSuggestions() {
+      document.getElementById('aiSuggestionsContainer').style.display = 'none';
+    }
+
+    function showToneAnalysis(analysis) {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      modal.innerHTML = `
+        <div style="
+          background: white;
+          padding: 24px;
+          border-radius: 12px;
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        ">
+          <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 16px;
+          ">
+            <h3 style="margin: 0; color: #1e293b; font-size: 20px;">📊 Tone Analysis</h3>
+            <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="
+              background: none;
+              border: none;
+              font-size: 24px;
+              color: #64748b;
+              cursor: pointer;
+              line-height: 1;
+            ">&times;</button>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <div style="
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 16px;
+              border-radius: 8px;
+              margin-bottom: 16px;
+            ">
+              <div style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">
+                ${analysis.overall_tone}
+              </div>
+              <div style="opacity: 0.9;">
+                Confidence: ${analysis.confidence}%
+              </div>
+            </div>
+            <div style="margin-bottom: 16px;">
+              <strong style="color: #374151; display: block; margin-bottom: 8px;">
+                💡 Recommendations:
+              </strong>
+              <ul style="margin: 0; padding-left: 20px; color: #64748b; line-height: 1.6;">
+                ${analysis.recommendations.map(rec => `<li style="margin-bottom: 4px;">${rec}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="
+              padding: 10px 20px;
+              background: #667eea;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+              transition: background 0.2s ease;
+            " onmouseover="this.style.background='#5a67d8'" onmouseout="this.style.background='#667eea'">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+
+    function getRecentMessages(count = 5) {
+      // Get recent messages from the current chat for context
+      const messagesContainer = document.getElementById('messagesContainer');
+      const messages = messagesContainer.querySelectorAll('.message');
+      const recentMessages = [];
+
+      for (let i = Math.max(0, messages.length - count); i < messages.length; i++) {
+        const message = messages[i];
+        const content = message.querySelector('.message-content')?.textContent?.trim();
+        const isUser = message.classList.contains('sent');
+
+        if (content) {
+          recentMessages.push({
+            role: isUser ? 'user' : 'assistant',
+            content: content
+          });
+        }
+      }
+
+      return recentMessages;
+    }
+
   </script>
+
+  <!-- AI Module -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="/js/ai-module.js"></script>
 </body>
 </html>

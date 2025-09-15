@@ -12,6 +12,7 @@ const config = require('./src/config/server');
 const AuthRoutes = require('./src/auth/routes');
 const ChatRoutes = require('./src/chat/routes');
 const AIRoutes = require('./src/ai/routes');
+const CorporateRoutes = require('./src/corporate/routes');
 const database = require('./src/database/connection');
 
 const app = express();
@@ -36,9 +37,11 @@ app.set('io', io);
 const authRoutes = new AuthRoutes();
 const chatRoutes = new ChatRoutes();
 const aiRoutes = new AIRoutes();
+const corporateRoutes = new CorporateRoutes();
 app.use('/api/auth', authRoutes.getRouter());
 app.use('/api/chat', chatRoutes.getRouter());
 app.use('/api/ai', aiRoutes.getRouter());
+app.use('/api/corporate', corporateRoutes.getRouter());
 
 // Health check
 app.get('/health', async (req, res) => {
