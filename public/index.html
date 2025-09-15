@@ -161,7 +161,7 @@
     <div id="message"></div>
 
     <div class="demo-note">
-      💡 This is demo mode. Your account will be temporary.
+      🚀 Welcome to Talk pAI - Your AI-powered messenger with real-time chat, group conversations, and secure messaging.
     </div>
   </div>
 
@@ -208,8 +208,9 @@
           showMessage('✅ Login successful! Welcome back!', true);
           localStorage.setItem('token', data.token);
           localStorage.setItem('nickname', data.nickname);
+          localStorage.setItem('userId', data.id);
           setTimeout(() => {
-            window.location.reload();
+            window.location.href = '/messenger.html';
           }, 1500);
         } else {
           showMessage('❌ ' + data.error, false);
@@ -248,8 +249,9 @@
           showMessage('🎉 Registration successful! Welcome to Talk pAI!', true);
           localStorage.setItem('token', data.user.token);
           localStorage.setItem('nickname', data.user.nickname);
+          localStorage.setItem('userId', data.user.id);
           setTimeout(() => {
-            window.location.reload();
+            window.location.href = '/messenger.html';
           }, 1500);
         } else {
           showMessage('❌ ' + data.error, false);
@@ -264,15 +266,7 @@
     const nickname = localStorage.getItem('nickname');
 
     if (token && nickname) {
-      document.querySelector('.container').innerHTML = `
-        <div class="logo">🎉</div>
-        <h1>Welcome back, ${nickname}!</h1>
-        <p style="margin: 20px 0; color: #666;">You are successfully logged in to Talk pAI.</p>
-        <button onclick="logout()">🚪 Logout</button>
-        <div class="demo-note">
-          💡 Full messenger features will be available soon!
-        </div>
-      `;
+      window.location.href = '/messenger.html';
     }
 
     function logout() {

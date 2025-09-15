@@ -10,6 +10,9 @@ require('dotenv').config();
 // Import modules
 const config = require('./src/config/server');
 const AuthRoutes = require('./src/auth/routes');
+const ChatRoutes = require('./src/chat/routes');
+const AIRoutes = require('./src/ai/routes');
+const database = require('./src/database/connection');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,10 +27,18 @@ app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
+
+// Make io available to routes
+app.set('io', io);
 
 // Routes
 const authRoutes = new AuthRoutes();
+const chatRoutes = new ChatRoutes();
+const aiRoutes = new AIRoutes();
 app.use('/api/auth', authRoutes.getRouter());
+app.use('/api/chat', chatRoutes.getRouter());
+app.use('/api/ai', aiRoutes.getRouter());
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -55,6 +66,32 @@ app.get('/ready', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Join chat room
+  socket.on('join_chat', (chatId) => {
+    socket.join(`chat_${chatId}`);
+    console.log(`User ${socket.id} joined chat ${chatId}`);
+  });
+
+  // Leave chat room
+  socket.on('leave_chat', (chatId) => {
+    socket.leave(`chat_${chatId}`);
+    console.log(`User ${socket.id} left chat ${chatId}`);
+  });
+
+  // Handle typing indicators
+  socket.on('typing_start', (data) => {
+    socket.to(`chat_${data.chatId}`).emit('user_typing', {
+      userId: data.userId,
+      nickname: data.nickname
+    });
+  });
+
+  socket.on('typing_stop', (data) => {
+    socket.to(`chat_${data.chatId}`).emit('user_stopped_typing', {
+      userId: data.userId
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
@@ -65,18 +102,44 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-server.listen(config.port, () => {
-  console.log(`🚀 Talk pAI server running on port ${config.port}`);
-  console.log(`🌍 Environment: ${config.nodeEnv}`);
-  console.log(`📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
-  console.log('🎯 All systems ready for Railway deployment!');
-});
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Try to connect to database
+    const dbConnected = await database.connect();
+
+    if (dbConnected) {
+      console.log('✅ PostgreSQL database connected and ready');
+    } else {
+      console.log('⚠️  Running with in-memory storage (development mode)');
+    }
+
+    server.listen(config.port, () => {
+      console.log(`🚀 Talk pAI server running on port ${config.port}`);
+      console.log(`🌍 Environment: ${config.nodeEnv}`);
+      console.log(`💾 Database: ${dbConnected ? 'PostgreSQL' : 'In-Memory'}`);
+      console.log(`📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
+      console.log('🎯 Production messenger ready!');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
+
+  // Close database connection
+  if (database.isConnected) {
+    await database.close();
+  }
+
   server.close(() => {
+    console.log('🔐 Server shutdown complete');
     process.exit(0);
   });
 });

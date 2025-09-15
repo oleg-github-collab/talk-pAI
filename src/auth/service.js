@@ -1,10 +1,13 @@
 const CryptoService = require('../utils/crypto');
 const ValidationService = require('../utils/validator');
 const InMemoryStorage = require('./storage');
+const DatabaseStorage = require('./database-storage');
+const database = require('../database/connection');
 
 class AuthService {
   constructor() {
-    this.storage = new InMemoryStorage();
+    this.storage = database.isConnected ? new DatabaseStorage() : new InMemoryStorage();
+    this.useDatabase = database.isConnected;
   }
 
   async register({ nickname, password, avatar }) {
@@ -15,7 +18,7 @@ class AuthService {
     }
 
     // Check if user exists
-    if (this.storage.userExists(nickname)) {
+    if (await this.storage.userExists(nickname)) {
       throw new Error('This nickname is already taken');
     }
 
@@ -24,7 +27,7 @@ class AuthService {
     const hashedPassword = CryptoService.hashPassword(password, salt);
     const token = CryptoService.generateToken();
 
-    const user = this.storage.createUser({
+    const user = await this.storage.createUser({
       nickname,
       password: hashedPassword,
       salt,
@@ -32,10 +35,15 @@ class AuthService {
     });
 
     // Create session
-    this.storage.createSession(nickname, token);
+    if (this.useDatabase) {
+      await this.storage.createSession(user.id, token);
+    } else {
+      await this.storage.createSession(nickname, token);
+    }
 
     return {
       user: {
+        id: user.id,
         nickname: user.nickname,
         avatar: user.avatar,
         token
@@ -51,7 +59,7 @@ class AuthService {
     }
 
     // Find user
-    const user = this.storage.findUser(nickname);
+    const user = await this.storage.findUser(nickname);
     if (!user) {
       throw new Error('Invalid nickname or password');
     }
@@ -61,11 +69,21 @@ class AuthService {
       throw new Error('Invalid nickname or password');
     }
 
+    // Update last login
+    if (this.useDatabase) {
+      await this.storage.updateLastLogin(user.id);
+    }
+
     // Create session
     const token = CryptoService.generateToken();
-    this.storage.createSession(nickname, token);
+    if (this.useDatabase) {
+      await this.storage.createSession(user.id, token);
+    } else {
+      await this.storage.createSession(nickname, token);
+    }
 
     return {
+      id: user.id,
       nickname: user.nickname,
       avatar: user.avatar,
       theme: 'auto',
@@ -73,17 +91,50 @@ class AuthService {
     };
   }
 
-  async authenticate(nickname, token) {
-    if (!nickname || !token) {
+  async authenticate(token) {
+    if (!token) {
       throw new Error('Authentication required');
     }
 
-    const session = this.storage.findSession(nickname, token);
-    if (!session) {
-      throw new Error('Invalid session');
+    if (this.useDatabase) {
+      const session = await this.storage.findSessionByToken(token);
+      if (!session) {
+        throw new Error('Invalid session');
+      }
+      return {
+        id: session.user_id,
+        nickname: session.nickname,
+        avatar: session.avatar,
+        token
+      };
+    } else {
+      // Fallback for in-memory storage
+      return { token };
     }
+  }
 
-    return { nickname, token };
+  async logout(token) {
+    if (this.useDatabase) {
+      const session = await this.storage.findSessionByToken(token);
+      if (session) {
+        await this.storage.deleteSession(session.user_id, token);
+      }
+    }
+    return { success: true };
+  }
+
+  async getUserChats(userId) {
+    if (this.useDatabase) {
+      return await this.storage.getUserChats(userId);
+    }
+    return [];
+  }
+
+  async getActiveUsers() {
+    if (this.useDatabase) {
+      return await this.storage.getActiveUsers();
+    }
+    return [];
   }
 }
 
