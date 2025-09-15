@@ -20,10 +20,6 @@ const NewsAgent = require('./news-agent');
 // Initialize news agent
 const newsAgent = new NewsAgent(db);
 
-// In-memory storage for demo when no database
-const memoryUsers = new Map();
-const memorySessions = new Map();
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -210,54 +206,19 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'This nickname is reserved' });
     }
     
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      if (memoryUsers.has(nickname)) {
-        return res.status(400).json({ error: 'This nickname is already taken' });
-      }
-    } else {
-      // Database version
-      const existingUser = await db.getUserByNickname(nickname);
-      if (existingUser) {
-        return res.status(400).json({ error: 'This nickname is already taken' });
-      }
+    // Check if user exists
+    const existingUser = db.getUserByNickname(nickname);
+    if (existingUser) {
+      return res.status(400).json({ error: 'This nickname is already taken' });
     }
     
     // Create user
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
     const token = generateToken();
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      memoryUsers.set(nickname, {
-        nickname,
-        password: hashedPassword,
-        salt,
-        avatar: avatar || '👤'
-      });
-
-      // Create session
-      const sessionKey = `${nickname}:${token}`;
-      memorySessions.set(sessionKey, {
-        nickname,
-        token,
-        createdAt: new Date()
-      });
-
-      return res.json({
-        success: true,
-        message: 'Registration successful',
-        user: { nickname, avatar: avatar || '👤', token },
-        demo: true
-      });
-    }
-
-    // Database version
-    await db.createUser(nickname, hashedPassword, salt, avatar || '👤');
-    await db.createSession(nickname, token, req.get('User-Agent'), req.ip);
+    
+    db.createUser(nickname, hashedPassword, salt, avatar || '👤');
+    db.createSession(nickname, token);
     
     // Add pAI and Sage as default contacts
     db.addContact(nickname, 'pAI');
@@ -314,40 +275,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Nickname and password are required' });
     }
     
-    // Check if database is available
-    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL && !process.env.DB_URL && !process.env.POSTGRESQL_URL) {
-      // Use memory storage for demo
-      const user = memoryUsers.get(nickname);
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid nickname or password' });
-      }
-
-      const hashedInput = hashPassword(password, user.salt);
-      if (hashedInput !== user.password) {
-        return res.status(401).json({ error: 'Invalid nickname or password' });
-      }
-
-      const token = generateToken();
-      const sessionKey = `${nickname}:${token}`;
-      memorySessions.set(sessionKey, {
-        nickname,
-        token,
-        createdAt: new Date()
-      });
-
-      return res.json({
-        success: true,
-        nickname: user.nickname,
-        avatar: user.avatar || '👤',
-        theme: 'auto',
-        token,
-        message: '🔐 Welcome back!',
-        demo: true
-      });
-    }
-
-    // Database version
-    const user = await db.getUserByNickname(nickname);
+    const user = db.getUserByNickname(nickname);
     if (!user) {
       return res.status(401).json({ error: 'Invalid nickname or password' });
     }
