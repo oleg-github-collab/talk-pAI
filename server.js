@@ -33,14 +33,18 @@ try {
 
 try {
   Logger = require('./src/utils/enhanced-logger');
+  // Test if Logger is a valid constructor
+  if (typeof Logger !== 'function') {
+    throw new Error('Logger is not a constructor');
+  }
 } catch (error) {
-  console.warn('Logger module not found, using console fallback');
+  console.warn('Logger module not found, using console fallback:', error.message);
   Logger = class FallbackLogger {
     constructor(name) { this.name = name; }
     static createRequestLogger() { return (req, res, next) => next(); }
-    debug() {}
-    info() {}
-    error() {}
+    debug(msg) { console.log(`[DEBUG] ${msg}`); }
+    info(msg) { console.log(`[INFO] ${msg}`); }
+    error(msg) { console.error(`[ERROR] ${msg}`); }
   };
 }
 
@@ -442,22 +446,32 @@ io.on('connection', (socket) => {
   });
 });
 
+// Simple UI route
+app.get('/simple', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'simple.html'));
+});
+
 // Basic API status endpoint
 app.get('/api', (req, res) => {
   res.json({
     message: 'Talk pAI API is running',
     version: '2.0.0',
-    endpoints: ['/health', '/ready', '/api/auth', '/api/chat', '/api/ai', '/api/aiden'],
+    endpoints: ['/health', '/ready', '/simple', '/api/auth', '/api/chat', '/api/ai', '/api/aiden'],
     timestamp: Date.now()
   });
 });
 
 // Serve frontend - catch all other routes
 app.get('*', (req, res) => {
-  try {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  } catch (error) {
-    res.status(500).json({ error: 'Frontend not available', message: error.message });
+  // Prevent redirect loops by checking URL
+  if (req.url === '/' || req.url === '/index.html') {
+    try {
+      res.sendFile(path.join(__dirname, 'public', 'simple.html'));
+    } catch (error) {
+      res.status(500).json({ error: 'Frontend not available' });
+    }
+  } else {
+    res.redirect('/simple');
   }
 });
 
