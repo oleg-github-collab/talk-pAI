@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk pAI Enterprise - Full-Featured Messenger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 80px;
+            background: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar:hover {
+            width: 240px;
+        }
+
+        .sidebar-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+
+        .sidebar-item.active {
+            background: #3498db;
+        }
+
+        .sidebar-item .icon {
+            font-size: 20px;
+            color: white;
+            min-width: 20px;
+        }
+
+        .sidebar-item .label {
+            color: white;
+            margin-left: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .sidebar:hover .sidebar-item .label {
+            opacity: 1;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .workspace-selector {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-right: 20px;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .search-global {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 20px;
+            padding: 8px 15px 8px 40px;
+            width: 300px;
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-button {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .nav-button:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            background: white;
+        }
+
+        /* Channel Sidebar */
+        .channel-sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .channel-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .workspace-name {
+            font-weight: 600;
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .workspace-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .channel-section {
+            padding: 15px 20px 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .section-toggle {
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .channel-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            transition: background 0.2s;
+        }
+
+        .channel-item:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .channel-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .channel-item .icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .channel-name {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .unread-badge {
+            background: #e74c3c;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 11px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .chat-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .chat-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .action-button:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        /* Messages */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafbfc;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .message.own {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin: 0 12px;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            max-width: 70%;
+            background: white;
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .message.own .message-content {
+            background: #3498db;
+            color: white;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .message-text {
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message-reactions {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .reaction {
+            background: rgba(0,0,0,0.05);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ai-message .message-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        /* Message Input */
+        .message-input-area {
+            padding: 20px;
+            border-top: 1px solid #e1e5e9;
+            background: white;
+        }
+
+        .message-input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 8px 12px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px 0;
+            resize: none;
+            max-height: 120px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-button {
+            background: none;
+            border: none;
+            padding: 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .input-button:hover {
+            background: rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .send-button {
+            background: #3498db;
+            color: white;
+        }
+
+        .send-button:hover {
+            background: #2980b9;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 300px;
+            background: white;
+            border-left: 1px solid #e1e5e9;
+            display: none;
+            flex-direction: column;
+        }
+
+        .right-panel.show {
+            display: flex;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .panel-content {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 8px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 32px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .button-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: #2980b9;
+        }
+
+        .button-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e1e5e9;
+        }
+
+        .button-secondary:hover {
+            background: #e9ecef;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -80px;
+                z-index: 100;
+                height: 100vh;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .channel-sidebar {
+                width: 100%;
+                position: fixed;
+                left: -100%;
+                z-index: 99;
+                transition: left 0.3s ease;
+            }
+
+            .channel-sidebar.mobile-open {
+                left: 0;
+            }
+
+            .right-panel {
+                position: fixed;
+                right: -300px;
+                z-index: 98;
+                height: 100vh;
+                transition: right 0.3s ease;
+            }
+
+            .right-panel.mobile-open {
+                right: 0;
+            }
+
+            .search-global {
+                width: 200px;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 12px;
+            margin: 10px 0;
+            font-style: italic;
+            color: #3498db;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            margin-right: 8px;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #3498db;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-item active" data-section="chats">
+            <span class="icon">💬</span>
+            <span class="label">Chats</span>
+        </div>
+        <div class="sidebar-item" data-section="groups">
+            <span class="icon">👥</span>
+            <span class="label">Groups</span>
+        </div>
+        <div class="sidebar-item" data-section="channels">
+            <span class="icon">#</span>
+            <span class="label">Channels</span>
+        </div>
+        <div class="sidebar-item" data-section="ai">
+            <span class="icon">🤖</span>
+            <span class="label">AI Assistant</span>
+        </div>
+        <div class="sidebar-item" data-section="files">
+            <span class="icon">📁</span>
+            <span class="label">Files</span>
+        </div>
+        <div class="sidebar-item" data-section="settings">
+            <span class="icon">⚙️</span>
+            <span class="label">Settings</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <div class="top-nav">
+            <div class="nav-left">
+                <div class="workspace-selector" id="workspaceSelector">
+                    <strong>TechCorp Workspace</strong> ▼
+                </div>
+                <div style="position: relative;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-global" placeholder="Search messages, files, people..." id="globalSearch">
+                </div>
+            </div>
+            <div class="nav-right">
+                <button class="nav-button" title="Notifications">🔔</button>
+                <button class="nav-button" title="Help">❓</button>
+                <button class="nav-button" title="Profile" id="profileButton">👤</button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- Channel Sidebar -->
+            <div class="channel-sidebar" id="channelSidebar">
+                <div class="channel-header">
+                    <div class="workspace-name">TechCorp Inc.</div>
+                    <div class="workspace-status">✅ 47 members online</div>
+                </div>
+
+                <div class="channel-section">
+                    <div class="section-header">
+                        <span>CHANNELS</span>
+                        <span class="section-toggle" onclick="showCreateChannelModal()">+</span>
+                    </div>
+                    <div class="channel-item active" data-chat="general">
+                        <span class="icon">#</span>
+                        <span class="channel-name">general</span>
+                        <span class="unread-badge">3</span>
+                    </div>
+                    <div class="channel-item" data-chat="development">
+                        <span class="icon">#</span>
+                        <span class="channel-name">development</span>
+                    </div>
+                    <div class="channel-item" data-chat="design">
+                        <span class="icon">🔒</span>
+                        <span class="channel-name">design</span>
+                        <span class="unread-badge">1</span>
+                    </div>
+                    <div class="channel-item" data-chat="random">
+                        <span class="icon">#</span>
+                        <span class="channel-name">random</span>
+                    </div>
+                </div>
+
+                <div class="channel-section">
+                    <div class="section-header">
+                        <span>DIRECT MESSAGES</span>
+                        <span class="section-toggle" onclick="showDirectMessageModal()">+</span>
+                    </div>
+                    <div class="channel-item" data-chat="aiden">
+                        <span class="icon">🤖</span>
+                        <span class="channel-name">Aiden (AI)</span>
+                    </div>
+                    <div class="channel-item" data-chat="alice">
+                        <span class="icon">👤</span>
+                        <span class="channel-name">Alice Johnson</span>
+                        <span class="unread-badge">2</span>
+                    </div>
+                    <div class="channel-item" data-chat="bob">
+                        <span class="icon">👤</span>
+                        <span class="channel-name">Bob Smith</span>
+                    </div>
+                </div>
+
+                <div class="channel-section">
+                    <div class="section-header">
+                        <span>GROUPS</span>
+                        <span class="section-toggle" onclick="showCreateGroupModal()">+</span>
+                    </div>
+                    <div class="channel-item" data-chat="project-alpha">
+                        <span class="icon">👥</span>
+                        <span class="channel-name">Project Alpha</span>
+                    </div>
+                    <div class="channel-item" data-chat="marketing-team">
+                        <span class="icon">👥</span>
+                        <span class="channel-name">Marketing Team</span>
+                        <span class="unread-badge">5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="chat-info">
+                        <div class="chat-avatar" id="chatAvatar">#</div>
+                        <div class="chat-details">
+                            <div class="chat-title" id="chatTitle">general</div>
+                            <div class="chat-subtitle" id="chatSubtitle">25 members</div>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="action-button" onclick="toggleRightPanel('members')">👥</button>
+                        <button class="action-button" onclick="toggleRightPanel('files')">📁</button>
+                        <button class="action-button" onclick="toggleRightPanel('info')">ℹ️</button>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Welcome message -->
+                    <div class="message">
+                        <div class="message-avatar">#</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">System</span>
+                                <span class="message-time">Today at 9:00 AM</span>
+                            </div>
+                            <div class="message-text">Welcome to #general! This is where the team comes together to chat. 🎉</div>
+                        </div>
+                    </div>
+
+                    <!-- Sample messages -->
+                    <div class="message">
+                        <div class="message-avatar">A</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">Alice Johnson</span>
+                                <span class="message-time">Today at 9:15 AM</span>
+                            </div>
+                            <div class="message-text">Good morning everyone! Ready for the sprint planning meeting?</div>
+                            <div class="message-reactions">
+                                <div class="reaction">👍 3</div>
+                                <div class="reaction">☕ 2</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message ai-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="ai-badge">AI Assistant</div>
+                            <div class="message-header">
+                                <span class="message-sender">Aiden</span>
+                                <span class="message-time">Today at 9:16 AM</span>
+                            </div>
+                            <div class="message-text">I can help you prepare agenda items and take notes during your sprint planning! Just let me know what you need.</div>
+                            <div class="message-reactions">
+                                <div class="reaction">🤖 5</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    <span id="typingText">Someone is typing...</span>
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-area">
+                    <div class="message-input-container">
+                        <div class="input-actions">
+                            <button class="input-button" title="Attach file">📎</button>
+                            <button class="input-button" title="Emoji">😊</button>
+                        </div>
+                        <textarea
+                            class="message-input"
+                            id="messageInput"
+                            placeholder="Type a message..."
+                            rows="1"></textarea>
+                        <div class="input-actions">
+                            <button class="input-button" title="Mentions">@</button>
+                            <button class="input-button send-button" id="sendButton" title="Send message">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel" id="rightPanel">
+                <div class="panel-header" id="panelHeader">Channel Info</div>
+                <div class="panel-content" id="panelContent">
+                    <p>Panel content will be loaded here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div class="modal" id="createChannelModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Create a Channel</div>
+                <button class="close-button" onclick="hideModal('createChannelModal')">&times;</button>
+            </div>
+            <form id="createChannelForm">
+                <div class="form-group">
+                    <label class="form-label">Channel Name</label>
+                    <input type="text" class="form-input" id="channelName" placeholder="e.g. project-updates" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input form-textarea" id="channelDescription" placeholder="What's this channel about?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Visibility</label>
+                    <select class="form-input form-select" id="channelVisibility">
+                        <option value="public">🌐 Public - Anyone can join</option>
+                        <option value="private">🔒 Private - Invite only</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="button button-secondary" onclick="hideModal('createChannelModal')">Cancel</button>
+                    <button type="submit" class="button button-primary">Create Channel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal" id="createGroupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Create a Group</div>
+                <button class="close-button" onclick="hideModal('createGroupModal')">&times;</button>
+            </div>
+            <form id="createGroupForm">
+                <div class="form-group">
+                    <label class="form-label">Group Name</label>
+                    <input type="text" class="form-input" id="groupName" placeholder="e.g. Project Alpha Team" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input form-textarea" id="groupDescription" placeholder="Describe this group..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Add Members</label>
+                    <input type="text" class="form-input" id="groupMembers" placeholder="Start typing to add members...">
+                </div>
+                <div class="button-group">
+                    <button type="button" class="button button-secondary" onclick="hideModal('createGroupModal')">Cancel</button>
+                    <button type="submit" class="button button-primary">Create Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let currentChat = 'general';
+        let authToken = localStorage.getItem('authToken');
+        let isTyping = false;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+
+            // Check authentication
+            if (!authToken) {
+                window.location.href = '/advanced-messenger.html';
+                return;
+            }
+
+            loadChatHistory(currentChat);
+        });
+
+        function initializeApp() {
+            // Auto-resize message input
+            const messageInput = document.getElementById('messageInput');
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Mock user data
+            currentUser = {
+                nickname: 'current_user',
+                display_name: 'Current User'
+            };
+        }
+
+        function setupEventListeners() {
+            // Sidebar navigation
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const section = this.dataset.section;
+                    handleSectionChange(section);
+                });
+            });
+
+            // Channel selection
+            document.querySelectorAll('.channel-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const chatId = this.dataset.chat;
+                    selectChat(chatId);
+                });
+            });
+
+            // Message input
+            const messageInput = document.getElementById('messageInput');
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Send button
+            document.getElementById('sendButton').addEventListener('click', sendMessage);
+
+            // Global search
+            document.getElementById('globalSearch').addEventListener('input', function(e) {
+                if (e.target.value.length > 2) {
+                    performGlobalSearch(e.target.value);
+                }
+            });
+
+            // Form submissions
+            document.getElementById('createChannelForm').addEventListener('submit', handleCreateChannel);
+            document.getElementById('createGroupForm').addEventListener('submit', handleCreateGroup);
+        }
+
+        function handleSectionChange(section) {
+            console.log('Section changed to:', section);
+            // Here you would load different content based on section
+            switch(section) {
+                case 'chats':
+                    loadDirectMessages();
+                    break;
+                case 'groups':
+                    loadGroups();
+                    break;
+                case 'channels':
+                    loadChannels();
+                    break;
+                case 'ai':
+                    selectChat('aiden');
+                    break;
+                case 'files':
+                    loadFiles();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        function selectChat(chatId) {
+            currentChat = chatId;
+
+            // Update chat header
+            const chatTitle = document.getElementById('chatTitle');
+            const chatSubtitle = document.getElementById('chatSubtitle');
+            const chatAvatar = document.getElementById('chatAvatar');
+
+            switch(chatId) {
+                case 'general':
+                    chatTitle.textContent = 'general';
+                    chatSubtitle.textContent = '25 members';
+                    chatAvatar.textContent = '#';
+                    break;
+                case 'aiden':
+                    chatTitle.textContent = 'Aiden (AI Assistant)';
+                    chatSubtitle.textContent = 'AI Powered';
+                    chatAvatar.textContent = '🤖';
+                    break;
+                case 'development':
+                    chatTitle.textContent = 'development';
+                    chatSubtitle.textContent = '12 members';
+                    chatAvatar.textContent = '#';
+                    break;
+                default:
+                    chatTitle.textContent = chatId;
+                    chatSubtitle.textContent = 'Direct Message';
+                    chatAvatar.textContent = chatId.charAt(0).toUpperCase();
+            }
+
+            loadChatHistory(chatId);
+        }
+
+        async function loadChatHistory(chatId) {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            // Show loading
+            messagesContainer.innerHTML = '<div class="loading"><div class="spinner"></div>Loading messages...</div>';
+
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Mock messages based on chat
+                let messages = [];
+
+                if (chatId === 'aiden') {
+                    messages = [
+                        {
+                            id: 1,
+                            sender: 'System',
+                            content: 'You\'re now chatting with Aiden, your AI assistant. Ask me anything!',
+                            timestamp: new Date(Date.now() - 3600000),
+                            type: 'system'
+                        },
+                        {
+                            id: 2,
+                            sender: 'Aiden',
+                            content: 'Hello! I\'m here to help you with any questions or tasks. I can assist with project planning, code reviews, documentation, and much more. What would you like to work on today?',
+                            timestamp: new Date(Date.now() - 3500000),
+                            type: 'ai'
+                        }
+                    ];
+                } else {
+                    messages = [
+                        {
+                            id: 1,
+                            sender: 'System',
+                            content: `Welcome to #${chatId}!`,
+                            timestamp: new Date(Date.now() - 7200000),
+                            type: 'system'
+                        },
+                        {
+                            id: 2,
+                            sender: 'Alice Johnson',
+                            content: 'Good morning everyone! Hope you\'re all doing well.',
+                            timestamp: new Date(Date.now() - 3600000),
+                            type: 'user'
+                        }
+                    ];
+                }
+
+                displayMessages(messages);
+
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+                messagesContainer.innerHTML = '<div class="loading">Failed to load messages. Please try again.</div>';
+            }
+        }
+
+        function displayMessages(messages) {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            messagesContainer.innerHTML = messages.map(message => {
+                const isOwn = message.sender === currentUser.nickname;
+                const isAI = message.type === 'ai';
+                const isSystem = message.type === 'system';
+
+                let avatarContent = message.sender.charAt(0).toUpperCase();
+                if (isAI) avatarContent = '🤖';
+                if (isSystem) avatarContent = '#';
+
+                const messageClass = isOwn ? 'message own' : (isAI ? 'message ai-message' : 'message');
+                const aiBadge = isAI ? '<div class="ai-badge">AI Assistant</div>' : '';
+
+                return `
+                    <div class="${messageClass}">
+                        <div class="message-avatar">${avatarContent}</div>
+                        <div class="message-content">
+                            ${aiBadge}
+                            <div class="message-header">
+                                <span class="message-sender">${message.sender}</span>
+                                <span class="message-time">${formatTime(message.timestamp)}</span>
+                            </div>
+                            <div class="message-text">${message.content}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+
+            if (!content) return;
+
+            // Clear input
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Add user message
+            addMessage(content, true);
+
+            // Handle AI chat
+            if (currentChat === 'aiden') {
+                showTypingIndicator('Aiden is thinking...');
+
+                try {
+                    const response = await fetch('/api/aiden/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            message: content,
+                            nickname: currentUser.nickname,
+                            conversation_id: `conv_${currentChat}_${Date.now()}`
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success || data.response) {
+                        addMessage(data.response, false, true);
+                    } else {
+                        addMessage("I'm having trouble responding right now. Please try again.", false, true);
+                    }
+                } catch (error) {
+                    console.error('AI chat error:', error);
+                    addMessage("Sorry, I couldn't process your message.", false, true);
+                } finally {
+                    hideTypingIndicator();
+                }
+            }
+        }
+
+        function addMessage(content, isOwn = false, isAI = false) {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwn ? 'own' : ''} ${isAI ? 'ai-message' : ''}`;
+
+            const avatarContent = isOwn ? currentUser.nickname.charAt(0).toUpperCase() :
+                                 (isAI ? '🤖' : currentChat.charAt(0).toUpperCase());
+
+            const senderName = isOwn ? currentUser.display_name :
+                              (isAI ? 'Aiden' : currentChat);
+
+            const aiBadge = isAI ? '<div class="ai-badge">AI Assistant</div>' : '';
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatarContent}</div>
+                <div class="message-content">
+                    ${aiBadge}
+                    <div class="message-header">
+                        <span class="message-sender">${senderName}</span>
+                        <span class="message-time">${formatTime(new Date())}</span>
+                    </div>
+                    <div class="message-text">${content}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator(text = 'Someone is typing...') {
+            const indicator = document.getElementById('typingIndicator');
+            const typingText = document.getElementById('typingText');
+
+            typingText.textContent = text;
+            indicator.style.display = 'flex';
+
+            // Scroll to bottom
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.style.display = 'none';
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function toggleRightPanel(type) {
+            const panel = document.getElementById('rightPanel');
+            const header = document.getElementById('panelHeader');
+            const content = document.getElementById('panelContent');
+
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+            } else {
+                panel.classList.add('show');
+
+                // Load panel content based on type
+                switch(type) {
+                    case 'members':
+                        header.textContent = 'Members';
+                        content.innerHTML = generateMembersContent();
+                        break;
+                    case 'files':
+                        header.textContent = 'Files';
+                        content.innerHTML = generateFilesContent();
+                        break;
+                    case 'info':
+                        header.textContent = 'Channel Info';
+                        content.innerHTML = generateInfoContent();
+                        break;
+                }
+            }
+        }
+
+        function generateMembersContent() {
+            return `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #3498db; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 10px;">A</div>
+                        <div>
+                            <div style="font-weight: 600;">Alice Johnson</div>
+                            <div style="font-size: 12px; color: #666;">🟢 Online</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #e74c3c; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 10px;">B</div>
+                        <div>
+                            <div style="font-weight: 600;">Bob Smith</div>
+                            <div style="font-size: 12px; color: #666;">⚫ Away</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #f39c12; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 10px;">🤖</div>
+                        <div>
+                            <div style="font-weight: 600;">Aiden AI</div>
+                            <div style="font-size: 12px; color: #666;">🟢 Always Online</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateFilesContent() {
+            return `
+                <div style="margin-bottom: 20px;">
+                    <div style="padding: 10px; border: 1px solid #e1e5e9; border-radius: 6px; margin-bottom: 10px;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">📄 project-specs.pdf</div>
+                        <div style="font-size: 12px; color: #666;">Shared by Alice • 2 hours ago</div>
+                    </div>
+                    <div style="padding: 10px; border: 1px solid #e1e5e9; border-radius: 6px;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">🖼️ mockup-design.png</div>
+                        <div style="font-size: 12px; color: #666;">Shared by Bob • Yesterday</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateInfoContent() {
+            return `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">About this channel</h4>
+                    <p style="color: #666; margin-bottom: 20px;">This is the main channel for general discussions and announcements.</p>
+
+                    <h4 style="margin-bottom: 10px;">Channel Settings</h4>
+                    <div style="font-size: 14px; color: #666;">
+                        <div style="margin-bottom: 8px;">📅 Created: January 15, 2024</div>
+                        <div style="margin-bottom: 8px;">👥 Members: 25</div>
+                        <div style="margin-bottom: 8px;">🌐 Visibility: Public</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Modal functions
+        function showCreateChannelModal() {
+            document.getElementById('createChannelModal').style.display = 'flex';
+        }
+
+        function showCreateGroupModal() {
+            document.getElementById('createGroupModal').style.display = 'flex';
+        }
+
+        function showDirectMessageModal() {
+            // Implementation for direct message creation
+            console.log('Show direct message modal');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        async function handleCreateChannel(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('channelName').value;
+            const description = document.getElementById('channelDescription').value;
+            const visibility = document.getElementById('channelVisibility').value;
+
+            try {
+                const response = await fetch('/api/corporate/channels', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        visibility,
+                        workspace_id: 'current-workspace'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    hideModal('createChannelModal');
+                    // Add channel to sidebar
+                    addChannelToSidebar(data.channel);
+                } else {
+                    alert('Failed to create channel: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Channel creation error:', error);
+                alert('Failed to create channel');
+            }
+        }
+
+        async function handleCreateGroup(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('groupName').value;
+            const description = document.getElementById('groupDescription').value;
+
+            try {
+                const response = await fetch('/api/chats/groups', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        isPublic: false
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    hideModal('createGroupModal');
+                    // Add group to sidebar
+                    addGroupToSidebar(data.group);
+                } else {
+                    alert('Failed to create group: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Group creation error:', error);
+                alert('Failed to create group');
+            }
+        }
+
+        function addChannelToSidebar(channel) {
+            const channelsSection = document.querySelector('.channel-section');
+            const channelItem = document.createElement('div');
+            channelItem.className = 'channel-item';
+            channelItem.dataset.chat = channel.id;
+            channelItem.innerHTML = `
+                <span class="icon">${channel.visibility === 'private' ? '🔒' : '#'}</span>
+                <span class="channel-name">${channel.name}</span>
+            `;
+
+            channelItem.addEventListener('click', function() {
+                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                selectChat(channel.id);
+            });
+
+            channelsSection.appendChild(channelItem);
+        }
+
+        function addGroupToSidebar(group) {
+            const groupsSection = document.querySelector('.channel-section:last-child');
+            const groupItem = document.createElement('div');
+            groupItem.className = 'channel-item';
+            groupItem.dataset.chat = group.id;
+            groupItem.innerHTML = `
+                <span class="icon">👥</span>
+                <span class="channel-name">${group.name}</span>
+            `;
+
+            groupItem.addEventListener('click', function() {
+                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                selectChat(group.id);
+            });
+
+            groupsSection.appendChild(groupItem);
+        }
+
+        async function performGlobalSearch(query) {
+            console.log('Searching for:', query);
+            // Implementation for global search
+        }
+
+        function loadDirectMessages() {
+            console.log('Loading direct messages');
+        }
+
+        function loadGroups() {
+            console.log('Loading groups');
+        }
+
+        function loadChannels() {
+            console.log('Loading channels');
+        }
+
+        function loadFiles() {
+            console.log('Loading files');
+        }
+
+        function loadSettings() {
+            console.log('Loading settings');
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

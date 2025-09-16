@@ -215,42 +215,398 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
-// Basic Aiden AI endpoint
-app.post('/api/aiden/chat', async (req, res) => {
+// User search endpoint
+app.get('/api/users/search', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { query } = req.query;
 
-    if (!message) {
+    if (!query || query.length < 2) {
       return res.status(400).json({
-        error: 'Message is required'
+        success: false,
+        error: 'Search query must be at least 2 characters'
       });
     }
 
-    // Simple AI response (placeholder)
-    const responses = [
-      "Hello! I'm Aiden, your AI companion. How can I help you today?",
-      "That's an interesting question! Let me think about that...",
-      "I understand what you're asking. Here's my perspective...",
-      "Great point! I'd be happy to help with that.",
-      "Thank you for sharing that with me!"
+    // Mock users database
+    const mockUsers = [
+      { id: 1, nickname: 'alice', avatar: '/avatars/alice.jpg', status: 'online', lastSeen: Date.now() },
+      { id: 2, nickname: 'bob', avatar: '/avatars/bob.jpg', status: 'offline', lastSeen: Date.now() - 3600000 },
+      { id: 3, nickname: 'charlie', avatar: '/avatars/charlie.jpg', status: 'away', lastSeen: Date.now() - 900000 },
+      { id: 4, nickname: 'diana', avatar: '/avatars/diana.jpg', status: 'online', lastSeen: Date.now() },
+      { id: 5, nickname: 'eve', avatar: '/avatars/eve.jpg', status: 'busy', lastSeen: Date.now() - 1800000 }
     ];
 
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    const filteredUsers = mockUsers.filter(user =>
+      user.nickname.toLowerCase().includes(query.toLowerCase())
+    );
 
     res.json({
-      response: randomResponse,
-      timestamp: Date.now()
+      success: true,
+      users: filteredUsers,
+      total: filteredUsers.length
     });
 
   } catch (error) {
-    console.error('Aiden chat error:', error);
+    console.error('User search error:', error);
     res.status(500).json({
-      error: 'AI service temporarily unavailable'
+      success: false,
+      error: 'Internal server error'
     });
   }
 });
 
+// User profile endpoints
+app.get('/api/users/profile/:nickname', async (req, res) => {
+  try {
+    const { nickname } = req.params;
+
+    // Mock user profile
+    const mockProfile = {
+      id: 1,
+      nickname: nickname,
+      displayName: nickname.charAt(0).toUpperCase() + nickname.slice(1),
+      avatar: `/avatars/${nickname}.jpg`,
+      bio: 'Hey there! I am using Talk pAI.',
+      status: 'online',
+      joinDate: '2024-01-15',
+      lastSeen: Date.now(),
+      preferences: {
+        theme: 'dark',
+        notifications: true,
+        privacy: 'friends'
+      },
+      stats: {
+        messages: 1245,
+        friends: 23,
+        groups: 5
+      }
+    };
+
+    res.json({
+      success: true,
+      profile: mockProfile
+    });
+
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+app.put('/api/users/profile', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    const { displayName, bio, avatar, preferences } = req.body;
+
+    // Mock profile update
+    const updatedProfile = {
+      displayName: displayName || 'User',
+      bio: bio || 'Hey there! I am using Talk pAI.',
+      avatar: avatar || '/avatars/default.jpg',
+      preferences: preferences || { theme: 'dark', notifications: true, privacy: 'friends' },
+      lastUpdated: Date.now()
+    };
+
+    res.json({
+      success: true,
+      profile: updatedProfile,
+      message: 'Profile updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Enhanced AI chat with real OpenAI integration
+app.post('/api/aiden/chat', async (req, res) => {
+  try {
+    const { message, nickname, conversation_id } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    console.log('🤖 Processing AI request:', { message, nickname, conversation_id });
+
+    // Try real OpenAI API first
+    try {
+      const openai_key = process.env.OPENAI_API_KEY;
+
+      if (!openai_key || openai_key === 'test-key') {
+        throw new Error('No valid OpenAI API key');
+      }
+
+      const { OpenAI } = require('openai');
+      const openai = new OpenAI({ apiKey: openai_key });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are Aiden, an advanced AI assistant integrated into Talk pAI messenger. You are helpful, friendly, and intelligent. You can:
+            - Have natural conversations
+            - Help with various tasks
+            - Provide information and explanations
+            - Assist with problem-solving
+            - Maintain context in conversations
+
+            Keep responses conversational and engaging. User's nickname is ${nickname}.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      });
+
+      const aiResponse = completion.choices[0].message.content;
+
+      console.log('✅ OpenAI API response received');
+
+      res.json({
+        success: true,
+        response: aiResponse,
+        timestamp: Date.now(),
+        conversation_id: conversation_id || `conv_${Date.now()}`,
+        model: 'gpt-4o-mini',
+        tokens_used: completion.usage?.total_tokens || 0
+      });
+
+    } catch (openaiError) {
+      console.error('❌ OpenAI API failed:', openaiError.message);
+
+      // Fallback to enhanced mock responses
+      const contextualResponses = [
+        `Hi ${nickname}! That's an interesting point about "${message.substring(0, 50)}...". Let me think about that.`,
+        `Great question, ${nickname}! Based on what you're asking about "${message.substring(0, 30)}...", here's what I think...`,
+        `Thanks for sharing that, ${nickname}! I understand you're interested in discussing "${message.substring(0, 40)}...".`,
+        `${nickname}, that's a fascinating perspective on "${message.substring(0, 35)}...". Could you tell me more?`,
+        `I appreciate you bringing up "${message.substring(0, 45)}...", ${nickname}. That's worth exploring further.`
+      ];
+
+      const fallbackResponse = contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+
+      res.json({
+        success: true,
+        response: fallbackResponse,
+        timestamp: Date.now(),
+        conversation_id: conversation_id || `conv_${Date.now()}`,
+        model: 'fallback',
+        note: 'Using fallback response - OpenAI API not available'
+      });
+    }
+
+  } catch (error) {
+    console.error('AI chat error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Group chat management endpoints
+app.post('/api/chats/groups', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const { name, description, participants, isPublic = false } = req.body;
+
+    if (!name || name.length < 3) {
+      return res.status(400).json({ success: false, error: 'Group name must be at least 3 characters' });
+    }
+
+    const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const token = authHeader.substring(7);
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [creatorNickname] = decoded.split(':');
+
+    const groupChat = {
+      id: groupId,
+      name,
+      description: description || '',
+      type: 'group',
+      visibility: isPublic ? 'public' : 'private',
+      creator: creatorNickname,
+      participants: participants || [creatorNickname],
+      created_at: new Date().toISOString(),
+      member_count: (participants || [creatorNickname]).length,
+      settings: {
+        allow_invites: true,
+        moderated: false,
+        read_only: false
+      }
+    };
+
+    res.json({
+      success: true,
+      group: groupChat,
+      message: 'Group chat created successfully'
+    });
+
+  } catch (error) {
+    console.error('Group creation error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chats/groups', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const groupChats = [
+      {
+        id: 'group_general',
+        name: 'General Discussion',
+        description: 'General chat for everyone',
+        type: 'group',
+        visibility: 'public',
+        member_count: 25,
+        last_activity: Date.now() - 300000,
+        unread_count: 3
+      },
+      {
+        id: 'group_tech',
+        name: 'Tech Talk',
+        description: 'Discussions about technology',
+        type: 'group',
+        visibility: 'public',
+        member_count: 12,
+        last_activity: Date.now() - 900000,
+        unread_count: 0
+      }
+    ];
+
+    res.json({
+      success: true,
+      groups: groupChats,
+      total: groupChats.length
+    });
+
+  } catch (error) {
+    console.error('Groups fetch error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Corporate account registration
+app.post('/api/auth/register/corporate', async (req, res) => {
+  try {
+    const {
+      company_name,
+      company_domain,
+      admin_nickname,
+      admin_email,
+      admin_password,
+      industry,
+      company_size,
+      plan_type = 'pro'
+    } = req.body;
+
+    if (!company_name || !admin_nickname || !admin_email || !admin_password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company name, admin credentials are required'
+      });
+    }
+
+    const orgId = `org_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const adminToken = Buffer.from(`${admin_nickname}:${Date.now()}`).toString('base64');
+
+    const organization = {
+      id: orgId,
+      name: company_name,
+      domain: company_domain,
+      industry: industry || 'Technology',
+      size: company_size || 'medium',
+      plan_type,
+      created_at: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      organization,
+      admin_token: adminToken,
+      message: 'Corporate account created successfully'
+    });
+
+  } catch (error) {
+    console.error('Corporate registration error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Corporate channels management
+app.get('/api/corporate/channels/:workspaceId', async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+
+    const channels = [
+      {
+        id: 'ch_general',
+        name: 'general',
+        description: 'General discussion',
+        type: 'channel',
+        visibility: 'public',
+        member_count: 25,
+        unread_count: 3
+      },
+      {
+        id: 'ch_dev',
+        name: 'development',
+        description: 'Development discussions',
+        type: 'channel',
+        visibility: 'public',
+        member_count: 12,
+        unread_count: 0
+      }
+    ];
+
+    res.json({
+      success: true,
+      channels,
+      workspace_id: workspaceId,
+      total: channels.length
+    });
+
+  } catch (error) {
+    console.error('Channels fetch error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 console.log('✅ Emergency API endpoints ready');
+console.log('✅ Group chats functionality ready');
+console.log('✅ Corporate features ready');
+console.log('✅ Advanced profile management ready');
 
 // Try to load advanced routes (optional)
 try {

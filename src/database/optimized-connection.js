@@ -151,53 +151,202 @@ class OptimizedDatabaseConnection {
 
   async initializeSchema() {
     try {
-      console.log('🔗 Attempting database connection...');
+      console.log('🔗 Attempting database schema initialization...');
 
-      // Check if schema file exists
-      const schemaPath = path.join(__dirname, '../../database/schema.sql');
+      // Check if production schema file exists
+      const schemaPath = path.join(__dirname, '../../database/production-schema.sql');
 
       try {
         await fs.access(schemaPath);
-        console.log('📄 Schema file found');
+        console.log('📄 Production schema file found');
+
+        const client = await this.pool.connect();
+
+        try {
+          // Read and execute production schema
+          const schemaSQL = await fs.readFile(schemaPath, 'utf8');
+          await client.query(schemaSQL);
+          console.log('✅ Production database schema initialized successfully');
+        } catch (error) {
+          console.warn('⚠️ Production schema initialization failed, using basic schema:', error.message);
+
+          // Fallback to basic schema
+          await this.createBasicSchema(client);
+        } finally {
+          client.release();
+        }
       } catch (error) {
-        console.log('⚠️ Schema file not found, skipping initialization');
-        return;
-      }
+        console.log('⚠️ Production schema file not found, creating basic schema');
 
-      const client = await this.pool.connect();
-
-      try {
-        // Simple schema check - create basic tables if they don't exist
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            nickname VARCHAR(100) UNIQUE NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS chats (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(255),
-            type VARCHAR(50) DEFAULT 'private',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        console.log('✅ Basic database schema ready');
-      } catch (error) {
-        console.warn('⚠️ Schema initialization failed, continuing:', error.message);
-      } finally {
-        client.release();
+        const client = await this.pool.connect();
+        try {
+          await this.createBasicSchema(client);
+        } finally {
+          client.release();
+        }
       }
     } catch (error) {
       console.error('🚨 Schema initialization failed:', error.message);
       // Don't throw error - let app continue with existing schema
     }
 
-    console.log('✅ Database connection test completed');
+    console.log('✅ Database initialization completed');
+  }
+
+  async createBasicSchema(client) {
+    try {
+      // Enable UUID extension
+      await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+
+      // Users table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          nickname VARCHAR(50) UNIQUE NOT NULL,
+          email VARCHAR(255) UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          display_name VARCHAR(100),
+          bio TEXT,
+          avatar_url VARCHAR(500),
+          status VARCHAR(20) DEFAULT 'offline',
+          account_type VARCHAR(20) DEFAULT 'personal',
+          is_verified BOOLEAN DEFAULT FALSE,
+          is_active BOOLEAN DEFAULT TRUE,
+          last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          notifications_enabled BOOLEAN DEFAULT TRUE,
+          dark_mode BOOLEAN DEFAULT FALSE,
+          metadata JSONB DEFAULT '{}'::jsonb
+        )
+      `);
+
+      // Organizations table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS organizations (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          name VARCHAR(255) NOT NULL,
+          domain VARCHAR(255) UNIQUE,
+          logo_url VARCHAR(500),
+          description TEXT,
+          plan_type VARCHAR(20) DEFAULT 'basic',
+          settings JSONB DEFAULT '{}'::jsonb,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      // Workspaces table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS workspaces (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          slug VARCHAR(100) UNIQUE,
+          is_public BOOLEAN DEFAULT FALSE,
+          settings JSONB DEFAULT '{}'::jsonb,
+          created_by UUID REFERENCES users(id),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      // Chats table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS chats (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+          name VARCHAR(255),
+          description TEXT,
+          type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group', 'channel', 'ai')),
+          visibility VARCHAR(20) DEFAULT 'private',
+          is_archived BOOLEAN DEFAULT FALSE,
+          settings JSONB DEFAULT '{}'::jsonb,
+          created_by UUID REFERENCES users(id),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      // Chat participants
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS chat_participants (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          role VARCHAR(20) DEFAULT 'member',
+          joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          last_read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          UNIQUE(chat_id, user_id)
+        )
+      `);
+
+      // Messages table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
+          sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          content TEXT,
+          message_type VARCHAR(20) DEFAULT 'text',
+          reply_to_id UUID REFERENCES messages(id),
+          is_edited BOOLEAN DEFAULT FALSE,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          metadata JSONB DEFAULT '{}'::jsonb,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          ai_conversation_id VARCHAR(255),
+          ai_model VARCHAR(100)
+        )
+      `);
+
+      // Insert default AI assistant
+      await client.query(`
+        INSERT INTO users (id, nickname, display_name, bio, account_type, status, avatar_url, is_verified)
+        VALUES (
+          '00000000-0000-0000-0000-000000000001',
+          'aiden',
+          'Aiden AI Assistant',
+          'Your intelligent AI companion',
+          'enterprise',
+          'online',
+          '🤖',
+          TRUE
+        ) ON CONFLICT (nickname) DO NOTHING
+      `);
+
+      // Create default workspace
+      await client.query(`
+        INSERT INTO workspaces (id, name, slug, description, is_public)
+        VALUES (
+          '00000000-0000-0000-0000-000000000001',
+          'General Workspace',
+          'general',
+          'Default workspace for all users',
+          TRUE
+        ) ON CONFLICT (slug) DO NOTHING
+      `);
+
+      // Create default AI chat
+      await client.query(`
+        INSERT INTO chats (id, workspace_id, name, type, visibility, created_by)
+        VALUES (
+          '00000000-0000-0000-0000-000000000001',
+          '00000000-0000-0000-0000-000000000001',
+          'AI Assistant',
+          'ai',
+          'public',
+          '00000000-0000-0000-0000-000000000001'
+        ) ON CONFLICT (id) DO NOTHING
+      `);
+
+      console.log('✅ Basic database schema created successfully');
+    } catch (error) {
+      console.error('❌ Basic schema creation failed:', error.message);
+      throw error;
+    }
   }
 
   async query(text, params = []) {
