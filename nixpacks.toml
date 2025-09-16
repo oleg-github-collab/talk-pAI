@@ -1,0 +1,17 @@
+# Railway.app deployment configuration with nixpacks
+[variables]
+NODE_VERSION = "18"
+NPM_CONFIG_PRODUCTION = "true"
+
+[phases.build]
+dependsOn = ["install"]
+cmds = ["echo 'Build phase completed'"]
+
+[phases.install]
+cmds = ["npm ci --only=production"]
+
+[start]
+cmd = "node server.js"
+
+[staticAssets]
+"public" = "/"

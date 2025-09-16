@@ -1,14 +1,19 @@
 const OpenAI = require('openai');
 const RSSParser = require('rss-parser');
 const axios = require('axios');
-const database = require('../database/connection');
-const logger = require('../utils/logger');
+const database = require('../database/optimized-connection');
+const Logger = require('../utils/enhanced-logger');
+const logger = require('../utils/logger'); // Keep for compatibility
 
 class AIService {
   constructor() {
     this.openai = null;
     this.rssParser = new RSSParser();
     this.isConfigured = false;
+    this.logger = new Logger('AIService');
+    this.errorCount = 0;
+    this.lastError = null;
+    this.rateLimiter = new Map(); // Simple rate limiting
     this.initializeAI();
   }
 

@@ -262,18 +262,54 @@ class ChatService {
     return { success: true };
   }
 
-  async searchUsers(query, limit = 10) {
+  async searchUsers(query, limit = 10, excludeUserId = null) {
+    if (!this.useDatabase) {
+      // For development mode without database
+      return [
+        { id: 1, nickname: 'admin', full_name: 'Administrator', avatar: null },
+        { id: 2, nickname: 'user1', full_name: 'User One', avatar: null },
+        { id: 3, nickname: 'testuser', full_name: 'Test User', avatar: null },
+        { id: 4, nickname: 'demo', full_name: 'Demo User', avatar: null }
+      ].filter(user =>
+        user.id !== excludeUserId &&
+        (user.nickname.toLowerCase().includes(query.toLowerCase()) ||
+         user.full_name.toLowerCase().includes(query.toLowerCase()))
+      ).slice(0, limit);
+    }
+
+    let queryStr = `
+      SELECT id, nickname, full_name, avatar, title, department, status
+      FROM users
+      WHERE (nickname ILIKE $1 OR full_name ILIKE $1)
+        AND status = 'active'
+    `;
+
+    const params = [`%${query}%`];
+
+    if (excludeUserId) {
+      queryStr += ` AND id != $${params.length + 1}`;
+      params.push(excludeUserId);
+    }
+
+    queryStr += ` ORDER BY nickname ASC LIMIT $${params.length + 1}`;
+    params.push(limit);
+
+    const result = await database.query(queryStr, params);
+    return result.rows;
+  }
+
+  async getChatParticipants(chatId) {
     if (!this.useDatabase) {
       return [];
     }
 
     const result = await database.query(`
-      SELECT id, nickname, avatar
-      FROM users
-      WHERE nickname ILIKE $1 AND is_active = true
-      ORDER BY nickname
-      LIMIT $2
-    `, [`%${query}%`, limit]);
+      SELECT u.id, u.nickname, u.full_name, u.avatar, cp.role, cp.joined_at
+      FROM chat_participants cp
+      JOIN users u ON cp.user_id = u.id
+      WHERE cp.chat_id = $1
+      ORDER BY cp.joined_at ASC
+    `, [chatId]);
 
     return result.rows;
   }

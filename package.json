@@ -1,11 +1,13 @@
 {
   "name": "talk-pai",
-  "version": "1.0.0",
-  "description": "Talk pAI - AI-Powered Messenger with GPT-4o integration",
+  "version": "2.0.0",
+  "description": "Talk pAI - Enterprise AI-Powered Messenger with advanced search, real-time collaboration, and comprehensive logging",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'Build completed - Ready for Railway deployment'",
+    "railway:start": "node server.js"
   },
   "keywords": [
     "messenger",
@@ -14,7 +16,13 @@
     "gpt-4o",
     "realtime",
     "postgresql",
-    "railway"
+    "enterprise",
+    "teams",
+    "workspaces",
+    "search",
+    "mobile",
+    "responsive",
+    "production"
   ],
   "author": "Talk pAI Team",
   "license": "MIT",
@@ -36,6 +44,15 @@
     "nodemon": "^3.0.2"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/talk-pai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/talk-pai/issues"
+  },
+  "homepage": "https://github.com/your-username/talk-pai#readme"
 }
