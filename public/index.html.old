@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talk pAI - AI Messenger</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 30px;
+      font-size: 1.8rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e1e1;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .toggle-btn {
+      background: transparent;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .toggle-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .success {
+      color: #4CAF50;
+      margin-top: 15px;
+      font-weight: 500;
+    }
+
+    .error {
+      color: #f44336;
+      margin-top: 15px;
+      font-weight: 500;
+    }
+
+    .demo-note {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e3f2fd;
+      border-radius: 10px;
+      color: #1976d2;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🤖</div>
+    <h1>Talk pAI Messenger</h1>
+
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Nickname</label>
+        <input type="text" id="loginNickname" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <button onclick="handleLogin()">🔐 Sign In</button>
+      <button class="toggle-btn" onclick="showRegister()">Create Account</button>
+    </div>
+
+    <div id="registerForm" class="hidden">
+      <div class="form-group">
+        <label>Choose Nickname</label>
+        <input type="text" id="regNickname" required>
+      </div>
+      <div class="form-group">
+        <label>Password (min 6 chars)</label>
+        <input type="password" id="regPassword" required>
+      </div>
+      <button onclick="handleRegister()">✨ Create Account</button>
+      <button class="toggle-btn" onclick="showLogin()">Back to Sign In</button>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="demo-note">
+      🚀 Welcome to Talk pAI - Your AI-powered messenger with real-time chat, group conversations, and secure messaging.
+    </div>
+  </div>
+
+  <script>
+    function showRegister() {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('message').innerHTML = '';
+    }
+
+    function showLogin() {
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('message').innerHTML = '';
+    }
+
+    function showMessage(text, isSuccess = true) {
+      const messageEl = document.getElementById('message');
+      messageEl.innerHTML = text;
+      messageEl.className = isSuccess ? 'success' : 'error';
+    }
+
+    async function handleLogin() {
+      const nickname = document.getElementById('loginNickname').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!nickname || !password) {
+        showMessage('Please fill in all fields', false);
+        return;
+      }
+
+      try {
+        showMessage('Logging in...', true);
+
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showMessage('✅ Login successful! Welcome back!', true);
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('nickname', data.nickname);
+          localStorage.setItem('userId', data.id);
+          setTimeout(() => {
+            window.location.href = '/messenger.html';
+          }, 1500);
+        } else {
+          showMessage('❌ ' + data.error, false);
+        }
+      } catch (error) {
+        showMessage('❌ Connection error: ' + error.message, false);
+      }
+    }
+
+    async function handleRegister() {
+      const nickname = document.getElementById('regNickname').value.trim();
+      const password = document.getElementById('regPassword').value;
+
+      if (!nickname || nickname.length < 3) {
+        showMessage('Nickname must be at least 3 characters', false);
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        showMessage('Password must be at least 6 characters', false);
+        return;
+      }
+
+      try {
+        showMessage('Creating account...', true);
+
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showMessage('🎉 Registration successful! Welcome to Talk pAI!', true);
+          localStorage.setItem('token', data.user.token);
+          localStorage.setItem('nickname', data.user.nickname);
+          localStorage.setItem('userId', data.user.id);
+          setTimeout(() => {
+            window.location.href = '/messenger.html';
+          }, 1500);
+        } else {
+          showMessage('❌ ' + data.error, false);
+        }
+      } catch (error) {
+        showMessage('❌ Connection error: ' + error.message, false);
+      }
+    }
+
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    const nickname = localStorage.getItem('nickname');
+
+    if (token && nickname) {
+      window.location.href = '/messenger.html';
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.reload();
+    }
+
+    // Add Enter key support
+    document.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        if (!document.getElementById('registerForm').classList.contains('hidden')) {
+          handleRegister();
+        } else {
+          handleLogin();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

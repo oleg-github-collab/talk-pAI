@@ -446,32 +446,41 @@ io.on('connection', (socket) => {
   });
 });
 
-// Simple UI route
-app.get('/simple', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'simple.html'));
-});
-
 // Basic API status endpoint
 app.get('/api', (req, res) => {
   res.json({
     message: 'Talk pAI API is running',
     version: '2.0.0',
-    endpoints: ['/health', '/ready', '/simple', '/api/auth', '/api/chat', '/api/ai', '/api/aiden'],
+    endpoints: ['/health', '/ready', '/api/auth', '/api/chat', '/api/ai', '/api/aiden'],
     timestamp: Date.now()
   });
 });
 
-// Serve frontend - catch all other routes
+// Root route and all HTML routes - serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/messenger.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/simple', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Catch all other routes - serve index.html (SPA behavior)
 app.get('*', (req, res) => {
-  // Prevent redirect loops by checking URL
-  if (req.url === '/' || req.url === '/index.html') {
-    try {
-      res.sendFile(path.join(__dirname, 'public', 'simple.html'));
-    } catch (error) {
-      res.status(500).json({ error: 'Frontend not available' });
-    }
+  // API routes should return 404
+  if (req.url.startsWith('/api/') || req.url.includes('/health') || req.url.includes('/ping')) {
+    res.status(404).json({ error: 'Not found' });
   } else {
-    res.redirect('/simple');
+    // All other routes serve the main app
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
 });
 
