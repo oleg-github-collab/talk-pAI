@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk pAI Ultra - Super Powerful Messenger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 95vw;
+            height: 95vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Enhanced Search Bar */
+        .global-search {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 50px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            z-index: 1000;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .global-search:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transform: translateX(-50%) scale(1.02);
+        }
+
+        .search-icon {
+            margin: 0 15px;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            background: transparent;
+            padding: 0 10px 0 0;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid #e1e5e9;
+        }
+
+        .search-category {
+            padding: 12px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .search-result {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f2f5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .search-result:hover {
+            background: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+        .search-result:last-child {
+            border-bottom: none;
+        }
+
+        .result-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+            position: relative;
+        }
+
+        .result-avatar.verified::after {
+            content: '✓';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #4caf50;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .result-meta {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.online { background: #4caf50; }
+        .status-dot.away { background: #ff9800; }
+        .status-dot.busy { background: #f44336; }
+
+        .invite-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .invite-button:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 80px 0 20px;
+            transition: width 0.3s ease;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar:hover {
+            width: 240px;
+        }
+
+        .sidebar-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scale(1.1);
+        }
+
+        .sidebar-item .icon {
+            font-size: 20px;
+            color: white;
+            min-width: 20px;
+        }
+
+        .sidebar-item .label {
+            color: white;
+            margin-left: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .sidebar:hover .sidebar-item .label {
+            opacity: 1;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fafbfc;
+        }
+
+        /* Chat List */
+        .chat-list {
+            width: 320px;
+            background: white;
+            border-right: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-list-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .workspace-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .workspace-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .workspace-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .workspace-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .workspace-status {
+            font-size: 12px;
+            color: #4caf50;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #e9ecef;
+            transform: scale(1.1);
+        }
+
+        .chat-sections {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .chat-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .add-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .add-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.2);
+        }
+
+        .chat-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .chat-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateX(5px);
+        }
+
+        .chat-item.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), transparent);
+            border-right: 3px solid #667eea;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+            position: relative;
+        }
+
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-preview {
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-meta {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 8px;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .unread-badge {
+            background: #667eea;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            min-width: 18px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Main Chat */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.05), transparent);
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-header-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .chat-header-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .chat-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .chat-header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-action {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .header-action:hover {
+            background: #e9ecef;
+            color: #333;
+            transform: scale(1.1);
+        }
+
+        /* Messages Container */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: linear-gradient(180deg, #fafbfc 0%, #f8f9fa 100%);
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 25px;
+            align-items: flex-start;
+            animation: messageIn 0.3s ease-out;
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin: 0 12px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .message-content {
+            max-width: 70%;
+            background: white;
+            border-radius: 18px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .message-content:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .message.own .message-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .message-text {
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .ai-message .message-content {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+
+        /* AI Writing Suggestions */
+        .writing-suggestions {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 10px;
+            display: none;
+            border: 1px solid #e1e5e9;
+        }
+
+        .suggestions-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        .suggestion-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .suggestion-text {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* Message Input */
+        .message-input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+            position: relative;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: flex-end;
+            background: #f8f9fa;
+            border-radius: 25px;
+            padding: 12px 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .input-container:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-actions-left {
+            display: flex;
+            gap: 10px;
+            margin-right: 15px;
+        }
+
+        .input-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .input-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 8px 0;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.4;
+            max-height: 120px;
+        }
+
+        .input-actions-right {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+            align-items: center;
+        }
+
+        .send-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .send-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Onboarding Overlay */
+        .onboarding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .onboarding-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .onboarding-step {
+            display: none;
+        }
+
+        .onboarding-step.active {
+            display: block;
+        }
+
+        .step-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .step-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .step-description {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e1e5e9;
+            padding: 10px 28px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #f0f2f5;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .global-search {
+                width: 90%;
+                top: 15px;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -80px;
+                z-index: 1000;
+                height: 100vh;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .chat-list {
+                width: 100%;
+                position: fixed;
+                left: -100%;
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+
+            .chat-list.mobile-open {
+                left: 0;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Status indicators */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 18px;
+            margin: 10px 0;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            margin-right: 10px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.16s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Search -->
+    <div class="global-search" id="globalSearch">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="Search people, messages, files..." id="searchInput">
+        <div class="search-suggestions" id="searchSuggestions"></div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-item active" data-section="chats">
+                <span class="icon">💬</span>
+                <span class="label">Chats</span>
+            </div>
+            <div class="sidebar-item" data-section="groups">
+                <span class="icon">👥</span>
+                <span class="label">Groups</span>
+            </div>
+            <div class="sidebar-item" data-section="channels">
+                <span class="icon">#</span>
+                <span class="label">Channels</span>
+            </div>
+            <div class="sidebar-item" data-section="ai">
+                <span class="icon">🤖</span>
+                <span class="label">AI Assistant</span>
+            </div>
+            <div class="sidebar-item" data-section="files">
+                <span class="icon">📁</span>
+                <span class="label">Files</span>
+            </div>
+            <div class="sidebar-item" data-section="analytics">
+                <span class="icon">📊</span>
+                <span class="label">Analytics</span>
+            </div>
+            <div class="sidebar-item" data-section="settings">
+                <span class="icon">⚙️</span>
+                <span class="label">Settings</span>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Chat List -->
+            <div class="chat-list" id="chatList">
+                <div class="chat-list-header">
+                    <div class="workspace-info">
+                        <div class="workspace-avatar">TC</div>
+                        <div class="workspace-details">
+                            <div class="workspace-name">TechCorp</div>
+                            <div class="workspace-status">✅ 47 online</div>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="action-btn" onclick="showCreateGroupModal()" title="Create Group">👥</button>
+                        <button class="action-btn" onclick="showCompanyRegModal()" title="Register Company">🏢</button>
+                    </div>
+                </div>
+
+                <div class="chat-sections">
+                    <div class="chat-section">
+                        <div class="section-header">
+                            <span>Channels</span>
+                            <button class="add-btn" onclick="showCreateChannelModal()">+</button>
+                        </div>
+                        <div class="chat-item active" data-chat="general">
+                            <div class="chat-avatar">#</div>
+                            <div class="chat-info">
+                                <div class="chat-name">general</div>
+                                <div class="chat-preview">Alice: Good morning everyone! 🌅</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">9:15</div>
+                                <div class="unread-badge">3</div>
+                            </div>
+                        </div>
+                        <div class="chat-item" data-chat="development">
+                            <div class="chat-avatar">💻</div>
+                            <div class="chat-info">
+                                <div class="chat-name">development</div>
+                                <div class="chat-preview">Bob: New feature deployed!</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">8:42</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-section">
+                        <div class="section-header">
+                            <span>Direct Messages</span>
+                            <button class="add-btn" onclick="showInviteModal()">+</button>
+                        </div>
+                        <div class="chat-item" data-chat="aiden">
+                            <div class="chat-avatar">🤖</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Aiden AI</div>
+                                <div class="chat-preview">I can help with analytics and data!</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">now</div>
+                            </div>
+                        </div>
+                        <div class="chat-item" data-chat="alice">
+                            <div class="chat-avatar">A</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Alice Johnson</div>
+                                <div class="chat-preview">Thanks for the feedback!</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">2:30</div>
+                                <div class="unread-badge">2</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-section">
+                        <div class="section-header">
+                            <span>Groups</span>
+                            <button class="add-btn" onclick="showCreateGroupModal()">+</button>
+                        </div>
+                        <div class="chat-item" data-chat="project-alpha">
+                            <div class="chat-avatar">🚀</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Project Alpha</div>
+                                <div class="chat-preview">Sprint planning tomorrow</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">1:15</div>
+                                <div class="unread-badge">5</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chat -->
+            <div class="main-chat">
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-header-avatar" id="chatAvatar">#</div>
+                        <div class="chat-header-details">
+                            <div class="chat-title" id="chatTitle">general</div>
+                            <div class="chat-subtitle" id="chatSubtitle">25 members • #general channel</div>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions">
+                        <button class="header-action" onclick="searchInChat()" title="Search in chat">🔍</button>
+                        <button class="header-action" onclick="showChatMenu()" title="More options">⋯</button>
+                        <button class="header-action" onclick="toggleAIAnalytics()" title="AI Analytics">📊</button>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer">
+                    <div class="message">
+                        <div class="message-avatar">#</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">System</span>
+                                <span class="message-time">Today at 9:00 AM</span>
+                            </div>
+                            <div class="message-text">Welcome to #general! This is where the team collaborates. 🎉</div>
+                        </div>
+                    </div>
+
+                    <div class="message">
+                        <div class="message-avatar">A</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">Alice Johnson</span>
+                                <span class="message-time">Today at 9:15 AM</span>
+                            </div>
+                            <div class="message-text">Good morning everyone! Ready for today's sprint planning? I've prepared some data analysis that might be helpful. 📊</div>
+                        </div>
+                    </div>
+
+                    <div class="message ai-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="ai-badge">AI Assistant • Business Analytics</div>
+                            <div class="message-header">
+                                <span class="message-sender">Aiden</span>
+                                <span class="message-time">Today at 9:16 AM</span>
+                            </div>
+                            <div class="message-text">I've analyzed your team's productivity metrics from last sprint. Performance increased by 23%! I can generate detailed reports, suggest optimizations, and help with data visualization. Would you like me to create a comprehensive analysis for today's meeting?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Writing Suggestions -->
+                <div class="writing-suggestions" id="writingSuggestions">
+                    <div class="suggestions-header">💡 AI Writing Suggestions</div>
+                    <div class="suggestion-item" onclick="applySuggestion('professional')">
+                        <span class="suggestion-icon">🎯</span>
+                        <span class="suggestion-text">Make it more professional</span>
+                    </div>
+                    <div class="suggestion-item" onclick="applySuggestion('concise')">
+                        <span class="suggestion-icon">📝</span>
+                        <span class="suggestion-text">Make it more concise</span>
+                    </div>
+                    <div class="suggestion-item" onclick="applySuggestion('friendly')">
+                        <span class="suggestion-icon">😊</span>
+                        <span class="suggestion-text">Add friendly touch</span>
+                    </div>
+                    <div class="suggestion-item" onclick="applySuggestion('clear')">
+                        <span class="suggestion-icon">💡</span>
+                        <span class="suggestion-text">Improve clarity</span>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-area">
+                    <div class="input-container">
+                        <div class="input-actions-left">
+                            <button class="input-btn" onclick="toggleAttachMenu()" title="Attach file">📎</button>
+                            <button class="input-btn" onclick="toggleEmojiPicker()" title="Emoji">😊</button>
+                            <button class="input-btn" onclick="toggleAIMenu()" title="AI Help">🤖</button>
+                        </div>
+                        <textarea
+                            class="message-input"
+                            id="messageInput"
+                            placeholder="Type a message..."
+                            rows="1"></textarea>
+                        <div class="input-actions-right">
+                            <button class="input-btn" onclick="toggleWritingSuggestions()" title="Writing help">✨</button>
+                            <button class="send-btn" id="sendButton" title="Send message">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Overlay -->
+    <div class="onboarding-overlay" id="onboardingOverlay">
+        <div class="onboarding-content">
+            <div class="onboarding-step active" id="step1">
+                <div class="step-icon">👋</div>
+                <div class="step-title">Welcome to Talk pAI Ultra!</div>
+                <div class="step-description">
+                    The most powerful business messenger with AI-driven insights, analytics, and productivity tools.
+                    Let's get you started with a quick tour.
+                </div>
+                <div class="onboarding-actions">
+                    <button class="btn-primary" onclick="nextOnboardingStep()">Get Started</button>
+                    <button class="btn-secondary" onclick="skipOnboarding()">Skip Tour</button>
+                </div>
+            </div>
+
+            <div class="onboarding-step" id="step2">
+                <div class="step-icon">🔍</div>
+                <div class="step-title">Powerful Search</div>
+                <div class="step-description">
+                    Use the global search to find people, messages, and files instantly.
+                    Get real-time recommendations and connect with your team.
+                </div>
+                <div class="onboarding-actions">
+                    <button class="btn-primary" onclick="nextOnboardingStep()">Next</button>
+                    <button class="btn-secondary" onclick="prevOnboardingStep()">Back</button>
+                </div>
+            </div>
+
+            <div class="onboarding-step" id="step3">
+                <div class="step-icon">🤖</div>
+                <div class="step-title">AI-Powered Assistant</div>
+                <div class="step-description">
+                    Aiden can analyze your data, generate business reports, provide writing suggestions,
+                    and help with web searches. Your productivity companion!
+                </div>
+                <div class="onboarding-actions">
+                    <button class="btn-primary" onclick="nextOnboardingStep()">Next</button>
+                    <button class="btn-secondary" onclick="prevOnboardingStep()">Back</button>
+                </div>
+            </div>
+
+            <div class="onboarding-step" id="step4">
+                <div class="step-icon">🏢</div>
+                <div class="step-title">Enterprise Features</div>
+                <div class="step-description">
+                    Create channels, register your company, manage teams, and access powerful analytics.
+                    Everything you need for business communication.
+                </div>
+                <div class="onboarding-actions">
+                    <button class="btn-primary" onclick="completeOnboarding()">Start Messaging!</button>
+                    <button class="btn-secondary" onclick="prevOnboardingStep()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite User Modal -->
+    <div class="modal" id="inviteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Invite User</div>
+                <button class="close-btn" onclick="hideModal('inviteModal')">&times;</button>
+            </div>
+            <form id="inviteForm">
+                <div class="form-group">
+                    <label class="form-label">Search by Nickname</label>
+                    <input type="text" class="form-input" id="inviteSearch" placeholder="Start typing nickname...">
+                    <div id="inviteResults" style="margin-top: 10px;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Personal Message</label>
+                    <textarea class="form-input form-textarea" id="inviteMessage" placeholder="Hi! I'd like to connect with you on Talk pAI..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="hideModal('inviteModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invitation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal" id="createGroupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Create Group</div>
+                <button class="close-btn" onclick="hideModal('createGroupModal')">&times;</button>
+            </div>
+            <form id="createGroupForm">
+                <div class="form-group">
+                    <label class="form-label">Group Name</label>
+                    <input type="text" class="form-input" id="groupName" placeholder="Enter group name..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input form-textarea" id="groupDescription" placeholder="What's this group about?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Add Members</label>
+                    <input type="text" class="form-input" id="groupMembers" placeholder="Search for members to add...">
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="hideModal('createGroupModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Company Registration Modal -->
+    <div class="modal" id="companyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Register Company</div>
+                <button class="close-btn" onclick="hideModal('companyModal')">&times;</button>
+            </div>
+            <form id="companyForm">
+                <div class="form-group">
+                    <label class="form-label">Company Name</label>
+                    <input type="text" class="form-input" id="companyName" placeholder="Your company name..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company Domain</label>
+                    <input type="text" class="form-input" id="companyDomain" placeholder="company.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Industry</label>
+                    <input type="text" class="form-input" id="companyIndustry" placeholder="Technology, Finance, etc.">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Admin Email</label>
+                    <input type="email" class="form-input" id="adminEmail" placeholder="admin@company.com" required>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="hideModal('companyModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Register Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = { nickname: 'current_user', display_name: 'Current User' };
+        let currentChat = 'general';
+        let authToken = localStorage.getItem('authToken') || 'demo-token';
+        let onboardingStep = 1;
+        let searchTimeout = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!localStorage.getItem('onboarding_completed')) {
+                showOnboarding();
+            }
+
+            setupEventListeners();
+            initializeSearch();
+            setupMessageInput();
+        });
+
+        function setupEventListeners() {
+            // Global search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', handleGlobalSearch);
+            searchInput.addEventListener('focus', showSearchSuggestions);
+
+            // Message input
+            const messageInput = document.getElementById('messageInput');
+            messageInput.addEventListener('input', handleMessageInput);
+            messageInput.addEventListener('keydown', handleMessageKeyDown);
+
+            // Send button
+            document.getElementById('sendButton').addEventListener('click', sendMessage);
+
+            // Chat selection
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    selectChat(this.dataset.chat);
+                });
+            });
+
+            // Sidebar navigation
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    handleSidebarClick(this.dataset.section);
+                });
+            });
+
+            // Form submissions
+            document.getElementById('inviteForm').addEventListener('submit', handleInvite);
+            document.getElementById('createGroupForm').addEventListener('submit', handleCreateGroup);
+            document.getElementById('companyForm').addEventListener('submit', handleCompanyRegistration);
+
+            // Invite search
+            document.getElementById('inviteSearch').addEventListener('input', handleInviteSearch);
+        }
+
+        function initializeSearch() {
+            // Auto-show recommendations when search is focused but empty
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput.addEventListener('focus', function() {
+                if (!this.value) {
+                    loadRecommendations();
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.global-search')) {
+                    hideSearchSuggestions();
+                }
+            });
+        }
+
+        async function handleGlobalSearch(e) {
+            const query = e.target.value;
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                if (query.length > 0) {
+                    await performSearch(query);
+                } else {
+                    await loadRecommendations();
+                }
+            }, 300);
+        }
+
+        async function performSearch(query) {
+            try {
+                const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}&limit=10`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySearchResults(data.users, 'Search Results');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/api/users/search?include_recommendations=true', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySearchResults(data.users, 'Recommended for you');
+                }
+            } catch (error) {
+                console.error('Recommendations error:', error);
+            }
+        }
+
+        function displaySearchResults(users, title) {
+            const suggestionsContainer = document.getElementById('searchSuggestions');
+
+            let html = `<div class="search-category">${title}</div>`;
+
+            users.forEach(user => {
+                const verifiedClass = user.verified ? 'verified' : '';
+                const statusClass = user.status || 'offline';
+
+                html += `
+                    <div class="search-result" data-user-id="${user.id}" data-nickname="${user.nickname}">
+                        <div class="result-avatar ${verifiedClass}">${user.avatar || user.nickname.charAt(0).toUpperCase()}</div>
+                        <div class="result-info">
+                            <div class="result-name">${user.display_name || user.nickname}</div>
+                            <div class="result-meta">
+                                <span class="status-dot ${statusClass}"></span>
+                                <span>${user.bio || user.title || user.department || 'User'}</span>
+                                ${user.mutualConnections ? `• ${user.mutualConnections} mutual` : ''}
+                            </div>
+                        </div>
+                        <button class="invite-button" onclick="quickInvite('${user.nickname}')">
+                            ${user.type === 'ai' ? 'Chat' : 'Connect'}
+                        </button>
+                    </div>
+                `;
+            });
+
+            suggestionsContainer.innerHTML = html;
+            showSearchSuggestions();
+        }
+
+        function showSearchSuggestions() {
+            document.getElementById('searchSuggestions').style.display = 'block';
+        }
+
+        function hideSearchSuggestions() {
+            document.getElementById('searchSuggestions').style.display = 'none';
+        }
+
+        async function quickInvite(nickname) {
+            if (nickname === 'aiden') {
+                selectChat('aiden');
+                hideSearchSuggestions();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/invite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        target_nickname: nickname,
+                        message: "Hi! I'd like to connect with you on Talk pAI."
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`Invitation sent to ${nickname}! 🎉`);
+                    hideSearchSuggestions();
+                }
+            } catch (error) {
+                console.error('Quick invite error:', error);
+            }
+        }
+
+        function selectChat(chatId) {
+            currentChat = chatId;
+
+            // Update active chat
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            const selectedChat = document.querySelector(`[data-chat="${chatId}"]`);
+            if (selectedChat) {
+                selectedChat.classList.add('active');
+            }
+
+            // Update chat header
+            updateChatHeader(chatId);
+            loadChatMessages(chatId);
+        }
+
+        function updateChatHeader(chatId) {
+            const chatTitle = document.getElementById('chatTitle');
+            const chatSubtitle = document.getElementById('chatSubtitle');
+            const chatAvatar = document.getElementById('chatAvatar');
+
+            const chatData = {
+                'general': { title: 'general', subtitle: '25 members • #general channel', avatar: '#' },
+                'aiden': { title: 'Aiden AI', subtitle: 'AI Assistant • Business Analytics', avatar: '🤖' },
+                'alice': { title: 'Alice Johnson', subtitle: 'Online • Senior Developer', avatar: 'A' },
+                'development': { title: 'development', subtitle: '12 members • #development channel', avatar: '💻' },
+                'project-alpha': { title: 'Project Alpha', subtitle: '8 members • Private group', avatar: '🚀' }
+            };
+
+            const chat = chatData[chatId] || { title: chatId, subtitle: 'Direct Message', avatar: chatId.charAt(0).toUpperCase() };
+
+            chatTitle.textContent = chat.title;
+            chatSubtitle.textContent = chat.subtitle;
+            chatAvatar.textContent = chat.avatar;
+        }
+
+        function loadChatMessages(chatId) {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            // Mock different messages based on chat
+            if (chatId === 'aiden') {
+                messagesContainer.innerHTML = `
+                    <div class="message ai-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="ai-badge">AI Assistant • Ready to Help</div>
+                            <div class="message-header">
+                                <span class="message-sender">Aiden</span>
+                                <span class="message-time">now</span>
+                            </div>
+                            <div class="message-text">Hello! I'm your AI business assistant. I can help you with:
+                            <br>📊 Data analysis and insights
+                            <br>📝 Business report generation
+                            <br>🔍 Web research and information
+                            <br>✨ Writing improvement suggestions
+                            <br><br>What would you like to work on today?</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Keep existing messages for other chats
+                // Implementation would load from server
+            }
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function setupMessageInput() {
+            const messageInput = document.getElementById('messageInput');
+
+            // Auto-resize
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+        }
+
+        function handleMessageInput(e) {
+            const text = e.target.value;
+
+            // Show writing suggestions for longer messages
+            if (text.length > 10) {
+                showWritingSuggestions();
+            } else {
+                hideWritingSuggestions();
+            }
+        }
+
+        function handleMessageKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim();
+
+            if (!text) return;
+
+            // Clear input
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            hideWritingSuggestions();
+
+            // Add user message
+            addMessage(text, true);
+
+            // Handle AI chat
+            if (currentChat === 'aiden') {
+                showTypingIndicator();
+
+                try {
+                    const response = await fetch('/api/aiden/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            message: text,
+                            nickname: currentUser.nickname,
+                            conversation_id: `conv_${currentChat}_${Date.now()}`
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success || data.response) {
+                        addMessage(data.response, false, true);
+                    }
+                } catch (error) {
+                    console.error('AI chat error:', error);
+                    addMessage("I'm having trouble right now. Please try again.", false, true);
+                } finally {
+                    hideTypingIndicator();
+                }
+            }
+        }
+
+        function addMessage(text, isOwn = false, isAI = false) {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwn ? 'own' : ''} ${isAI ? 'ai-message' : ''}`;
+
+            const avatarContent = isOwn ? currentUser.nickname.charAt(0).toUpperCase() :
+                                 (isAI ? '🤖' : currentChat.charAt(0).toUpperCase());
+
+            const senderName = isOwn ? currentUser.display_name :
+                              (isAI ? 'Aiden' : currentChat);
+
+            const aiBadge = isAI ? '<div class="ai-badge">AI Assistant</div>' : '';
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatarContent}</div>
+                <div class="message-content">
+                    ${aiBadge}
+                    <div class="message-header">
+                        <span class="message-sender">${senderName}</span>
+                        <span class="message-time">${formatTime(new Date())}</span>
+                    </div>
+                    <div class="message-text">${text}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>Aiden is thinking...</span>
+            `;
+
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function toggleWritingSuggestions() {
+            const suggestions = document.getElementById('writingSuggestions');
+            suggestions.style.display = suggestions.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function showWritingSuggestions() {
+            document.getElementById('writingSuggestions').style.display = 'block';
+        }
+
+        function hideWritingSuggestions() {
+            document.getElementById('writingSuggestions').style.display = 'none';
+        }
+
+        async function applySuggestion(type) {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value;
+
+            if (!text) return;
+
+            try {
+                const response = await fetch('/api/aiden/writing-suggestions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        context: 'professional',
+                        recipient_type: 'colleague'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const improvement = data.suggestions.improvements.find(imp => imp.type === type);
+                    if (improvement) {
+                        messageInput.value = improvement.improved_text;
+                        showNotification(`Applied ${improvement.title.toLowerCase()}! ✨`);
+                        hideWritingSuggestions();
+                    }
+                }
+            } catch (error) {
+                console.error('Writing suggestions error:', error);
+            }
+        }
+
+        // Onboarding functions
+        function showOnboarding() {
+            document.getElementById('onboardingOverlay').style.display = 'flex';
+        }
+
+        function nextOnboardingStep() {
+            const currentStepEl = document.getElementById(`step${onboardingStep}`);
+            currentStepEl.classList.remove('active');
+
+            onboardingStep++;
+            const nextStepEl = document.getElementById(`step${onboardingStep}`);
+            if (nextStepEl) {
+                nextStepEl.classList.add('active');
+            }
+        }
+
+        function prevOnboardingStep() {
+            const currentStepEl = document.getElementById(`step${onboardingStep}`);
+            currentStepEl.classList.remove('active');
+
+            onboardingStep--;
+            const prevStepEl = document.getElementById(`step${onboardingStep}`);
+            if (prevStepEl) {
+                prevStepEl.classList.add('active');
+            }
+        }
+
+        function completeOnboarding() {
+            localStorage.setItem('onboarding_completed', 'true');
+            document.getElementById('onboardingOverlay').style.display = 'none';
+            showNotification('Welcome to Talk pAI Ultra! 🚀');
+        }
+
+        function skipOnboarding() {
+            localStorage.setItem('onboarding_completed', 'true');
+            document.getElementById('onboardingOverlay').style.display = 'none';
+        }
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showInviteModal() {
+            showModal('inviteModal');
+        }
+
+        function showCreateGroupModal() {
+            showModal('createGroupModal');
+        }
+
+        function showCompanyRegModal() {
+            showModal('companyModal');
+        }
+
+        function showCreateChannelModal() {
+            // Implementation for channel creation
+            showNotification('Channel creation coming soon! 🚧');
+        }
+
+        // Form handlers
+        async function handleInvite(e) {
+            e.preventDefault();
+
+            const nickname = document.getElementById('inviteSearch').value;
+            const message = document.getElementById('inviteMessage').value;
+
+            if (!nickname) {
+                showNotification('Please enter a nickname to invite.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/invite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ target_nickname: nickname, message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`Invitation sent to ${nickname}! 🎉`);
+                    hideModal('inviteModal');
+                    document.getElementById('inviteForm').reset();
+                }
+            } catch (error) {
+                console.error('Invite error:', error);
+                showNotification('Failed to send invitation. Please try again.');
+            }
+        }
+
+        async function handleCreateGroup(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('groupName').value;
+            const description = document.getElementById('groupDescription').value;
+
+            try {
+                const response = await fetch('/api/chats/groups', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name, description, isPublic: false })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`Group "${name}" created successfully! 🎉`);
+                    hideModal('createGroupModal');
+                    document.getElementById('createGroupForm').reset();
+
+                    // Add to chat list
+                    addGroupToList(data.group);
+                }
+            } catch (error) {
+                console.error('Group creation error:', error);
+                showNotification('Failed to create group. Please try again.');
+            }
+        }
+
+        async function handleCompanyRegistration(e) {
+            e.preventDefault();
+
+            const companyName = document.getElementById('companyName').value;
+            const companyDomain = document.getElementById('companyDomain').value;
+            const adminEmail = document.getElementById('adminEmail').value;
+            const industry = document.getElementById('companyIndustry').value;
+
+            try {
+                const response = await fetch('/api/auth/register/corporate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        company_name: companyName,
+                        company_domain: companyDomain,
+                        admin_email: adminEmail,
+                        admin_nickname: currentUser.nickname,
+                        admin_password: 'temp-password',
+                        industry: industry,
+                        company_size: 'medium'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`Company "${companyName}" registered successfully! 🏢`);
+                    hideModal('companyModal');
+                    document.getElementById('companyForm').reset();
+                }
+            } catch (error) {
+                console.error('Company registration error:', error);
+                showNotification('Failed to register company. Please try again.');
+            }
+        }
+
+        // Additional functions
+        function handleInviteSearch(e) {
+            const query = e.target.value;
+
+            if (query.length > 1) {
+                // Simulate user search
+                const results = document.getElementById('inviteResults');
+                results.innerHTML = `
+                    <div style="padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: 12px;">
+                        Searching for "${query}"... Found: alice_johnson, bob_smith
+                    </div>
+                `;
+            }
+        }
+
+        function addGroupToList(group) {
+            // Implementation to add group to chat list
+            console.log('Adding group to list:', group);
+        }
+
+        function searchInChat() {
+            showNotification('Chat search feature coming soon! 🔍');
+        }
+
+        function showChatMenu() {
+            showNotification('Chat menu with advanced options coming soon! ⋯');
+        }
+
+        function toggleAIAnalytics() {
+            showNotification('AI Analytics dashboard launching! 📊');
+        }
+
+        function handleSidebarClick(section) {
+            // Update active sidebar item
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+
+            // Handle different sections
+            switch(section) {
+                case 'ai':
+                    selectChat('aiden');
+                    break;
+                case 'analytics':
+                    showNotification('Analytics dashboard coming soon! 📊');
+                    break;
+                default:
+                    showNotification(`${section.charAt(0).toUpperCase() + section.slice(1)} section activated!`);
+            }
+        }
+
+        function showNotification(message) {
+            // Simple notification system
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 30px;
+                background: #4caf50;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Close modals on background click
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

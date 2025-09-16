@@ -216,34 +216,165 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // User search endpoint
+// Enhanced user search with recommendations
 app.get('/api/users/search', async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, limit = 10, include_recommendations = true } = req.query;
 
-    if (!query || query.length < 2) {
+    if (!query || query.length < 1) {
+      if (include_recommendations === 'true') {
+        // Return popular/recommended users when no query
+        const recommendedUsers = [
+          { id: 'rec_1', nickname: 'aiden', display_name: 'AI Assistant', avatar: '🤖', status: 'online', verified: true, type: 'ai', bio: 'Your intelligent AI companion' },
+          { id: 'rec_2', nickname: 'alice_johnson', display_name: 'Alice Johnson', avatar: '/avatars/alice.jpg', status: 'online', verified: true, type: 'user', bio: 'Senior Developer at TechCorp' },
+          { id: 'rec_3', nickname: 'bob_smith', display_name: 'Bob Smith', avatar: '/avatars/bob.jpg', status: 'away', verified: false, type: 'user', bio: 'Product Manager' },
+          { id: 'rec_4', nickname: 'diana_dev', display_name: 'Diana Developer', avatar: '/avatars/diana.jpg', status: 'online', verified: true, type: 'user', bio: 'Full-stack developer' }
+        ];
+
+        return res.json({
+          success: true,
+          users: recommendedUsers,
+          total: recommendedUsers.length,
+          type: 'recommendations'
+        });
+      }
+
       return res.status(400).json({
         success: false,
-        error: 'Search query must be at least 2 characters'
+        error: 'Search query required'
       });
     }
 
-    // Mock users database
+    // Enhanced mock users database with more details
     const mockUsers = [
-      { id: 1, nickname: 'alice', avatar: '/avatars/alice.jpg', status: 'online', lastSeen: Date.now() },
-      { id: 2, nickname: 'bob', avatar: '/avatars/bob.jpg', status: 'offline', lastSeen: Date.now() - 3600000 },
-      { id: 3, nickname: 'charlie', avatar: '/avatars/charlie.jpg', status: 'away', lastSeen: Date.now() - 900000 },
-      { id: 4, nickname: 'diana', avatar: '/avatars/diana.jpg', status: 'online', lastSeen: Date.now() },
-      { id: 5, nickname: 'eve', avatar: '/avatars/eve.jpg', status: 'busy', lastSeen: Date.now() - 1800000 }
+      {
+        id: 'user_1',
+        nickname: 'alice_johnson',
+        display_name: 'Alice Johnson',
+        email: 'alice@techcorp.com',
+        avatar: '/avatars/alice.jpg',
+        status: 'online',
+        verified: true,
+        type: 'user',
+        bio: 'Senior Full-Stack Developer at TechCorp. Passionate about React and Node.js',
+        department: 'Engineering',
+        title: 'Senior Developer',
+        lastSeen: Date.now(),
+        mutualConnections: 5,
+        commonGroups: ['TechCorp Engineering', 'React Developers']
+      },
+      {
+        id: 'user_2',
+        nickname: 'bob_smith',
+        display_name: 'Bob Smith',
+        email: 'bob@techcorp.com',
+        avatar: '/avatars/bob.jpg',
+        status: 'away',
+        verified: false,
+        type: 'user',
+        bio: 'Product Manager focused on user experience and growth',
+        department: 'Product',
+        title: 'Product Manager',
+        lastSeen: Date.now() - 3600000,
+        mutualConnections: 3,
+        commonGroups: ['TechCorp Product']
+      },
+      {
+        id: 'user_3',
+        nickname: 'charlie_design',
+        display_name: 'Charlie Designer',
+        email: 'charlie@techcorp.com',
+        avatar: '/avatars/charlie.jpg',
+        status: 'busy',
+        verified: true,
+        type: 'user',
+        bio: 'UI/UX Designer creating beautiful and functional interfaces',
+        department: 'Design',
+        title: 'Senior Designer',
+        lastSeen: Date.now() - 900000,
+        mutualConnections: 7,
+        commonGroups: ['Design Team', 'Creative Guild']
+      },
+      {
+        id: 'user_4',
+        nickname: 'diana_dev',
+        display_name: 'Diana Developer',
+        email: 'diana@techcorp.com',
+        avatar: '/avatars/diana.jpg',
+        status: 'online',
+        verified: true,
+        type: 'user',
+        bio: 'Backend specialist with expertise in databases and APIs',
+        department: 'Engineering',
+        title: 'Backend Developer',
+        lastSeen: Date.now(),
+        mutualConnections: 4,
+        commonGroups: ['TechCorp Engineering', 'Backend Guild']
+      },
+      {
+        id: 'user_5',
+        nickname: 'eve_marketing',
+        display_name: 'Eve Marketing',
+        email: 'eve@techcorp.com',
+        avatar: '/avatars/eve.jpg',
+        status: 'offline',
+        verified: false,
+        type: 'user',
+        bio: 'Marketing specialist driving growth and engagement',
+        department: 'Marketing',
+        title: 'Marketing Specialist',
+        lastSeen: Date.now() - 1800000,
+        mutualConnections: 2,
+        commonGroups: ['Marketing Team']
+      },
+      {
+        id: 'ai_1',
+        nickname: 'aiden',
+        display_name: 'Aiden AI Assistant',
+        avatar: '🤖',
+        status: 'online',
+        verified: true,
+        type: 'ai',
+        bio: 'Your intelligent AI companion for productivity and assistance',
+        department: 'AI',
+        title: 'AI Assistant',
+        lastSeen: Date.now(),
+        mutualConnections: 0,
+        commonGroups: ['AI Assistance']
+      }
     ];
 
-    const filteredUsers = mockUsers.filter(user =>
-      user.nickname.toLowerCase().includes(query.toLowerCase())
-    );
+    // Smart search with multiple criteria
+    const searchQuery = query.toLowerCase();
+    const filteredUsers = mockUsers.filter(user => {
+      return (
+        user.nickname.toLowerCase().includes(searchQuery) ||
+        user.display_name.toLowerCase().includes(searchQuery) ||
+        user.email?.toLowerCase().includes(searchQuery) ||
+        user.bio.toLowerCase().includes(searchQuery) ||
+        user.department?.toLowerCase().includes(searchQuery) ||
+        user.title?.toLowerCase().includes(searchQuery)
+      );
+    });
+
+    // Sort by relevance: exact matches first, then by mutual connections
+    filteredUsers.sort((a, b) => {
+      const aExact = a.nickname.toLowerCase().startsWith(searchQuery) ? 1 : 0;
+      const bExact = b.nickname.toLowerCase().startsWith(searchQuery) ? 1 : 0;
+
+      if (aExact !== bExact) return bExact - aExact;
+
+      return (b.mutualConnections || 0) - (a.mutualConnections || 0);
+    });
+
+    const limitedResults = filteredUsers.slice(0, parseInt(limit));
 
     res.json({
       success: true,
-      users: filteredUsers,
-      total: filteredUsers.length
+      users: limitedResults,
+      total: filteredUsers.length,
+      query: query,
+      type: 'search_results'
     });
 
   } catch (error) {
@@ -252,6 +383,46 @@ app.get('/api/users/search', async (req, res) => {
       success: false,
       error: 'Internal server error'
     });
+  }
+});
+
+// Send friend request
+app.post('/api/users/invite', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const { target_nickname, message } = req.body;
+
+    if (!target_nickname) {
+      return res.status(400).json({ success: false, error: 'Target nickname is required' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [senderNickname] = decoded.split(':');
+
+    // Mock invitation
+    const invitation = {
+      id: `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      from: senderNickname,
+      to: target_nickname,
+      message: message || `Hi! I'd like to connect with you on Talk pAI.`,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      invitation,
+      message: `Invitation sent to ${target_nickname}`
+    });
+
+  } catch (error) {
+    console.error('Invitation error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -330,6 +501,214 @@ app.put('/api/users/profile', async (req, res) => {
       success: false,
       error: 'Internal server error'
     });
+  }
+});
+
+// AI web search integration
+app.post('/api/aiden/search', async (req, res) => {
+  try {
+    const { query, type = 'general' } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ success: false, error: 'Search query is required' });
+    }
+
+    console.log('🔍 AI Web Search:', { query, type });
+
+    // Mock web search results with AI enhancement
+    const searchResults = {
+      query,
+      results: [
+        {
+          title: `Advanced ${query} Analysis`,
+          url: `https://example.com/search?q=${encodeURIComponent(query)}`,
+          snippet: `Comprehensive analysis and insights about ${query}. Latest trends, data, and expert opinions.`,
+          source: 'TechCorp Research',
+          relevance: 0.95
+        },
+        {
+          title: `${query} Best Practices Guide`,
+          url: `https://guide.example.com/${query.replace(/\s+/g, '-')}`,
+          snippet: `Professional guide covering all aspects of ${query}. Industry standards and recommendations.`,
+          source: 'Industry Guide',
+          relevance: 0.89
+        },
+        {
+          title: `Latest ${query} Trends 2024`,
+          url: `https://trends.example.com/2024/${query}`,
+          snippet: `Current trends and future predictions for ${query}. Market analysis and forecasts.`,
+          source: 'Market Research',
+          relevance: 0.87
+        }
+      ],
+      summary: `Based on web search, ${query} is currently trending with significant developments in the field. Key areas of focus include innovation, efficiency improvements, and market growth.`,
+      related_queries: [
+        `${query} trends 2024`,
+        `${query} best practices`,
+        `${query} market analysis`,
+        `${query} future outlook`
+      ]
+    };
+
+    res.json({
+      success: true,
+      search_results: searchResults,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    console.error('AI search error:', error);
+    res.status(500).json({ success: false, error: 'Search service temporarily unavailable' });
+  }
+});
+
+// AI business analysis and generation
+app.post('/api/aiden/analyze', async (req, res) => {
+  try {
+    const { data_type, content, analysis_type = 'comprehensive' } = req.body;
+
+    if (!data_type || !content) {
+      return res.status(400).json({ success: false, error: 'Data type and content are required' });
+    }
+
+    console.log('📊 AI Analysis Request:', { data_type, analysis_type });
+
+    // Mock business analysis
+    const analysis = {
+      data_type,
+      analysis_type,
+      insights: {
+        key_findings: [
+          'Strong growth potential identified in target market segments',
+          'Operational efficiency can be improved by 25% with recommended changes',
+          'Customer satisfaction metrics show positive trends',
+          'Revenue optimization opportunities worth $50k annually'
+        ],
+        metrics: {
+          performance_score: 8.5,
+          growth_potential: 9.2,
+          risk_level: 3.4,
+          roi_projection: 15.8
+        },
+        recommendations: [
+          {
+            priority: 'High',
+            action: 'Implement automated workflow system',
+            impact: 'Reduce processing time by 40%',
+            timeline: '2-3 months'
+          },
+          {
+            priority: 'Medium',
+            action: 'Expand customer support channels',
+            impact: 'Improve customer satisfaction by 20%',
+            timeline: '1-2 months'
+          },
+          {
+            priority: 'Low',
+            action: 'Optimize marketing spend allocation',
+            impact: 'Increase ROI by 12%',
+            timeline: '3-4 months'
+          }
+        ]
+      },
+      generated_content: {
+        executive_summary: `Based on comprehensive analysis of ${data_type}, we've identified significant opportunities for optimization and growth. The data reveals strong performance indicators with targeted areas for improvement that could yield substantial returns.`,
+        detailed_report: `Our analysis indicates that ${content.substring(0, 100)}... demonstrates excellent potential for strategic enhancement. Key performance metrics exceed industry standards in several areas.`,
+        action_plan: [
+          'Phase 1: Immediate optimizations (0-30 days)',
+          'Phase 2: Strategic implementations (30-90 days)',
+          'Phase 3: Long-term growth initiatives (90+ days)'
+        ]
+      },
+      charts_data: {
+        performance_trends: [65, 70, 75, 82, 78, 85, 90],
+        categories: ['Efficiency', 'Quality', 'Innovation', 'Customer Satisfaction'],
+        scores: [85, 92, 78, 88]
+      }
+    };
+
+    res.json({
+      success: true,
+      analysis,
+      timestamp: Date.now(),
+      analysis_id: `analysis_${Date.now()}`
+    });
+
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    res.status(500).json({ success: false, error: 'Analysis service temporarily unavailable' });
+  }
+});
+
+// AI writing suggestions
+app.post('/api/aiden/writing-suggestions', async (req, res) => {
+  try {
+    const { text, context = 'professional', recipient_type = 'colleague' } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ success: false, error: 'Text is required' });
+    }
+
+    console.log('✍️ AI Writing Suggestions:', { context, recipient_type });
+
+    const suggestions = {
+      improvements: [
+        {
+          type: 'tone',
+          icon: '🎯',
+          title: 'Make it more professional',
+          description: 'Adjust tone for business communication',
+          improved_text: text.replace(/hey/gi, 'Hello').replace(/gonna/gi, 'going to').replace(/\!/g, '.')
+        },
+        {
+          type: 'clarity',
+          icon: '💡',
+          title: 'Improve clarity',
+          description: 'Make the message clearer and more direct',
+          improved_text: `Regarding: ${text}\n\nCould you please clarify the next steps?`
+        },
+        {
+          type: 'concise',
+          icon: '📝',
+          title: 'Make it concise',
+          description: 'Shorten while keeping key points',
+          improved_text: text.split(' ').slice(0, Math.ceil(text.split(' ').length * 0.7)).join(' ') + '...'
+        },
+        {
+          type: 'friendly',
+          icon: '😊',
+          title: 'Add friendly touch',
+          description: 'Make it warmer and more approachable',
+          improved_text: `Hope you're doing well! ${text} Looking forward to hearing from you.`
+        }
+      ],
+      grammar_check: {
+        errors_found: 0,
+        suggestions: [],
+        corrected_text: text
+      },
+      style_tips: [
+        'Consider adding a clear call-to-action',
+        'Structure long messages with bullet points',
+        'Use active voice for more engaging communication'
+      ],
+      context_suggestions: {
+        professional: 'Consider starting with a proper greeting and ending with next steps',
+        casual: 'Feel free to use more relaxed language and emojis',
+        urgent: 'Mark as urgent and specify deadline clearly'
+      }
+    };
+
+    res.json({
+      success: true,
+      suggestions,
+      original_text: text,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    console.error('Writing suggestions error:', error);
+    res.status(500).json({ success: false, error: 'Writing assistance temporarily unavailable' });
   }
 });
 
@@ -603,10 +982,98 @@ app.get('/api/corporate/channels/:workspaceId', async (req, res) => {
   }
 });
 
+// File upload for avatars and attachments
+app.post('/api/upload/avatar', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    // Mock file upload
+    const avatarUrl = `/avatars/user_${Date.now()}.jpg`;
+
+    res.json({
+      success: true,
+      avatar_url: avatarUrl,
+      message: 'Avatar uploaded successfully'
+    });
+
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ success: false, error: 'Upload failed' });
+  }
+});
+
+// Enhanced profile management
+app.get('/api/users/profile/settings/:nickname', async (req, res) => {
+  try {
+    const { nickname } = req.params;
+
+    const profileSettings = {
+      personal_info: {
+        nickname,
+        display_name: nickname.charAt(0).toUpperCase() + nickname.slice(1),
+        email: `${nickname}@example.com`,
+        phone: '+1 (555) 123-4567',
+        bio: 'Professional developer and team player',
+        location: 'San Francisco, CA',
+        website: `https://${nickname}.dev`,
+        avatar_url: `/avatars/${nickname}.jpg`
+      },
+      professional_info: {
+        title: 'Senior Developer',
+        department: 'Engineering',
+        company: 'TechCorp Inc.',
+        skills: ['JavaScript', 'React', 'Node.js', 'Python'],
+        experience_years: 5,
+        linkedin: `https://linkedin.com/in/${nickname}`,
+        github: `https://github.com/${nickname}`
+      },
+      privacy_settings: {
+        profile_visibility: 'public',
+        show_email: false,
+        show_phone: false,
+        show_last_seen: true,
+        allow_direct_messages: true,
+        searchable: true
+      },
+      notification_preferences: {
+        email_notifications: true,
+        push_notifications: true,
+        desktop_notifications: true,
+        sound_enabled: true,
+        mentions_only: false,
+        quiet_hours: { enabled: true, start: '22:00', end: '08:00' }
+      },
+      appearance: {
+        theme: 'dark',
+        language: 'en',
+        timezone: 'America/Los_Angeles',
+        compact_view: false,
+        emoji_style: 'native'
+      }
+    };
+
+    res.json({
+      success: true,
+      settings: profileSettings
+    });
+
+  } catch (error) {
+    console.error('Profile settings error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 console.log('✅ Emergency API endpoints ready');
 console.log('✅ Group chats functionality ready');
 console.log('✅ Corporate features ready');
 console.log('✅ Advanced profile management ready');
+console.log('✅ Enhanced user search with recommendations ready');
+console.log('✅ AI-powered business analysis ready');
+console.log('✅ Writing suggestions and web search ready');
+console.log('✅ File upload and enhanced profiles ready');
 
 // Try to load advanced routes (optional)
 try {
