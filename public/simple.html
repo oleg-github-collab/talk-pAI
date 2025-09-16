@@ -378,16 +378,47 @@
     <script>
         let currentUser = null;
         let currentChat = 'aiden';
+        let isAuthChecked = false;
 
-        // Check if user is already logged in
-        function checkAuth() {
+        // Ultra-safe auth check - only run once
+        async function checkAuth() {
+            // Prevent multiple checks
+            if (isAuthChecked) return;
+            isAuthChecked = true;
+
             const token = localStorage.getItem('token');
             const nickname = localStorage.getItem('nickname');
 
-            if (token && nickname) {
-                currentUser = { nickname, token };
-                showChatInterface();
+            if (!token || !nickname) {
+                console.log('No stored credentials found');
+                return;
             }
+
+            console.log('Found stored credentials, verifying...');
+
+            try {
+                // Verify token with server
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    if (userData.success && userData.user) {
+                        currentUser = { nickname: userData.user.nickname, token };
+                        console.log('Authentication verified, showing chat');
+                        showChatInterface();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log('Auth verification failed:', error);
+            }
+
+            // Clear invalid credentials
+            console.log('Clearing invalid credentials');
+            localStorage.clear();
+            currentUser = null;
         }
 
         function showMessage(text, type = 'info') {
@@ -428,12 +459,18 @@
 
                 const data = await response.json();
 
-                if (data.success) {
+                if (data.success && data.token && data.nickname) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('nickname', data.nickname);
                     currentUser = { nickname: data.nickname, token: data.token };
                     showMessage('Login successful!');
-                    setTimeout(showChatInterface, 1000);
+
+                    // Safe delayed transition
+                    setTimeout(() => {
+                        if (currentUser && currentUser.token) {
+                            showChatInterface();
+                        }
+                    }, 1000);
                 } else {
                     showMessage(data.error || 'Login failed', 'error');
                 }
@@ -467,12 +504,18 @@
 
                 const data = await response.json();
 
-                if (data.success) {
+                if (data.success && data.user && data.user.token && data.user.nickname) {
                     localStorage.setItem('token', data.user.token);
                     localStorage.setItem('nickname', data.user.nickname);
                     currentUser = { nickname: data.user.nickname, token: data.user.token };
                     showMessage('Account created successfully!');
-                    setTimeout(showChatInterface, 1000);
+
+                    // Safe delayed transition
+                    setTimeout(() => {
+                        if (currentUser && currentUser.token) {
+                            showChatInterface();
+                        }
+                    }, 1000);
                 } else {
                     showMessage(data.error || 'Registration failed', 'error');
                 }
@@ -482,20 +525,64 @@
         }
 
         function showChatInterface() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('chatInterface').classList.remove('hidden');
-            document.getElementById('userName').textContent = currentUser.nickname;
-            document.getElementById('userAvatar').textContent = currentUser.nickname[0].toUpperCase();
+            // Double check user is valid
+            if (!currentUser || !currentUser.nickname) {
+                console.error('Cannot show chat interface: no valid user');
+                showLoginScreen();
+                return;
+            }
+
+            console.log('Showing chat interface for:', currentUser.nickname);
+
+            // Hide login screen and show chat
+            const loginScreen = document.getElementById('loginScreen');
+            const chatInterface = document.getElementById('chatInterface');
+
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (chatInterface) chatInterface.classList.remove('hidden');
+
+            // Update UI with user info
+            const userName = document.getElementById('userName');
+            const userAvatar = document.getElementById('userAvatar');
+
+            if (userName) userName.textContent = currentUser.nickname;
+            if (userAvatar) userAvatar.textContent = currentUser.nickname[0].toUpperCase();
+        }
+
+        function showLoginScreen() {
+            console.log('Showing login screen');
+
+            const loginScreen = document.getElementById('loginScreen');
+            const chatInterface = document.getElementById('chatInterface');
+
+            if (chatInterface) chatInterface.classList.add('hidden');
+            if (loginScreen) loginScreen.classList.remove('hidden');
+
+            // Clear any messages
+            showLogin();
         }
 
         function logout() {
+            console.log('Logging out user');
+
+            // Clear all user data
             localStorage.clear();
             currentUser = null;
-            document.getElementById('chatInterface').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('loginNickname').value = '';
-            document.getElementById('loginPassword').value = '';
-            showLogin();
+            isAuthChecked = false; // Allow recheck on next visit
+
+            // Clear form inputs
+            const loginNickname = document.getElementById('loginNickname');
+            const loginPassword = document.getElementById('loginPassword');
+            const regNickname = document.getElementById('regNickname');
+            const regPassword = document.getElementById('regPassword');
+
+            if (loginNickname) loginNickname.value = '';
+            if (loginPassword) loginPassword.value = '';
+            if (regNickname) regNickname.value = '';
+            if (regPassword) regPassword.value = '';
+
+            // Show login screen
+            showLoginScreen();
         }
 
         function selectChat(chatId) {
@@ -578,8 +665,34 @@
             }
         });
 
-        // Initialize
-        checkAuth();
+        // Ultra-safe initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing Talk pAI...');
+
+            // Ensure we start with login screen visible
+            showLoginScreen();
+
+            // Wait a bit then check auth to avoid race conditions
+            setTimeout(() => {
+                if (!isAuthChecked) {
+                    checkAuth();
+                }
+            }, 500);
+        });
+
+        // Backup initialization if DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            // DOM still loading, wait for it
+        } else {
+            // DOM already loaded
+            setTimeout(() => {
+                console.log('DOM already loaded, initializing...');
+                showLoginScreen();
+                if (!isAuthChecked) {
+                    checkAuth();
+                }
+            }, 100);
+        }
     </script>
 </body>
 </html>
