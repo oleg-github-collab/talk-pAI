@@ -5,7 +5,7 @@ NPM_CONFIG_PRODUCTION = "true"
 
 [phases.build]
 dependsOn = ["install"]
-cmds = ["echo 'Build completed - Talk pAI ready for Railway'"]
+cmds = ["echo 'Talk pAI build completed - Railway ready'"]
 
 [phases.install]
 cmds = ["npm ci --only=production"]
@@ -15,7 +15,3 @@ cmd = "node server.js"
 
 [staticAssets]
 "public" = "/"
-
-# Health check configuration for Railway
-[healthcheck]
-path = "/health"
