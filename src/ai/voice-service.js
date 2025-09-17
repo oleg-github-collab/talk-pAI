@@ -363,7 +363,7 @@ class VoiceService {
         messages.push({ role: 'user', content: userMessage });
 
         const response = await this.openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages,
           max_tokens: 300,
           temperature: 0.7
@@ -424,7 +424,7 @@ class VoiceService {
         .join('\n');
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -552,7 +552,7 @@ class VoiceService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

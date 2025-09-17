@@ -152,7 +152,7 @@ class ImageGenerationService {
     try {
       // Use GPT to enhance the prompt for better image generation
       const enhancementResponse = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -470,7 +470,7 @@ Transform the user's prompt into a detailed, artistic description that will prod
   async getImageSuggestions(description) {
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

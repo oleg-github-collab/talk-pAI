@@ -258,7 +258,7 @@ class AidenRoutes {
 
       const personalityInfo = {
         name: status.name,
-        description: 'Advanced AI Companion built on GPT-4o',
+        description: 'Advanced AI Assistant with multiple capabilities',
         capabilities: status.capabilities,
         expertise: status.personality.expertise,
         traits: status.personality.traits,

@@ -9,7 +9,7 @@ const VoiceService = require('./voice-service');
 
 /**
  * Aiden - Advanced AI Companion for Talk pAI
- * A sophisticated AI assistant built on GPT-4o with personality, memory, and contextual awareness
+ * A sophisticated AI assistant with personality, memory, and contextual awareness
  */
 class AidenCompanion {
   constructor() {
@@ -93,7 +93,7 @@ class AidenCompanion {
 
       this.isReady = true;
       this.logger.info('Aiden AI Companion initialized successfully', {
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         capabilities: this.personality.capabilities.length
       });
 
@@ -120,7 +120,7 @@ class AidenCompanion {
       // Build conversation context
       const conversationContext = await this.buildContext(userId, message, context, userMemory);
 
-      // Generate response using GPT-4o
+      // Generate AI response
       const response = await this.generateResponse(conversationContext, userId);
 
       // Update user memory
@@ -242,7 +242,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
 
   async generateResponse(conversationMessages, userId) {
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: conversationMessages,
       max_tokens: 2000,
       temperature: 0.7,
@@ -398,7 +398,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
           aiResponse,
           'ai_response',
           `aiden_conv_${Date.now()}`,
-          'gpt-4o',
+          'gpt-4o-mini',
           JSON.stringify({ userMessage, context })
         ]);
       } else {
@@ -540,7 +540,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
     try {
       // Test with a simple request
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 10
       });
@@ -548,7 +548,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
       return {
         status: 'healthy',
         response_time: 'normal',
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         active_memories: this.conversationMemory.size
       };
     } catch (error) {
@@ -749,7 +749,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
         userMemory
       );
 
-      // Generate response using GPT-4o with enhanced prompts
+      // Generate AI response with enhanced prompts
       const response = await this.generateEnhancedResponse(conversationContext, userId);
 
       // Update user memory
@@ -1023,7 +1023,7 @@ Respond naturally as Aiden would, incorporating your personality and enhanced ca
 
   async generateEnhancedResponse(conversationMessages, userId) {
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: conversationMessages,
       max_tokens: 2000,
       temperature: 0.7,
@@ -1089,7 +1089,7 @@ Respond naturally as Aiden would, incorporating your personality and enhanced ca
       ).join('\n\n');
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

@@ -84,7 +84,7 @@ class VisionService {
       this.logger.info('Starting image analysis', { analysisType, detail });
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages,
         max_tokens: maxTokens,
         temperature: 0.3
@@ -104,7 +104,7 @@ class VisionService {
         analysis,
         structured: structuredAnalysis,
         metadata: {
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           tokensUsed: response.usage?.total_tokens,
           analysisType,
           detail,
@@ -410,7 +410,7 @@ class VisionService {
       ];
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages,
         max_tokens: 1000,
         temperature: 0.3
@@ -419,7 +419,7 @@ class VisionService {
       return {
         comparison: response.choices[0].message.content,
         metadata: {
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           tokensUsed: response.usage?.total_tokens,
           timestamp: new Date().toISOString()
         }
@@ -452,7 +452,7 @@ class VisionService {
       ready: this.isReady,
       supportedFormats: this.supportedFormats,
       maxFileSize: this.maxFileSize,
-      model: 'gpt-4o'
+      model: 'gpt-4o-mini'
     };
   }
 }

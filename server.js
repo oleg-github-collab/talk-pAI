@@ -82,6 +82,7 @@ const AidenRoutes = safeRequire('./src/ai/aiden-routes', 'AidenRoutes');
 const CorporateRoutes = safeRequire('./src/corporate/routes', 'CorporateRoutes');
 const SearchRoutes = safeRequire('./src/search/routes', 'SearchRoutes');
 const EnterpriseRoutes = safeRequire('./src/enterprise/routes', 'EnterpriseRoutes');
+const EnhancedRoutes = safeRequire('./src/routes/enhanced-api', 'EnhancedRoutes');
 
 // Initialize Express app
 const app = express();
@@ -143,6 +144,7 @@ app.use('/api/aiden', new AidenRoutes(database, logger).getRouter());
 app.use('/api/corporate', new CorporateRoutes(database, logger).getRouter());
 app.use('/api/search', new SearchRoutes(database, logger).getRouter());
 app.use('/api/enterprise', new EnterpriseRoutes(database, logger).getRouter());
+app.use('/api/enhanced', new EnhancedRoutes(database, logger).getRouter());
 
 // Health endpoints
 app.get('/health', (req, res) => {
@@ -188,6 +190,32 @@ io.on('connection', (socket) => {
     socket.to(`chat-${data.chatId}`).emit('user-stopped-typing', {
       userId: data.userId
     });
+  });
+
+  // Enhanced real-time features
+  socket.on('message-reaction', (data) => {
+    socket.to(`chat-${data.chatId}`).emit('reaction-added', data);
+  });
+
+  socket.on('message-read', (data) => {
+    socket.to(`chat-${data.chatId}`).emit('message-read', data);
+  });
+
+  socket.on('voice-recording-start', (data) => {
+    socket.to(`chat-${data.chatId}`).emit('user-recording', {
+      userId: data.userId,
+      username: data.username
+    });
+  });
+
+  socket.on('voice-recording-stop', (data) => {
+    socket.to(`chat-${data.chatId}`).emit('user-stopped-recording', {
+      userId: data.userId
+    });
+  });
+
+  socket.on('user-status-change', (data) => {
+    socket.broadcast.emit('user-status-updated', data);
   });
 
   socket.on('disconnect', () => {

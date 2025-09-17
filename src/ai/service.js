@@ -25,7 +25,7 @@ class AIService {
         apiKey: apiKey
       });
       this.isConfigured = true;
-      console.log('✅ AI service initialized with ChatGPT-4o');
+      console.log('✅ AI service initialized with AI assistant');
     } else {
       console.log('⚠️  OPENAI_API_KEY not found - AI features disabled');
     }
@@ -53,7 +53,7 @@ class AIService {
       ];
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: messages,
         max_tokens: 1000,
         temperature: 0.7,
@@ -90,7 +90,7 @@ class AIService {
       ${newsContent}`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are a news summarization assistant. Provide clear, concise summaries of news content.' },
           { role: 'user', content: prompt }
@@ -309,7 +309,7 @@ ${context}
 Please provide only the rewritten message without any explanations or quotes.`;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -545,7 +545,7 @@ Please provide:
 Format as JSON with fields: tone, emotion, clarity, recommendations, alternative`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -577,7 +577,7 @@ Format as JSON with fields: tone, emotion, clarity, recommendations, alternative
   getStatus() {
     return {
       configured: this.isConfigured,
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       features: [
         'chat',
         'rss_summarization',

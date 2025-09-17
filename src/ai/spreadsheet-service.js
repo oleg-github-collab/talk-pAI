@@ -208,7 +208,7 @@ class SpreadsheetService {
     try {
       // Use AI to structure text data
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -376,7 +376,7 @@ Guidelines:
       const analysisPrompt = this.buildAnalysisPrompt(processedData);
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -496,7 +496,7 @@ Please provide:
       });
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
