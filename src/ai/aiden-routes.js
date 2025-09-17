@@ -25,7 +25,11 @@ class AidenRoutes {
         retryAfter: '1 minute'
       },
       standardHeaders: true,
-      legacyHeaders: false
+      legacyHeaders: false,
+      trustProxy: true,
+      keyGenerator: (req) => {
+        return req.ip;
+      }
     });
 
     // Chat with Aiden

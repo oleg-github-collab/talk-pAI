@@ -23,6 +23,7 @@ class ChatRoutes {
     // Messaging
     this.router.post('/:chatId/messages', this.sendMessage.bind(this));
     this.router.post('/:chatId/audio', uploadMiddleware.handleAudioUpload(), this.sendAudioMessage.bind(this));
+    this.router.post('/:chatId/file', uploadMiddleware.handleFileUpload(), this.sendFileMessage.bind(this));
     this.router.delete('/messages/:messageId', this.deleteMessage.bind(this));
 
     // Participants management
@@ -280,6 +281,63 @@ class ChatRoutes {
       console.error('Search users error:', error);
       res.status(500).json({ error: error.message });
     }
+  }
+
+  async sendFileMessage(req, res) {
+    try {
+      const { chatId } = req.params;
+      const userId = req.user.id;
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Check file size (5MB limit)
+      if (req.file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: 'File size must be less than 5MB' });
+      }
+
+      const fileMessage = await this.chatService.sendMessage({
+        chatId: parseInt(chatId),
+        senderId: userId,
+        type: 'file',
+        content: req.file.filename,
+        metadata: {
+          originalName: req.file.originalname,
+          fileSize: req.file.size,
+          mimeType: req.file.mimetype,
+          filePath: req.file.path
+        }
+      });
+
+      // Emit to Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`chat_${chatId}`).emit('new_message', {
+          ...fileMessage,
+          fileUrl: `/uploads/${req.file.filename}`,
+          fileName: req.file.originalname,
+          fileSize: this.formatFileSize(req.file.size)
+        });
+      }
+
+      res.json({
+        success: true,
+        message: fileMessage,
+        fileUrl: `/uploads/${req.file.filename}`
+      });
+    } catch (error) {
+      console.error('Send file message error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   getRouter() {

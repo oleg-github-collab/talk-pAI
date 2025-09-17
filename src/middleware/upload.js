@@ -1,4 +1,6 @@
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const AudioService = require('../audio/service');
 
 class UploadMiddleware {
@@ -8,8 +10,23 @@ class UploadMiddleware {
   }
 
   setupMulter() {
-    // Configure multer for memory storage
-    this.storage = multer.memoryStorage();
+    // Configure multer for disk storage
+    this.storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    });
+
+    // Memory storage for audio processing
+    this.memoryStorage = multer.memoryStorage();
 
     // File filter for audio files
     this.audioFileFilter = (req, file, cb) => {
@@ -31,14 +48,30 @@ class UploadMiddleware {
         'audio/mpeg',
         'audio/mp4',
         'audio/aac',
-        // Images (for future use)
+        // Images
         'image/jpeg',
         'image/png',
         'image/gif',
         'image/webp',
-        // Documents (for future use)
+        'image/svg+xml',
+        // Documents
         'application/pdf',
-        'text/plain'
+        'text/plain',
+        'text/csv',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // Archives
+        'application/zip',
+        'application/x-rar-compressed',
+        'application/x-7z-compressed',
+        // Video
+        'video/mp4',
+        'video/webm',
+        'video/quicktime'
       ];
 
       if (allowedMimeTypes.includes(file.mimetype)) {
@@ -50,10 +83,10 @@ class UploadMiddleware {
 
     // Audio upload middleware
     this.audioUpload = multer({
-      storage: this.storage,
+      storage: this.memoryStorage,
       fileFilter: this.audioFileFilter,
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB
+        fileSize: 10 * 1024 * 1024, // 10MB for 1 minute audio
         files: 1
       }
     }).single('audio');
@@ -63,10 +96,10 @@ class UploadMiddleware {
       storage: this.storage,
       fileFilter: this.generalFileFilter,
       limits: {
-        fileSize: 25 * 1024 * 1024, // 25MB
-        files: 5
+        fileSize: 5 * 1024 * 1024, // 5MB limit as requested
+        files: 1
       }
-    }).array('files', 5);
+    }).single('file');
   }
 
   handleAudioUpload() {
@@ -108,12 +141,12 @@ class UploadMiddleware {
           if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE') {
               return res.status(400).json({
-                error: 'File too large. Maximum size is 25MB'
+                error: 'File too large. Maximum size is 5MB'
               });
             }
             if (err.code === 'LIMIT_FILE_COUNT') {
               return res.status(400).json({
-                error: 'Too many files. Maximum 5 files allowed'
+                error: 'Too many files. Only 1 file allowed'
               });
             }
           }
@@ -122,9 +155,9 @@ class UploadMiddleware {
           });
         }
 
-        if (!req.files || req.files.length === 0) {
+        if (!req.file) {
           return res.status(400).json({
-            error: 'No files provided'
+            error: 'No file provided'
           });
         }
 

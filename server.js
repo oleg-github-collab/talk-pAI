@@ -93,17 +93,28 @@ const io = new Server(server, {
 
 const logger = new Logger('Server');
 
-// Rate limiting
+// Trust proxy for Railway deployment
+app.set('trust proxy', 1);
+
+// Rate limiting with proper proxy configuration
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
+  trustProxy: true,
+  keyGenerator: (req) => {
+    return req.ip;
+  }
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth requests per windowMs
-  message: { error: 'Too many authentication attempts, please try again later' }
+  max: 10, // Increased limit for Railway
+  message: { error: 'Too many authentication attempts, please try again later' },
+  trustProxy: true,
+  keyGenerator: (req) => {
+    return req.ip;
+  }
 });
 
 // Middleware setup
