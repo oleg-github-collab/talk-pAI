@@ -55,7 +55,7 @@ class DatabaseInitializer {
 
     async connectSQLite() {
         try {
-            const Database = require('better-sqlite3');
+            const sqlite3 = require('sqlite3').verbose();
 
             const dbPath = process.env.SQLITE_DB_PATH || path.join(__dirname, '..', 'talkpai.db');
 
@@ -65,12 +65,16 @@ class DatabaseInitializer {
                 fs.mkdirSync(dbDir, { recursive: true });
             }
 
-            this.client = new Database(dbPath);
+            this.client = new sqlite3.Database(dbPath, (err) => {
+                if (err) {
+                    throw err;
+                }
+            });
             this.isConnected = true;
             this.connectionType = 'sqlite';
 
             // Enable foreign keys
-            this.client.pragma('foreign_keys = ON');
+            this.client.run('PRAGMA foreign_keys = ON');
 
             console.log('📂 SQLite database initialized at:', dbPath);
 
@@ -158,7 +162,14 @@ class DatabaseInitializer {
 
             for (const statement of statements) {
                 try {
-                    this.client.exec(statement);
+                    await new Promise((resolve, reject) => {
+                        this.client.run(statement, (err) => {
+                            if (err && !err.message.includes('already exists')) {
+                                console.warn('⚠️ SQLite statement warning:', err.message);
+                            }
+                            resolve();
+                        });
+                    });
                 } catch (error) {
                     if (!error.message.includes('already exists')) {
                         console.warn('⚠️ SQLite statement warning:', error.message);
@@ -182,18 +193,29 @@ class DatabaseInitializer {
                 const result = await this.client.query(sql, params);
                 return result.rows;
             } else {
-                // SQLite
-                if (sql.toLowerCase().startsWith('select')) {
-                    const stmt = this.client.prepare(sql);
-                    return stmt.all(params);
-                } else {
-                    const stmt = this.client.prepare(sql);
-                    const result = stmt.run(params);
-                    return {
-                        rowCount: result.changes,
-                        insertId: result.lastInsertRowid
-                    };
-                }
+                // SQLite3 (using callback-based API)
+                return await new Promise((resolve, reject) => {
+                    if (sql.toLowerCase().startsWith('select')) {
+                        this.client.all(sql, params, (err, rows) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(rows || []);
+                            }
+                        });
+                    } else {
+                        this.client.run(sql, params, function(err) {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve({
+                                    rowCount: this.changes,
+                                    insertId: this.lastID
+                                });
+                            }
+                        });
+                    }
+                });
             }
         } catch (error) {
             console.error('❌ Query error:', error.message);
@@ -207,7 +229,14 @@ class DatabaseInitializer {
             if (this.connectionType === 'postgresql') {
                 await this.client.end();
             } else {
-                this.client.close();
+                await new Promise((resolve) => {
+                    this.client.close((err) => {
+                        if (err) {
+                            console.warn('Database close warning:', err.message);
+                        }
+                        resolve();
+                    });
+                });
             }
             this.isConnected = false;
             console.log('🔐 Database connection closed');

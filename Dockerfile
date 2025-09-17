@@ -1,24 +1,35 @@
-# Railway Docker fallback for Talk pAI
+# Use Node.js 18 for Railway compatibility
 FROM node:18-alpine
+
+# Install minimal dependencies
+RUN apk add --no-cache curl
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Set NODE_ENV for production optimizations
+ENV NODE_ENV=production
 
-# Install dependencies
-RUN npm ci --only=production
+# Copy package.json only
+COPY package.json ./
+
+# Install dependencies (Railway will handle this better)
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8080
+# Create necessary directories
+RUN mkdir -p public database uploads
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+# Use non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
+# Expose port (Railway will set this)
+EXPOSE $PORT
 
 # Start application
 CMD ["node", "server.js"]
