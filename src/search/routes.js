@@ -1,7 +1,7 @@
 const express = require('express');
 const SearchService = require('./service');
 const authMiddleware = require('../middleware/auth');
-const Logger = require('../utils/logger');
+const Logger = require('../utils/enhanced-logger');
 
 class SearchRoutes {
   constructor() {

@@ -1,5 +1,5 @@
-const database = require('../database/connection');
-const Logger = require('../utils/logger');
+const database = require('../database/optimized-connection');
+const Logger = require('../utils/enhanced-logger');
 
 class SearchService {
   constructor() {

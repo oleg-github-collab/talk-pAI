@@ -3,7 +3,8 @@ const RSSParser = require('rss-parser');
 const axios = require('axios');
 const database = require('../database/optimized-connection');
 const Logger = require('../utils/enhanced-logger');
-const logger = require('../utils/logger'); // Keep for compatibility
+// Create logger instance
+const logger = new Logger('AIService');
 
 class AIService {
   constructor() {

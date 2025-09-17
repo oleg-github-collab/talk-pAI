@@ -263,6 +263,93 @@
             color: #666;
         }
 
+        /* Enhanced search styles */
+        .search-loading,
+        .search-no-results,
+        .search-error {
+            padding: 15px;
+            text-align: center;
+            color: #8e9297;
+            font-style: italic;
+        }
+
+        .search-error {
+            color: #dc3545;
+        }
+
+        .search-suggestion-label {
+            padding: 8px 15px;
+            background: #f8f9fa;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-result.online {
+            background: linear-gradient(90deg, #e8f5e8 0%, #ffffff 20%);
+        }
+
+        .search-result .status-indicator {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 8px;
+            background: white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-result .user-avatar {
+            position: relative;
+        }
+
+        .search-result-display-name {
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        .search-result-actions {
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .search-result:hover .search-result-actions {
+            opacity: 1;
+        }
+
+        .quick-chat-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quick-chat-btn:hover {
+            background: #5a6fd8;
+        }
+
+        /* Highlight matched text */
+        mark {
+            background: #fff3cd;
+            color: #856404;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
         .chat-list {
             flex: 1;
             overflow-y: auto;
@@ -1051,47 +1138,139 @@
             hideError();
         }
 
-        // User search functions
+        // Enhanced user search with real-time suggestions
         let searchTimeout = null;
+        let searchCache = new Map();
+        let suggestionCache = new Map();
 
         async function searchUsers(query) {
-            if (!query || query.length < 2) {
+            // Show suggestions for very short queries
+            if (query.length === 1) {
+                await showSuggestions(query);
+                return;
+            }
+
+            if (!query || query.length < 1) {
                 searchResults.style.display = 'none';
                 return;
             }
 
-            try {
-                const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`);
-                const data = await response.json();
+            // Check cache first for performance
+            const cacheKey = query.toLowerCase();
+            if (searchCache.has(cacheKey)) {
+                displaySearchResults(searchCache.get(cacheKey), query);
+                return;
+            }
 
-                if (data.success && data.users) {
-                    displaySearchResults(data.users);
+            try {
+                // Show loading state
+                searchResults.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
+                searchResults.style.display = 'block';
+
+                const response = await fetch(`/api/search/users?q=${encodeURIComponent(query)}&limit=10`);
+                const users = await response.json();
+
+                if (Array.isArray(users) && users.length > 0) {
+                    // Cache results for 30 seconds
+                    searchCache.set(cacheKey, users);
+                    setTimeout(() => searchCache.delete(cacheKey), 30000);
+
+                    displaySearchResults(users, query);
+                } else {
+                    searchResults.innerHTML = '<div class="search-no-results">No users found</div>';
+                    searchResults.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                searchResults.innerHTML = '<div class="search-error">Search failed. Try again.</div>';
+                searchResults.style.display = 'block';
+            }
+        }
+
+        async function showSuggestions(query) {
+            const cacheKey = `suggestions_${query}`;
+            if (suggestionCache.has(cacheKey)) {
+                displaySearchResults(suggestionCache.get(cacheKey), query, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/search/users/suggestions?q=${encodeURIComponent(query)}&limit=5`);
+                const suggestions = await response.json();
+
+                if (Array.isArray(suggestions) && suggestions.length > 0) {
+                    suggestionCache.set(cacheKey, suggestions);
+                    setTimeout(() => suggestionCache.delete(cacheKey), 10000);
+
+                    displaySearchResults(suggestions, query, true);
                 } else {
                     searchResults.style.display = 'none';
                 }
             } catch (error) {
-                console.error('Search error:', error);
+                console.error('Suggestions error:', error);
                 searchResults.style.display = 'none';
             }
         }
 
-        function displaySearchResults(users) {
+        function displaySearchResults(users, query = '', isSuggestion = false) {
             if (!users.length) {
                 searchResults.style.display = 'none';
                 return;
             }
 
-            searchResults.innerHTML = users.map(user => `
-                <div class="search-result" data-user-id="${user.id}" data-nickname="${user.nickname}">
-                    <div class="user-avatar">${getAvatarText(user.nickname)}</div>
-                    <div class="search-result-info">
-                        <div class="search-result-name">${user.nickname}</div>
-                        <div class="search-result-status">${user.status}</div>
+            const suggestionLabel = isSuggestion ? '<div class="search-suggestion-label">💡 Suggestions</div>' : '';
+
+            searchResults.innerHTML = suggestionLabel + users.map(user => {
+                const statusIcon = getStatusIcon(user.status || 'offline');
+                const isOnline = user.isOnline || user.status === 'online';
+                const highlightedName = highlightMatch(user.nickname, query);
+                const displayName = user.full_name || user.display_name || user.nickname;
+                const highlightedDisplayName = highlightMatch(displayName, query);
+
+                return `
+                    <div class="search-result ${isOnline ? 'online' : ''}"
+                         data-user-id="${user.id}"
+                         data-nickname="${user.nickname}"
+                         title="Click to start chat with ${user.nickname}">
+                        <div class="user-avatar">
+                            ${user.avatar || getAvatarText(user.nickname)}
+                            <span class="status-indicator">${statusIcon}</span>
+                        </div>
+                        <div class="search-result-info">
+                            <div class="search-result-name">${highlightedName}</div>
+                            ${displayName !== user.nickname ? `<div class="search-result-display-name">${highlightedDisplayName}</div>` : ''}
+                            <div class="search-result-status">
+                                ${user.title || user.department || (isOnline ? 'Online' : 'Offline')}
+                            </div>
+                        </div>
+                        <div class="search-result-actions">
+                            <button class="quick-chat-btn" title="Quick chat">💬</button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             searchResults.style.display = 'block';
+        }
+
+        function highlightMatch(text, query) {
+            if (!query || !text) return text;
+            const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
+        }
+
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'online': return '🟢';
+                case 'away': return '🟡';
+                case 'busy': case 'dnd': return '🔴';
+                case 'offline': return '⚫';
+                default: return '⚪';
+            }
         }
 
         function addUserToChat(nickname) {
@@ -1296,12 +1475,29 @@
             authForm.addEventListener('submit', handleAuth);
             switchMode.addEventListener('click', toggleAuthMode);
 
-            // Search
+            // Enhanced search with debouncing
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+
+                if (query.length === 0) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+
+                // Faster response for suggestions, slower for full search
+                const delay = query.length === 1 ? 150 : 300;
+
                 searchTimeout = setTimeout(() => {
-                    searchUsers(e.target.value);
-                }, 300);
+                    searchUsers(query);
+                }, delay);
+            });
+
+            // Show search on focus if there's text
+            searchInput.addEventListener('focus', (e) => {
+                if (e.target.value.trim().length > 0) {
+                    searchUsers(e.target.value.trim());
+                }
             });
 
             // Click outside search results to close
@@ -1311,12 +1507,38 @@
                 }
             });
 
-            // Search results click
+            // Enhanced search results click handling
             searchResults.addEventListener('click', (e) => {
+                // Handle quick chat button
+                if (e.target.closest('.quick-chat-btn')) {
+                    e.stopPropagation();
+                    const result = e.target.closest('.search-result');
+                    if (result) {
+                        const nickname = result.dataset.nickname;
+                        const userId = result.dataset.userId;
+
+                        // Start quick chat immediately
+                        addUserToChat(nickname);
+
+                        // Show notification
+                        showNotification(`Started chat with ${nickname}`, 'success');
+
+                        // Hide search
+                        searchResults.style.display = 'none';
+                        searchInput.value = '';
+                    }
+                    return;
+                }
+
+                // Handle search result click
                 const result = e.target.closest('.search-result');
                 if (result) {
                     const nickname = result.dataset.nickname;
                     addUserToChat(nickname);
+
+                    // Hide search results
+                    searchResults.style.display = 'none';
+                    searchInput.value = '';
                 }
             });
 

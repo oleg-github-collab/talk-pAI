@@ -1,5 +1,6 @@
-const database = require('../database/connection');
-const logger = require('../utils/logger');
+const database = require('../database/optimized-connection');
+const Logger = require('../utils/enhanced-logger');
+const logger = new Logger('CorporateService');
 
 class CorporateService {
   constructor() {
