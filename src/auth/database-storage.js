@@ -1,4 +1,4 @@
-const database = require('../database/connection');
+const database = require('../database/optimized-connection');
 const CryptoService = require('../utils/crypto');
 
 class DatabaseStorage {

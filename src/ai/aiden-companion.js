@@ -358,10 +358,35 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
     if (!database.isConnected) return;
 
     try {
-      await database.query(`
-        INSERT INTO ai_conversations (user_id, user_message, ai_response, context, created_at)
-        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-      `, [userId, userMessage, aiResponse, JSON.stringify(context)]);
+      // Check if ai_conversations table exists with expected schema
+      const tableCheckResult = await database.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'ai_conversations'
+        AND column_name IN ('user_message', 'ai_response')
+      `);
+
+      if (tableCheckResult.rows.length === 0) {
+        // Use messages table instead
+        await database.query(`
+          INSERT INTO messages (chat_id, sender_id, content, message_type, ai_conversation_id, ai_model, metadata, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `, [
+          '00000000-0000-0000-0000-000000000001', // Default AI chat
+          userId,
+          aiResponse,
+          'ai_response',
+          `aiden_conv_${Date.now()}`,
+          'gpt-4o',
+          JSON.stringify({ userMessage, context })
+        ]);
+      } else {
+        // Use ai_conversations table
+        await database.query(`
+          INSERT INTO ai_conversations (user_id, user_message, ai_response, context, created_at)
+          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `, [userId, userMessage, aiResponse, JSON.stringify(context)]);
+      }
     } catch (error) {
       this.logger.error('Failed to save Aiden conversation', { error: error.message });
     }
@@ -371,28 +396,49 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
     if (!database.isConnected) return;
 
     try {
-      const result = await database.query(`
-        SELECT
-          user_id,
-          user_message,
-          ai_response,
-          context,
-          created_at
-        FROM ai_conversations
-        WHERE created_at > NOW() - INTERVAL '7 days'
-        ORDER BY created_at DESC
-        LIMIT 1000
-      `);
+      // Try to load from ai_conversations table first, fallback to messages
+      let result;
+      try {
+        result = await database.query(`
+          SELECT
+            user_id,
+            user_message,
+            ai_response,
+            context,
+            created_at
+          FROM ai_conversations
+          WHERE created_at > NOW() - INTERVAL '7 days'
+          ORDER BY created_at DESC
+          LIMIT 1000
+        `);
+      } catch (err) {
+        // Fallback to messages table
+        result = await database.query(`
+          SELECT
+            sender_id as user_id,
+            metadata->>'userMessage' as user_message,
+            content as ai_response,
+            metadata->>'context' as context,
+            created_at
+          FROM messages
+          WHERE message_type = 'ai_response'
+          AND created_at > NOW() - INTERVAL '7 days'
+          ORDER BY created_at DESC
+          LIMIT 1000
+        `);
+      }
 
       // Rebuild conversation memories from recent history
       for (const row of result.rows) {
+        if (!row.user_id || !row.ai_response) continue;
+
         const memory = this.getUserMemory(row.user_id);
 
         // Add to context if not already there
-        const userMsg = { role: 'user', content: row.user_message, timestamp: row.created_at };
+        const userMsg = { role: 'user', content: row.user_message || 'Previous message', timestamp: row.created_at };
         const aiMsg = { role: 'assistant', content: row.ai_response, timestamp: row.created_at };
 
-        if (!memory.context.some(ctx => ctx.content === row.user_message && ctx.timestamp?.getTime() === row.created_at.getTime())) {
+        if (!memory.context.some(ctx => ctx.content === row.ai_response && ctx.timestamp?.getTime() === row.created_at.getTime())) {
           memory.context.unshift(userMsg, aiMsg);
         }
       }
@@ -426,13 +472,30 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
     if (!database.isConnected) return [];
 
     try {
-      const result = await database.query(`
-        SELECT user_message, ai_response, context, created_at
-        FROM ai_conversations
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-        LIMIT $2
-      `, [userId, limit]);
+      let result;
+      try {
+        result = await database.query(`
+          SELECT user_message, ai_response, context, created_at
+          FROM ai_conversations
+          WHERE user_id = $1
+          ORDER BY created_at DESC
+          LIMIT $2
+        `, [userId, limit]);
+      } catch (err) {
+        // Fallback to messages table
+        result = await database.query(`
+          SELECT
+            metadata->>'userMessage' as user_message,
+            content as ai_response,
+            metadata->>'context' as context,
+            created_at
+          FROM messages
+          WHERE sender_id = $1
+          AND message_type = 'ai_response'
+          ORDER BY created_at DESC
+          LIMIT $2
+        `, [userId, limit]);
+      }
 
       return result.rows.reverse(); // Return in chronological order
     } catch (error) {

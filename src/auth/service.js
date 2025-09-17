@@ -2,7 +2,7 @@ const CryptoService = require('../utils/crypto');
 const ValidationService = require('../utils/validator');
 const InMemoryStorage = require('./storage');
 const DatabaseStorage = require('./database-storage');
-const database = require('../database/connection');
+const database = require('../database/optimized-connection');
 
 class AuthService {
   constructor() {

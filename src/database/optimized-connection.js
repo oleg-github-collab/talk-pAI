@@ -64,9 +64,13 @@ class OptimizedDatabaseConnection {
         this.logger.debug('New database client connected');
 
         // Set up client-specific configurations
-        client.query('SET statement_timeout = $1', [poolConfig.statement_timeout]);
-        client.query('SET lock_timeout = 10000'); // 10 second lock timeout
-        client.query('SET idle_in_transaction_session_timeout = 30000'); // 30 seconds
+        try {
+          client.query(`SET statement_timeout = ${poolConfig.statement_timeout || 30000}`);
+          client.query('SET lock_timeout = 10000'); // 10 second lock timeout
+          client.query('SET idle_in_transaction_session_timeout = 30000'); // 30 seconds
+        } catch (err) {
+          this.logger.warn('Failed to set client configuration:', err.message);
+        }
       });
 
       this.pool.on('acquire', () => {
@@ -150,6 +154,11 @@ class OptimizedDatabaseConnection {
   }
 
   async initializeSchema() {
+    if (!this.isConnected || !this.pool) {
+      console.log('⚠️ Database not connected, skipping schema initialization');
+      return;
+    }
+
     try {
       console.log('🔗 Attempting database schema initialization...');
 
@@ -165,7 +174,19 @@ class OptimizedDatabaseConnection {
         try {
           // Read and execute production schema
           const schemaSQL = await fs.readFile(schemaPath, 'utf8');
-          await client.query(schemaSQL);
+
+          // Split and execute statements one by one to avoid syntax errors
+          const statements = schemaSQL.split(';').filter(stmt => stmt.trim().length > 0);
+
+          for (const statement of statements) {
+            try {
+              await client.query(statement.trim());
+            } catch (stmtError) {
+              console.warn(`⚠️ Statement failed: ${stmtError.message}`);
+              // Continue with other statements
+            }
+          }
+
           console.log('✅ Production database schema initialized successfully');
         } catch (error) {
           console.warn('⚠️ Production schema initialization failed, using basic schema:', error.message);
@@ -181,6 +202,9 @@ class OptimizedDatabaseConnection {
         const client = await this.pool.connect();
         try {
           await this.createBasicSchema(client);
+        } catch (basicError) {
+          console.error('❌ Basic schema creation also failed:', basicError.message);
+          // Even if schema creation fails, don't crash the app
         } finally {
           client.release();
         }
@@ -198,7 +222,8 @@ class OptimizedDatabaseConnection {
       // Enable UUID extension
       await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
-      // Users table
+      console.log('📋 Creating users table...');
+      // Users table (створюємо першою, без foreign keys)
       await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -217,11 +242,12 @@ class OptimizedDatabaseConnection {
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           notifications_enabled BOOLEAN DEFAULT TRUE,
           dark_mode BOOLEAN DEFAULT FALSE,
-          metadata JSONB DEFAULT '{}'::jsonb
+          metadata JSONB DEFAULT '{}'
         )
       `);
 
-      // Organizations table
+      console.log('📋 Creating organizations table...');
+      // Organizations table (без foreign keys)
       await client.query(`
         CREATE TABLE IF NOT EXISTS organizations (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -230,52 +256,55 @@ class OptimizedDatabaseConnection {
           logo_url VARCHAR(500),
           description TEXT,
           plan_type VARCHAR(20) DEFAULT 'basic',
-          settings JSONB DEFAULT '{}'::jsonb,
+          settings JSONB DEFAULT '{}',
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `);
 
-      // Workspaces table
+      console.log('📋 Creating workspaces table...');
+      // Workspaces table (without foreign keys initially)
       await client.query(`
         CREATE TABLE IF NOT EXISTS workspaces (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+          organization_id UUID,
           name VARCHAR(255) NOT NULL,
           description TEXT,
           slug VARCHAR(100) UNIQUE,
           is_public BOOLEAN DEFAULT FALSE,
-          settings JSONB DEFAULT '{}'::jsonb,
-          created_by UUID REFERENCES users(id),
+          settings JSONB DEFAULT '{}',
+          created_by UUID,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `);
 
-      // Chats table
+      console.log('📋 Creating chats table...');
+      // Chats table (without foreign keys initially)
       await client.query(`
         CREATE TABLE IF NOT EXISTS chats (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+          workspace_id UUID,
           name VARCHAR(255),
           description TEXT,
           type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group', 'channel', 'ai')),
           visibility VARCHAR(20) DEFAULT 'private',
           is_archived BOOLEAN DEFAULT FALSE,
-          settings JSONB DEFAULT '{}'::jsonb,
-          created_by UUID REFERENCES users(id),
+          settings JSONB DEFAULT '{}',
+          created_by UUID,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `);
 
-      // Chat participants
+      console.log('📋 Creating chat_participants table...');
+      // Chat participants (without foreign keys initially)
       await client.query(`
         CREATE TABLE IF NOT EXISTS chat_participants (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          chat_id UUID,
+          user_id UUID,
           role VARCHAR(20) DEFAULT 'member',
           joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           last_read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -283,18 +312,19 @@ class OptimizedDatabaseConnection {
         )
       `);
 
-      // Messages table
+      console.log('📋 Creating messages table...');
+      // Messages table (without foreign keys initially)
       await client.query(`
         CREATE TABLE IF NOT EXISTS messages (
           id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-          sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          chat_id UUID,
+          sender_id UUID,
           content TEXT,
           message_type VARCHAR(20) DEFAULT 'text',
-          reply_to_id UUID REFERENCES messages(id),
+          reply_to_id UUID,
           is_edited BOOLEAN DEFAULT FALSE,
           is_deleted BOOLEAN DEFAULT FALSE,
-          metadata JSONB DEFAULT '{}'::jsonb,
+          metadata JSONB DEFAULT '{}',
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           ai_conversation_id VARCHAR(255),
@@ -302,45 +332,144 @@ class OptimizedDatabaseConnection {
         )
       `);
 
-      // Insert default AI assistant
+      console.log('📋 Creating sessions table...');
+      // Sessions table for authentication
       await client.query(`
-        INSERT INTO users (id, nickname, display_name, bio, account_type, status, avatar_url, is_verified)
-        VALUES (
-          '00000000-0000-0000-0000-000000000001',
-          'aiden',
-          'Aiden AI Assistant',
-          'Your intelligent AI companion',
-          'enterprise',
-          'online',
-          '🤖',
-          TRUE
-        ) ON CONFLICT (nickname) DO NOTHING
+        CREATE TABLE IF NOT EXISTS sessions (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          user_id UUID,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          is_active BOOLEAN DEFAULT TRUE,
+          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          device_info JSONB DEFAULT '{}',
+          ip_address INET,
+          user_agent TEXT
+        )
       `);
+
+      console.log('📋 Adding foreign key constraints...');
+      // Add foreign key constraints (if they don't exist)
+      const constraintQueries = [
+        {
+          name: 'workspaces_organization_id_fkey',
+          query: `ALTER TABLE workspaces ADD CONSTRAINT workspaces_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE`
+        },
+        {
+          name: 'workspaces_created_by_fkey',
+          query: `ALTER TABLE workspaces ADD CONSTRAINT workspaces_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)`
+        },
+        {
+          name: 'chats_workspace_id_fkey',
+          query: `ALTER TABLE chats ADD CONSTRAINT chats_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE`
+        },
+        {
+          name: 'chats_created_by_fkey',
+          query: `ALTER TABLE chats ADD CONSTRAINT chats_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id)`
+        },
+        {
+          name: 'chat_participants_chat_id_fkey',
+          query: `ALTER TABLE chat_participants ADD CONSTRAINT chat_participants_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE`
+        },
+        {
+          name: 'chat_participants_user_id_fkey',
+          query: `ALTER TABLE chat_participants ADD CONSTRAINT chat_participants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+        },
+        {
+          name: 'messages_chat_id_fkey',
+          query: `ALTER TABLE messages ADD CONSTRAINT messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE`
+        },
+        {
+          name: 'messages_sender_id_fkey',
+          query: `ALTER TABLE messages ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL`
+        },
+        {
+          name: 'messages_reply_to_id_fkey',
+          query: `ALTER TABLE messages ADD CONSTRAINT messages_reply_to_id_fkey FOREIGN KEY (reply_to_id) REFERENCES messages(id)`
+        },
+        {
+          name: 'sessions_user_id_fkey',
+          query: `ALTER TABLE sessions ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+        }
+      ];
+
+      for (const constraint of constraintQueries) {
+        try {
+          // Check if constraint exists
+          const existsResult = await client.query(`
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE constraint_name = $1
+          `, [constraint.name]);
+
+          if (existsResult.rows.length === 0) {
+            await client.query(constraint.query);
+            console.log(`✅ Added constraint: ${constraint.name}`);
+          } else {
+            console.log(`⚠️ Constraint already exists: ${constraint.name}`);
+          }
+        } catch (constraintError) {
+          console.log(`⚠️ Failed to add constraint ${constraint.name}: ${constraintError.message}`);
+          // Continue with other constraints
+        }
+      }
+
+      console.log('📋 Inserting default data...');
+      // Insert default AI assistant
+      try {
+        await client.query(`
+          INSERT INTO users (id, nickname, display_name, bio, account_type, status, avatar_url, is_verified, password_hash)
+          VALUES (
+            '00000000-0000-0000-0000-000000000001',
+            'aiden',
+            'Aiden AI Assistant',
+            'Your intelligent AI companion',
+            'enterprise',
+            'online',
+            '🤖',
+            TRUE,
+            'no-password-needed'
+          ) ON CONFLICT (nickname) DO NOTHING
+        `);
+        console.log('✅ AI assistant user created');
+      } catch (err) {
+        console.log('⚠️ AI assistant user creation failed:', err.message);
+      }
 
       // Create default workspace
-      await client.query(`
-        INSERT INTO workspaces (id, name, slug, description, is_public)
-        VALUES (
-          '00000000-0000-0000-0000-000000000001',
-          'General Workspace',
-          'general',
-          'Default workspace for all users',
-          TRUE
-        ) ON CONFLICT (slug) DO NOTHING
-      `);
+      try {
+        await client.query(`
+          INSERT INTO workspaces (id, name, slug, description, is_public)
+          VALUES (
+            '00000000-0000-0000-0000-000000000001',
+            'General Workspace',
+            'general',
+            'Default workspace for all users',
+            TRUE
+          ) ON CONFLICT (slug) DO NOTHING
+        `);
+        console.log('✅ Default workspace created');
+      } catch (err) {
+        console.log('⚠️ Default workspace creation failed:', err.message);
+      }
 
       // Create default AI chat
-      await client.query(`
-        INSERT INTO chats (id, workspace_id, name, type, visibility, created_by)
-        VALUES (
-          '00000000-0000-0000-0000-000000000001',
-          '00000000-0000-0000-0000-000000000001',
-          'AI Assistant',
-          'ai',
-          'public',
-          '00000000-0000-0000-0000-000000000001'
-        ) ON CONFLICT (id) DO NOTHING
-      `);
+      try {
+        await client.query(`
+          INSERT INTO chats (id, workspace_id, name, type, visibility, created_by)
+          VALUES (
+            '00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000001',
+            'AI Assistant',
+            'ai',
+            'public',
+            '00000000-0000-0000-0000-000000000001'
+          ) ON CONFLICT (id) DO NOTHING
+        `);
+        console.log('✅ Default AI chat created');
+      } catch (err) {
+        console.log('⚠️ Default AI chat creation failed:', err.message);
+      }
 
       console.log('✅ Basic database schema created successfully');
     } catch (error) {

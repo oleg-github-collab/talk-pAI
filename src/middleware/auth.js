@@ -1,25 +1,32 @@
 const AuthService = require('../auth/service');
 
-class AuthMiddleware {
-  constructor(authService) {
-    this.authService = authService;
+// Create a single auth service instance
+const authService = new AuthService();
+
+// Middleware function for authentication
+const authMiddleware = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const user = await authService.authenticate(token);
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return res.status(401).json({
+      success: false,
+      error: error.message || 'Authentication failed'
+    });
   }
+};
 
-  authenticate() {
-    return async (req, res, next) => {
-      try {
-        const token = req.headers['authorization']?.split(' ')[1];
-        const nickname = req.headers['x-nickname'];
-
-        const user = await this.authService.authenticate(nickname, token);
-        req.user = user;
-        next();
-      } catch (error) {
-        console.error('Auth error:', error);
-        return res.status(401).json({ error: error.message });
-      }
-    };
-  }
-}
-
-module.exports = AuthMiddleware;
+module.exports = authMiddleware;

@@ -7,6 +7,18 @@ const http = require('http');
 const path = require('path');
 require('dotenv').config();
 
+// Global error handlers for Railway compatibility
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error.message);
+  console.error('Stack:', error.stack);
+  // Don't exit in Railway, just log
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  // Log but continue running for Railway
+});
+
 // Safe module imports with error handling
 let config, database, Logger;
 let AuthRoutes, ChatRoutes, AIRoutes, AidenRoutes, CorporateRoutes, SearchRoutes, EnterpriseRoutes;
