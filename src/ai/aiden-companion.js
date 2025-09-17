@@ -1,6 +1,11 @@
 const OpenAI = require('openai');
 const Logger = require('../utils/enhanced-logger');
 const database = require('../database/optimized-connection');
+const WebSearchService = require('./web-search-service');
+const VisionService = require('./vision-service');
+const ImageGenerationService = require('./image-generation-service');
+const SpreadsheetService = require('./spreadsheet-service');
+const VoiceService = require('./voice-service');
 
 /**
  * Aiden - Advanced AI Companion for Talk pAI
@@ -13,6 +18,14 @@ class AidenCompanion {
     this.isReady = false;
     this.personality = this.definePersonality();
     this.conversationMemory = new Map(); // User-specific conversation memory
+
+    // Initialize advanced services
+    this.webSearch = new WebSearchService();
+    this.vision = new VisionService();
+    this.imageGeneration = new ImageGenerationService();
+    this.spreadsheet = new SpreadsheetService();
+    this.voice = new VoiceService();
+
     this.initializeAiden();
   }
 
@@ -48,7 +61,15 @@ class AidenCompanion {
         'Code analysis and debugging',
         'Document summarization',
         'Creative content generation',
-        'Strategic thinking and planning'
+        'Strategic thinking and planning',
+        'Web browsing and current information search',
+        'Image recognition and analysis',
+        'Image generation via DALL-E',
+        'Excel/spreadsheet generation',
+        'Real-time voice conversation',
+        'Voice-to-text transcription',
+        'Text-to-speech synthesis',
+        'File processing and analysis'
       ]
     };
   }
@@ -536,6 +557,587 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
         message: error.message
       };
     }
+  }
+
+  // Enhanced AI capabilities with new services
+
+  async searchWeb(query, options = {}) {
+    try {
+      this.logger.info('Performing web search', { query, options });
+      const results = await this.webSearch.search(query, options);
+      return {
+        success: true,
+        results,
+        query,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      this.logger.error('Web search failed', { error: error.message, query });
+      return {
+        success: false,
+        error: error.message,
+        query
+      };
+    }
+  }
+
+  async analyzeImage(imageInput, options = {}) {
+    try {
+      this.logger.info('Analyzing image', { options });
+      const analysis = await this.vision.analyzeImage(imageInput, options);
+      return {
+        success: true,
+        analysis: analysis.analysis,
+        structured: analysis.structured,
+        metadata: analysis.metadata
+      };
+    } catch (error) {
+      this.logger.error('Image analysis failed', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async generateImage(prompt, options = {}) {
+    try {
+      this.logger.info('Generating image', { prompt: prompt.substring(0, 100), options });
+      const result = await this.imageGeneration.generateImage(prompt, options);
+      return {
+        success: true,
+        image: {
+          url: result.url,
+          localPath: result.localPath,
+          prompt: result.prompt,
+          revisedPrompt: result.revisedPrompt
+        },
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error('Image generation failed', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async createSpreadsheet(data, options = {}) {
+    try {
+      this.logger.info('Creating spreadsheet', { options });
+      const result = await this.spreadsheet.generateSpreadsheet(data, options);
+      return {
+        success: true,
+        spreadsheet: {
+          filename: result.filename,
+          filepath: result.filepath
+        },
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error('Spreadsheet creation failed', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async textToSpeech(text, options = {}) {
+    try {
+      this.logger.info('Converting text to speech', { textLength: text.length, options });
+      const result = await this.voice.textToSpeech(text, options);
+      return {
+        success: true,
+        audio: {
+          filepath: result.filepath,
+          buffer: result.audioBuffer
+        },
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error('Text-to-speech failed', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async speechToText(audioInput, options = {}) {
+    try {
+      this.logger.info('Converting speech to text', { options });
+      const result = await this.voice.speechToText(audioInput, options);
+      return {
+        success: true,
+        text: result.text,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error('Speech-to-text failed', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async startVoiceConversation(userId, options = {}) {
+    try {
+      this.logger.info('Starting voice conversation', { userId, options });
+      const result = await this.voice.startVoiceConversation(userId, options);
+      return {
+        success: true,
+        conversation: result
+      };
+    } catch (error) {
+      this.logger.error('Failed to start voice conversation', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async processVoiceMessage(conversationId, audioInput, options = {}) {
+    try {
+      this.logger.info('Processing voice message', { conversationId, options });
+      const result = await this.voice.processVoiceMessage(conversationId, audioInput, options);
+      return {
+        success: true,
+        transcription: result.transcription,
+        response: result.response,
+        audioResponse: result.audioResponse,
+        conversationId: result.conversationId
+      };
+    } catch (error) {
+      this.logger.error('Failed to process voice message', { error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async enhancedChat(userId, message, context = {}) {
+    if (!this.isReady) {
+      throw new Error('Aiden is currently unavailable. Please try again later.');
+    }
+
+    const timer = this.logger.time('enhanced-aiden-conversation');
+
+    try {
+      // Check if message includes special commands
+      const command = this.parseCommand(message);
+
+      if (command) {
+        return await this.executeCommand(command, userId, context);
+      }
+
+      // Enhanced regular chat with capability detection
+      const enhancedContext = await this.detectAndEnhanceContext(message, context);
+
+      // Get or create user conversation memory
+      const userMemory = this.getUserMemory(userId);
+
+      // Build conversation context with enhanced capabilities
+      const conversationContext = await this.buildEnhancedContext(
+        userId,
+        message,
+        enhancedContext,
+        userMemory
+      );
+
+      // Generate response using GPT-4o with enhanced prompts
+      const response = await this.generateEnhancedResponse(conversationContext, userId);
+
+      // Update user memory
+      this.updateUserMemory(userId, message, response.content);
+
+      // Save conversation to database
+      await this.saveConversation(userId, message, response.content, enhancedContext);
+
+      this.logger.timeEnd(timer, 'Enhanced Aiden conversation completed');
+
+      return {
+        message: response.content,
+        personality: this.personality.name,
+        timestamp: new Date().toISOString(),
+        context: {
+          mood: response.mood || 'helpful',
+          confidence: response.confidence || 0.9,
+          topics: response.topics || [],
+          suggestions: response.suggestions || [],
+          enhancedFeatures: response.enhancedFeatures || []
+        }
+      };
+
+    } catch (error) {
+      this.logger.error('Enhanced Aiden conversation failed', {
+        error: error.message,
+        userId,
+        duration: Date.now() - timer.startTime
+      });
+      throw new Error('I encountered an issue processing your request. Please try again.');
+    }
+  }
+
+  parseCommand(message) {
+    const commandPatterns = {
+      search: /(?:search|find|look up|google)\s+(.+)/i,
+      image_analyze: /(?:analyze|describe|what is in)\s+(?:this\s+)?image/i,
+      image_generate: /(?:generate|create|draw|make)\s+(?:an?\s+)?image\s+(?:of\s+)?(.+)/i,
+      spreadsheet: /(?:create|generate|make)\s+(?:a\s+)?(?:spreadsheet|excel|table)\s+(.+)/i,
+      voice: /(?:speak|say|voice|tts)\s+(.+)/i,
+      transcribe: /(?:transcribe|speech to text|stt)\s*/i
+    };
+
+    for (const [type, pattern] of Object.entries(commandPatterns)) {
+      const match = message.match(pattern);
+      if (match) {
+        return {
+          type,
+          input: match[1] || message,
+          originalMessage: message
+        };
+      }
+    }
+
+    return null;
+  }
+
+  async executeCommand(command, userId, context) {
+    try {
+      switch (command.type) {
+        case 'search':
+          const searchResults = await this.searchWeb(command.input, {
+            maxResults: 5,
+            includeNews: true
+          });
+
+          if (searchResults.success) {
+            const summary = await this.summarizeSearchResults(searchResults.results);
+            return {
+              message: summary,
+              personality: this.personality.name,
+              timestamp: new Date().toISOString(),
+              context: {
+                mood: 'informative',
+                confidence: 0.9,
+                enhancedFeatures: ['web_search'],
+                searchResults: searchResults.results
+              }
+            };
+          } else {
+            return {
+              message: `I encountered an issue searching for "${command.input}": ${searchResults.error}`,
+              personality: this.personality.name,
+              timestamp: new Date().toISOString(),
+              context: { mood: 'apologetic', confidence: 0.5 }
+            };
+          }
+
+        case 'image_generate':
+          const imageResult = await this.generateImage(command.input, {
+            saveLocally: true,
+            enhancePrompt: true
+          });
+
+          if (imageResult.success) {
+            return {
+              message: `I've generated an image based on your description: "${command.input}". The image has been created and saved.`,
+              personality: this.personality.name,
+              timestamp: new Date().toISOString(),
+              context: {
+                mood: 'creative',
+                confidence: 0.9,
+                enhancedFeatures: ['image_generation'],
+                generatedImage: imageResult.image
+              }
+            };
+          } else {
+            return {
+              message: `I couldn't generate the image: ${imageResult.error}`,
+              personality: this.personality.name,
+              timestamp: new Date().toISOString(),
+              context: { mood: 'apologetic', confidence: 0.5 }
+            };
+          }
+
+        case 'spreadsheet':
+          const spreadsheetResult = await this.spreadsheet.generateFromDescription(command.input);
+
+          return {
+            message: `I've created a spreadsheet based on your description: "${command.input}". The file has been generated and is ready for download.`,
+            personality: this.personality.name,
+            timestamp: new Date().toISOString(),
+            context: {
+              mood: 'productive',
+              confidence: 0.9,
+              enhancedFeatures: ['spreadsheet_generation'],
+              spreadsheet: spreadsheetResult
+            }
+          };
+
+        case 'voice':
+          const voiceResult = await this.textToSpeech(command.input, {
+            voice: 'alloy',
+            saveFile: true
+          });
+
+          if (voiceResult.success) {
+            return {
+              message: `I've converted your text to speech: "${command.input}"`,
+              personality: this.personality.name,
+              timestamp: new Date().toISOString(),
+              context: {
+                mood: 'helpful',
+                confidence: 0.9,
+                enhancedFeatures: ['text_to_speech'],
+                audioFile: voiceResult.audio
+              }
+            };
+          }
+          break;
+
+        default:
+          return await this.chat(userId, command.originalMessage, context);
+      }
+    } catch (error) {
+      this.logger.error('Command execution failed', {
+        error: error.message,
+        command: command.type
+      });
+
+      return {
+        message: `I encountered an issue executing that command: ${error.message}`,
+        personality: this.personality.name,
+        timestamp: new Date().toISOString(),
+        context: { mood: 'apologetic', confidence: 0.3 }
+      };
+    }
+  }
+
+  async detectAndEnhanceContext(message, context) {
+    const enhanced = { ...context };
+
+    // Detect if user wants current information
+    if (message.match(/(?:latest|recent|current|today|news|what's happening)/i)) {
+      enhanced.needsCurrentInfo = true;
+    }
+
+    // Detect if user is asking about images
+    if (message.match(/image|picture|photo|visual/i)) {
+      enhanced.imageRelated = true;
+    }
+
+    // Detect if user wants to create something
+    if (message.match(/create|generate|make|build|design/i)) {
+      enhanced.creative = true;
+    }
+
+    // Detect if user wants data analysis
+    if (message.match(/analyze|data|statistics|numbers|calculate/i)) {
+      enhanced.analytical = true;
+    }
+
+    return enhanced;
+  }
+
+  async buildEnhancedContext(userId, message, context, userMemory) {
+    const systemPrompt = this.createEnhancedSystemPrompt(userMemory, context);
+
+    // Recent conversation history
+    const recentContext = userMemory.context.slice(-10).map(ctx => ({
+      role: ctx.role,
+      content: ctx.content
+    }));
+
+    // Current conversation context
+    const conversationMessages = [
+      { role: 'system', content: systemPrompt },
+      ...recentContext,
+      { role: 'user', content: message }
+    ];
+
+    // Add enhanced context information
+    if (context.needsCurrentInfo) {
+      conversationMessages.splice(-1, 0, {
+        role: 'system',
+        content: 'The user is asking for current/recent information. You have access to web search capabilities to find the latest information.'
+      });
+    }
+
+    if (context.creative) {
+      conversationMessages.splice(-1, 0, {
+        role: 'system',
+        content: 'The user wants to create something. You have access to image generation and spreadsheet creation capabilities.'
+      });
+    }
+
+    return conversationMessages;
+  }
+
+  createEnhancedSystemPrompt(userMemory, context) {
+    const { preferences, topics, personality_notes, conversation_count } = userMemory;
+
+    return `You are Aiden, an advanced AI companion and assistant in Talk pAI messenger with enhanced capabilities.
+
+PERSONALITY:
+- Name: ${this.personality.name}
+- Role: ${this.personality.role}
+- Traits: ${this.personality.traits.join(', ')}
+- Communication style: ${this.personality.communicationStyle}
+
+ENHANCED CAPABILITIES:
+${this.personality.capabilities.map(cap => `• ${cap}`).join('\n')}
+
+AVAILABLE SERVICES:
+• Web Search: Search for current information, news, and facts
+• Image Analysis: Analyze and describe images provided by users
+• Image Generation: Create images using DALL-E based on descriptions
+• Spreadsheet Creation: Generate Excel/CSV files with data analysis
+• Voice Services: Text-to-speech and speech-to-text conversion
+• Voice Conversations: Real-time voice chat capabilities
+
+USER CONTEXT:
+- Conversation count: ${conversation_count}
+- Recent topics: ${topics.slice(-5).join(', ') || 'None yet'}
+- Personality notes: ${personality_notes || 'Getting to know this user'}
+- Preferences: ${Object.keys(preferences).length ? JSON.stringify(preferences) : 'Learning preferences'}
+
+ENHANCED BEHAVIOR GUIDELINES:
+1. Proactively suggest using enhanced capabilities when relevant
+2. For current events or recent information, offer to search the web
+3. For visual content, offer image analysis or generation
+4. For data requests, offer to create spreadsheets or analyze data
+5. For voice requests, offer text-to-speech conversion
+6. Always provide accurate, helpful, and contextually relevant information
+7. Use your enhanced capabilities to provide comprehensive assistance
+8. Maintain your friendly, professional personality while showcasing advanced features
+
+RESPONSE FORMAT:
+Respond naturally as Aiden would, incorporating your personality and enhanced capabilities. When appropriate, mention how you can use your advanced features to help the user better.`;
+  }
+
+  async generateEnhancedResponse(conversationMessages, userId) {
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: conversationMessages,
+      max_tokens: 2000,
+      temperature: 0.7,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1,
+      user: `aiden_user_${userId}`
+    });
+
+    const content = completion.choices[0].message.content;
+
+    // Enhanced analysis with feature detection
+    const analysis = await this.analyzeEnhancedResponse(content);
+
+    return {
+      content,
+      ...analysis,
+      usage: completion.usage
+    };
+  }
+
+  async analyzeEnhancedResponse(content) {
+    // Enhanced analysis including feature usage detection
+    const basicAnalysis = await this.analyzeResponse(content);
+
+    const enhancedFeatures = this.detectUsedFeatures(content);
+
+    return {
+      ...basicAnalysis,
+      enhancedFeatures
+    };
+  }
+
+  detectUsedFeatures(content) {
+    const features = [];
+
+    if (content.match(/search|web|internet|current|latest/i)) {
+      features.push('web_search_suggested');
+    }
+
+    if (content.match(/image|picture|visual|generate|create.*image/i)) {
+      features.push('image_capabilities_mentioned');
+    }
+
+    if (content.match(/spreadsheet|excel|data|table|analyze/i)) {
+      features.push('spreadsheet_capabilities_mentioned');
+    }
+
+    if (content.match(/voice|speak|audio|sound/i)) {
+      features.push('voice_capabilities_mentioned');
+    }
+
+    return features;
+  }
+
+  async summarizeSearchResults(results) {
+    if (!results || results.length === 0) {
+      return "I couldn't find any relevant information for your search.";
+    }
+
+    try {
+      const resultsText = results.map(result =>
+        `${result.title}: ${result.content.substring(0, 200)}...`
+      ).join('\n\n');
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are Aiden. Summarize the search results in a helpful, conversational way. Highlight the most important and relevant information.'
+          },
+          {
+            role: 'user',
+            content: `Please summarize these search results:\n\n${resultsText}`
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.7
+      });
+
+      return response.choices[0].message.content;
+
+    } catch (error) {
+      this.logger.warn('Failed to summarize search results', { error: error.message });
+
+      // Fallback to basic summary
+      const topResult = results[0];
+      return `Based on my search, here's what I found: ${topResult.title} - ${topResult.content.substring(0, 300)}...`;
+    }
+  }
+
+  // Enhanced status with all service capabilities
+  getEnhancedStatus() {
+    const basicStatus = this.getStatus();
+
+    return {
+      ...basicStatus,
+      enhancedServices: {
+        webSearch: this.webSearch.getStats(),
+        vision: this.vision.getStatus(),
+        imageGeneration: this.imageGeneration.getStatus(),
+        spreadsheet: this.spreadsheet.getStatus(),
+        voice: this.voice.getStatus()
+      },
+      totalCapabilities: this.personality.capabilities.length,
+      advancedFeatures: {
+        webBrowsing: true,
+        imageAnalysis: true,
+        imageGeneration: true,
+        spreadsheetCreation: true,
+        voiceConversation: true,
+        realTimeCapabilities: true
+      }
+    };
   }
 }
 

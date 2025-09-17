@@ -35,8 +35,14 @@ class AidenRoutes {
     // Chat with Aiden
     this.router.post('/chat', aidenRateLimit, this.chat.bind(this));
 
+    // Enhanced chat with advanced capabilities
+    this.router.post('/enhanced-chat', aidenRateLimit, this.enhancedChat.bind(this));
+
     // Get Aiden's status and capabilities
     this.router.get('/status', this.getStatus.bind(this));
+
+    // Get enhanced status with all services
+    this.router.get('/enhanced-status', this.getEnhancedStatus.bind(this));
 
     // Get conversation history with Aiden
     this.router.get('/history', this.getHistory.bind(this));
@@ -49,6 +55,19 @@ class AidenRoutes {
 
     // Get Aiden's personality info
     this.router.get('/personality', this.getPersonality.bind(this));
+
+    // Advanced AI capabilities
+    this.router.post('/search', aidenRateLimit, this.webSearch.bind(this));
+    this.router.post('/analyze-image', aidenRateLimit, this.analyzeImage.bind(this));
+    this.router.post('/generate-image', aidenRateLimit, this.generateImage.bind(this));
+    this.router.post('/create-spreadsheet', aidenRateLimit, this.createSpreadsheet.bind(this));
+    this.router.post('/text-to-speech', aidenRateLimit, this.textToSpeech.bind(this));
+    this.router.post('/speech-to-text', aidenRateLimit, this.speechToText.bind(this));
+
+    // Voice conversation endpoints
+    this.router.post('/voice/start', aidenRateLimit, this.startVoiceConversation.bind(this));
+    this.router.post('/voice/:conversationId/message', aidenRateLimit, this.processVoiceMessage.bind(this));
+    this.router.delete('/voice/:conversationId', this.endVoiceConversation.bind(this));
   }
 
   async chat(req, res) {
@@ -262,6 +281,385 @@ class AidenRoutes {
 
       res.status(500).json({
         error: 'Failed to get personality information',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async enhancedChat(req, res) {
+    try {
+      const { message, context = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Message is required and must be a non-empty string'
+        });
+      }
+
+      this.logger.info('Enhanced Aiden chat request', {
+        userId,
+        messageLength: message.length,
+        hasContext: Object.keys(context).length > 0
+      });
+
+      const response = await this.aidenCompanion.enhancedChat(userId, message.trim(), context);
+
+      res.json({
+        success: true,
+        aiden: response,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Enhanced Aiden chat failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async getEnhancedStatus(req, res) {
+    try {
+      const status = this.aidenCompanion.getEnhancedStatus();
+
+      res.json({
+        success: true,
+        aiden: status,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Failed to get enhanced Aiden status', {
+        error: error.message
+      });
+
+      res.status(500).json({
+        error: 'Failed to get enhanced status',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async webSearch(req, res) {
+    try {
+      const { query, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!query || query.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Search query is required'
+        });
+      }
+
+      this.logger.info('Web search request', { userId, query });
+
+      const result = await this.aidenCompanion.searchWeb(query, options);
+
+      res.json({
+        success: true,
+        search: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Web search failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async analyzeImage(req, res) {
+    try {
+      const { imageUrl, imagePath, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!imageUrl && !imagePath && !req.file) {
+        return res.status(400).json({
+          error: 'Image URL, path, or file upload is required'
+        });
+      }
+
+      this.logger.info('Image analysis request', { userId, hasFile: !!req.file });
+
+      const imageInput = req.file ? req.file.path : (imageUrl || imagePath);
+      const result = await this.aidenCompanion.analyzeImage(imageInput, options);
+
+      res.json({
+        success: true,
+        analysis: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Image analysis failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async generateImage(req, res) {
+    try {
+      const { prompt, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!prompt || prompt.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Image prompt is required'
+        });
+      }
+
+      this.logger.info('Image generation request', {
+        userId,
+        promptLength: prompt.length
+      });
+
+      const result = await this.aidenCompanion.generateImage(prompt, {
+        ...options,
+        saveLocally: true
+      });
+
+      res.json({
+        success: true,
+        image: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Image generation failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async createSpreadsheet(req, res) {
+    try {
+      const { data, description, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!data && !description) {
+        return res.status(400).json({
+          error: 'Data or description is required for spreadsheet creation'
+        });
+      }
+
+      this.logger.info('Spreadsheet creation request', { userId, hasData: !!data });
+
+      let result;
+      if (description && !data) {
+        // Generate from description
+        result = await this.aidenCompanion.spreadsheet.generateFromDescription(description, options);
+      } else {
+        // Generate from data
+        result = await this.aidenCompanion.createSpreadsheet(data, options);
+      }
+
+      res.json({
+        success: true,
+        spreadsheet: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Spreadsheet creation failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async textToSpeech(req, res) {
+    try {
+      const { text, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!text || text.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Text is required for speech synthesis'
+        });
+      }
+
+      this.logger.info('Text-to-speech request', {
+        userId,
+        textLength: text.length
+      });
+
+      const result = await this.aidenCompanion.textToSpeech(text, {
+        ...options,
+        saveFile: true
+      });
+
+      res.json({
+        success: true,
+        audio: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Text-to-speech failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async speechToText(req, res) {
+    try {
+      const { audioUrl, audioPath, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!audioUrl && !audioPath && !req.file) {
+        return res.status(400).json({
+          error: 'Audio URL, path, or file upload is required'
+        });
+      }
+
+      this.logger.info('Speech-to-text request', { userId, hasFile: !!req.file });
+
+      const audioInput = req.file ? req.file.buffer : (audioUrl || audioPath);
+      const result = await this.aidenCompanion.speechToText(audioInput, options);
+
+      res.json({
+        success: true,
+        transcription: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Speech-to-text failed', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async startVoiceConversation(req, res) {
+    try {
+      const { options = {} } = req.body;
+      const userId = req.user.id;
+
+      this.logger.info('Starting voice conversation', { userId });
+
+      const result = await this.aidenCompanion.startVoiceConversation(userId, options);
+
+      res.json({
+        success: true,
+        conversation: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Failed to start voice conversation', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async processVoiceMessage(req, res) {
+    try {
+      const { conversationId } = req.params;
+      const { audioUrl, audioPath, options = {} } = req.body;
+      const userId = req.user.id;
+
+      if (!audioUrl && !audioPath && !req.file) {
+        return res.status(400).json({
+          error: 'Audio URL, path, or file upload is required'
+        });
+      }
+
+      this.logger.info('Processing voice message', { userId, conversationId });
+
+      const audioInput = req.file ? req.file.buffer : (audioUrl || audioPath);
+      const result = await this.aidenCompanion.processVoiceMessage(conversationId, audioInput, options);
+
+      res.json({
+        success: true,
+        message: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Failed to process voice message', {
+        error: error.message,
+        userId: req.user?.id,
+        conversationId: req.params.conversationId
+      });
+
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async endVoiceConversation(req, res) {
+    try {
+      const { conversationId } = req.params;
+      const userId = req.user.id;
+
+      this.logger.info('Ending voice conversation', { userId, conversationId });
+
+      const result = await this.aidenCompanion.voice.endVoiceConversation(conversationId);
+
+      res.json({
+        success: true,
+        conversation: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('Failed to end voice conversation', {
+        error: error.message,
+        userId: req.user?.id,
+        conversationId: req.params.conversationId
+      });
+
+      res.status(500).json({
+        error: error.message,
         timestamp: new Date().toISOString()
       });
     }
