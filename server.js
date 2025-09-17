@@ -37,7 +37,8 @@ try {
 }
 
 try {
-  database = require('./src/database/optimized-connection');
+  const DatabaseInitializer = require('./database/init-database');
+  database = new DatabaseInitializer();
 } catch (error) {
   console.warn('Database module not found, using fallback');
   database = { isConnected: false, connect: () => Promise.resolve(false) };
