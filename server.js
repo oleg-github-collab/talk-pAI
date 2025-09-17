@@ -146,6 +146,11 @@ app.use('/api/search', new SearchRoutes(database, logger).getRouter());
 app.use('/api/enterprise', new EnterpriseRoutes(database, logger).getRouter());
 app.use('/api/enhanced', new EnhancedRoutes(database, logger).getRouter());
 
+// Main route - serve the glassmorphism messenger
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'glassmorphism-messenger.html'));
+});
+
 // Health endpoints
 app.get('/health', (req, res) => {
   res.json({
