@@ -83,6 +83,7 @@ const CorporateRoutes = safeRequire('./src/corporate/routes', 'CorporateRoutes')
 const SearchRoutes = safeRequire('./src/search/routes', 'SearchRoutes');
 const EnterpriseRoutes = safeRequire('./src/enterprise/routes', 'EnterpriseRoutes');
 const EnhancedRoutes = safeRequire('./src/routes/enhanced-api', 'EnhancedRoutes');
+const ContactsAPI = safeRequire('./src/routes/contacts-api', 'ContactsAPI');
 
 // Initialize Express app
 const app = express();
@@ -145,6 +146,7 @@ app.use('/api/corporate', new CorporateRoutes(database, logger).getRouter());
 app.use('/api/search', new SearchRoutes(database, logger).getRouter());
 app.use('/api/enterprise', new EnterpriseRoutes(database, logger).getRouter());
 app.use('/api/enhanced', new EnhancedRoutes(database, logger).getRouter());
+app.use('/api/contacts', new ContactsAPI(database, logger).getRouter());
 
 // Main route - serve the glassmorphism messenger
 app.get('/', (req, res) => {
