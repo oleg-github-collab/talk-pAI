@@ -36,19 +36,15 @@ try {
   };
 }
 
-// Initialize database
+// Initialize PostgreSQL database
 let database;
 try {
   const DatabaseInitializer = require('./database/init-database');
   database = new DatabaseInitializer();
 } catch (error) {
-  console.warn('Database not available, using memory fallback');
-  try {
-    const MemoryDatabase = require('./database/memory-database');
-    database = new MemoryDatabase();
-  } catch (memError) {
-    database = { isConnected: false, connect: () => Promise.resolve(false) };
-  }
+  console.error('❌ Failed to initialize PostgreSQL database:', error.message);
+  console.error('💡 Make sure your DATABASE_URL environment variable is set with your Railway PostgreSQL connection string');
+  process.exit(1);
 }
 
 // Initialize logger
@@ -148,9 +144,9 @@ app.use('/api/enterprise', new EnterpriseRoutes(database, logger).getRouter());
 app.use('/api/enhanced', new EnhancedRoutes(database, logger).getRouter());
 app.use('/api/contacts', new ContactsAPI(database, logger).getRouter());
 
-// Main route - serve the glassmorphism messenger
+// Main route - serve the ultra-modern glassmorphism messenger
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'glassmorphism-messenger.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Health endpoints

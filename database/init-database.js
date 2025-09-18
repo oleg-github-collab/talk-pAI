@@ -1,25 +1,22 @@
 const fs = require('fs');
 const path = require('path');
 
-// Database initialization script
+// PostgreSQL-only Database Initializer for Railway
 class DatabaseInitializer {
     constructor() {
         this.isConnected = false;
         this.client = null;
-        this.connectionType = 'sqlite'; // Default to SQLite for Railway compatibility
+        this.connectionType = 'postgresql';
     }
 
     async connect() {
         try {
-            // Try PostgreSQL first
-            if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
-                console.log('🔗 Attempting PostgreSQL connection...');
-                await this.connectPostgreSQL();
-            } else {
-                // Fallback to SQLite
-                console.log('🔗 Using SQLite fallback database...');
-                await this.connectSQLite();
+            if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes('postgres')) {
+                throw new Error('PostgreSQL DATABASE_URL is required. Please set your Railway PostgreSQL connection string.');
             }
+
+            console.log('🔗 Connecting to PostgreSQL database...');
+            await this.connectPostgreSQL();
 
             console.log(`✅ Database connected successfully (${this.connectionType})`);
             await this.initializeSchema();
@@ -53,71 +50,24 @@ class DatabaseInitializer {
         }
     }
 
-    async connectSQLite() {
-        try {
-            const sqlite3 = require('sqlite3').verbose();
-
-            const dbPath = process.env.SQLITE_DB_PATH || path.join(__dirname, '..', 'talkpai.db');
-
-            // Ensure directory exists
-            const dbDir = path.dirname(dbPath);
-            if (!fs.existsSync(dbDir)) {
-                fs.mkdirSync(dbDir, { recursive: true });
-            }
-
-            this.client = new sqlite3.Database(dbPath, (err) => {
-                if (err) {
-                    throw err;
-                }
-            });
-            this.isConnected = true;
-            this.connectionType = 'sqlite';
-
-            // Enable foreign keys
-            this.client.run('PRAGMA foreign_keys = ON');
-
-            console.log('📂 SQLite database initialized at:', dbPath);
-
-        } catch (error) {
-            console.error('SQLite connection failed:', error.message);
-            throw error;
-        }
-    }
-
     async initializeSchema() {
         try {
-            console.log('🔧 Initializing database schema...');
+            console.log('🔧 Initializing PostgreSQL database schema...');
 
-            let schemaPath;
-            if (this.connectionType === 'postgresql') {
-                schemaPath = path.join(__dirname, 'production-schema.sql');
-            } else {
-                schemaPath = path.join(__dirname, 'sqlite-schema.sql');
-            }
+            const schemaPath = path.join(__dirname, 'production-schema.sql');
 
             if (!fs.existsSync(schemaPath)) {
-                console.warn(`Schema file not found: ${schemaPath}, trying alternative...`);
-                schemaPath = path.join(__dirname, 'fixed-schema.sql');
-            }
-
-            if (!fs.existsSync(schemaPath)) {
-                throw new Error('No schema file found');
+                throw new Error(`PostgreSQL schema file not found: ${schemaPath}`);
             }
 
             const schema = fs.readFileSync(schemaPath, 'utf8');
+            await this.initializePostgreSQLSchema(schema);
 
-            if (this.connectionType === 'postgresql') {
-                await this.initializePostgreSQLSchema(schema);
-            } else {
-                await this.initializeSQLiteSchema(schema);
-            }
-
-            console.log('✅ Database schema initialized successfully');
+            console.log('✅ PostgreSQL database schema initialized successfully');
 
         } catch (error) {
             console.error('❌ Schema initialization failed:', error.message);
-            // Don't throw error - continue with empty database
-            console.log('⚠️ Continuing with basic database setup...');
+            throw error; // Don't continue with broken schema
         }
     }
 
@@ -125,6 +75,7 @@ class DatabaseInitializer {
         try {
             // Enable UUID extension first
             await this.client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+            console.log('✅ UUID extension enabled');
 
             // Split and execute statements
             const statements = schema
@@ -132,53 +83,26 @@ class DatabaseInitializer {
                 .map(stmt => stmt.trim())
                 .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
 
-            for (const statement of statements) {
-                if (statement.includes('uuid_generate_v4()')) {
-                    // Convert SQLite UUID function to PostgreSQL
-                    const pgStatement = statement.replace(
-                        /DEFAULT \(lower\(hex\(randomblob\(4\)\)\).*?\)/g,
-                        'DEFAULT uuid_generate_v4()'
-                    );
-                    await this.client.query(pgStatement);
-                } else {
-                    await this.client.query(statement);
-                }
-            }
-
-        } catch (error) {
-            if (!error.message.includes('already exists')) {
-                console.error('❌ PostgreSQL schema error:', error.message);
-            }
-        }
-    }
-
-    async initializeSQLiteSchema(schema) {
-        try {
-            // Split and execute statements
-            const statements = schema
-                .split(';')
-                .map(stmt => stmt.trim())
-                .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+            console.log(`🔧 Executing ${statements.length} schema statements...`);
 
             for (const statement of statements) {
                 try {
-                    await new Promise((resolve, reject) => {
-                        this.client.run(statement, (err) => {
-                            if (err && !err.message.includes('already exists')) {
-                                console.warn('⚠️ SQLite statement warning:', err.message);
-                            }
-                            resolve();
-                        });
-                    });
+                    await this.client.query(statement);
                 } catch (error) {
                     if (!error.message.includes('already exists')) {
-                        console.warn('⚠️ SQLite statement warning:', error.message);
+                        console.error('❌ PostgreSQL schema error:', error.message);
+                        console.error('❌ Statement:', statement.substring(0, 100) + '...');
+                        throw error;
+                    } else {
+                        console.log('⚠️ Table/index already exists, skipping...');
                     }
                 }
             }
 
+            console.log('✅ All schema statements executed successfully');
+
         } catch (error) {
-            console.error('❌ SQLite schema error:', error.message);
+            console.error('❌ PostgreSQL schema initialization failed:', error.message);
             throw error;
         }
     }
@@ -189,65 +113,37 @@ class DatabaseInitializer {
         }
 
         try {
-            if (this.connectionType === 'postgresql') {
-                const result = await this.client.query(sql, params);
-                return result.rows;
-            } else {
-                // SQLite3 (using callback-based API)
-                return await new Promise((resolve, reject) => {
-                    if (sql.toLowerCase().startsWith('select')) {
-                        this.client.all(sql, params, (err, rows) => {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve(rows || []);
-                            }
-                        });
-                    } else {
-                        this.client.run(sql, params, function(err) {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve({
-                                    rowCount: this.changes,
-                                    insertId: this.lastID
-                                });
-                            }
-                        });
-                    }
-                });
+            // Convert ? placeholders to $1, $2, etc. for PostgreSQL
+            let pgSql = sql;
+            let pgParams = params;
+
+            if (sql.includes('?')) {
+                let paramIndex = 1;
+                pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
             }
+
+            const result = await this.client.query(pgSql, pgParams);
+            return result.rows;
         } catch (error) {
             console.error('❌ Query error:', error.message);
             console.error('❌ SQL:', sql);
+            console.error('❌ Params:', params);
             throw error;
         }
     }
 
     async close() {
         if (this.client) {
-            if (this.connectionType === 'postgresql') {
-                await this.client.end();
-            } else {
-                await new Promise((resolve) => {
-                    this.client.close((err) => {
-                        if (err) {
-                            console.warn('Database close warning:', err.message);
-                        }
-                        resolve();
-                    });
-                });
-            }
+            await this.client.end();
             this.isConnected = false;
-            console.log('🔐 Database connection closed');
+            console.log('🔐 PostgreSQL connection closed');
         }
     }
 
-    // Utility methods for common operations
+    // Utility methods for common operations (PostgreSQL specific)
     async getUserByNickname(nickname) {
-        const sql = 'SELECT * FROM users WHERE nickname = ?';
-        const params = this.connectionType === 'postgresql' ? [nickname] : [nickname];
-        const result = await this.query(sql, params);
+        const sql = 'SELECT * FROM users WHERE nickname = $1';
+        const result = await this.query(sql, [nickname]);
         return result[0] || null;
     }
 
@@ -263,21 +159,23 @@ class DatabaseInitializer {
 
         const sql = `
             INSERT INTO users (nickname, email, password_hash, display_name, bio, account_type)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
         `;
 
         const params = [nickname, email, password_hash, display_name, bio, account_type];
-        return await this.query(sql, params);
+        const result = await this.query(sql, params);
+        return result[0];
     }
 
     async getMessages(chatId, limit = 50, offset = 0) {
         const sql = `
-            SELECT m.*, u.nickname as sender_nickname, u.display_name as sender_display_name, u.avatar_url as sender_avatar
+            SELECT m.*, u.nickname as sender_nickname, u.display_name as sender_display_name, u.avatar as sender_avatar
             FROM messages m
             LEFT JOIN users u ON m.sender_id = u.id
-            WHERE m.chat_id = ?
+            WHERE m.chat_id = $1
             ORDER BY m.created_at DESC
-            LIMIT ? OFFSET ?
+            LIMIT $2 OFFSET $3
         `;
 
         const params = [chatId, limit, offset];
@@ -296,12 +194,21 @@ class DatabaseInitializer {
 
         const sql = `
             INSERT INTO messages (chat_id, sender_id, content, message_type, reply_to_id, metadata)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
         `;
 
-        const params = [chat_id, sender_id, content, message_type, reply_to_id,
-                       typeof metadata === 'string' ? metadata : JSON.stringify(metadata)];
-        return await this.query(sql, params);
+        const params = [
+            chat_id,
+            sender_id,
+            content,
+            message_type,
+            reply_to_id,
+            typeof metadata === 'string' ? metadata : JSON.stringify(metadata)
+        ];
+
+        const result = await this.query(sql, params);
+        return result[0];
     }
 
     async searchMessages(chatId, searchTerm, limit = 20) {
@@ -309,13 +216,75 @@ class DatabaseInitializer {
             SELECT m.*, u.nickname as sender_nickname, u.display_name as sender_display_name
             FROM messages m
             LEFT JOIN users u ON m.sender_id = u.id
-            WHERE m.chat_id = ? AND m.content LIKE ?
+            WHERE m.chat_id = $1 AND m.content ILIKE $2
             ORDER BY m.created_at DESC
-            LIMIT ?
+            LIMIT $3
         `;
 
         const params = [chatId, `%${searchTerm}%`, limit];
         return await this.query(sql, params);
+    }
+
+    async createChat(chatData) {
+        const {
+            name,
+            type = 'private',
+            created_by
+        } = chatData;
+
+        const sql = `
+            INSERT INTO chats (name, type, created_by)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        `;
+
+        const params = [name, type, created_by];
+        const result = await this.query(sql, params);
+        return result[0];
+    }
+
+    async getChatsByUserId(userId) {
+        const sql = `
+            SELECT c.*, cp.role, cp.joined_at
+            FROM chats c
+            JOIN chat_participants cp ON c.id = cp.chat_id
+            WHERE cp.user_id = $1
+            ORDER BY c.updated_at DESC
+        `;
+
+        return await this.query(sql, [userId]);
+    }
+
+    async addUserToChat(chatId, userId, role = 'member') {
+        const sql = `
+            INSERT INTO chat_participants (chat_id, user_id, role)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (chat_id, user_id) DO NOTHING
+            RETURNING *
+        `;
+
+        const params = [chatId, userId, role];
+        const result = await this.query(sql, params);
+        return result[0];
+    }
+
+    // Health check method
+    async healthCheck() {
+        try {
+            const result = await this.client.query('SELECT NOW() as current_time, version() as pg_version');
+            return {
+                connected: true,
+                timestamp: result.rows[0].current_time,
+                version: result.rows[0].pg_version,
+                type: 'postgresql'
+            };
+        } catch (error) {
+            return {
+                connected: false,
+                error: error.message,
+                type: 'postgresql'
+            };
+        }
     }
 }
 

@@ -534,7 +534,5 @@ class RealTimeManager {
 // Initialize global real-time manager
 window.RealTime = new RealTimeManager();
 
-// Export for modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = RealTimeManager;
-}
+// Browser global export
+window.RealTimeManager = RealTimeManager;
