@@ -172,10 +172,113 @@ class FallbackDatabase {
         return this.data.users.find(user => user.email === email) || null;
     }
 
+    async getUserById(userId) {
+        return this.data.users.find(user => user.id === userId) || null;
+    }
+
+    async searchUsers(query, options = {}) {
+        const { limit = 20, offset = 0 } = options;
+        const searchTerm = query.toLowerCase();
+
+        // Advanced fuzzy search with scoring
+        const users = this.data.users
+            .map(user => {
+                let score = 0;
+                const nickname = (user.nickname || '').toLowerCase();
+                const displayName = (user.display_name || '').toLowerCase();
+                const email = (user.email || '').toLowerCase();
+                const bio = (user.bio || '').toLowerCase();
+
+                // Exact matches get highest score
+                if (nickname === searchTerm) score += 100;
+                if (displayName === searchTerm) score += 90;
+                if (email === searchTerm) score += 80;
+
+                // Starts with gets high score
+                if (nickname.startsWith(searchTerm)) score += 70;
+                if (displayName.startsWith(searchTerm)) score += 60;
+                if (email.startsWith(searchTerm)) score += 50;
+
+                // Contains gets medium score
+                if (nickname.includes(searchTerm)) score += 40;
+                if (displayName.includes(searchTerm)) score += 30;
+                if (email.includes(searchTerm)) score += 20;
+                if (bio.includes(searchTerm)) score += 10;
+
+                // Fuzzy matching for typos
+                if (this.levenshteinDistance(nickname, searchTerm) <= 2) score += 25;
+                if (this.levenshteinDistance(displayName, searchTerm) <= 2) score += 20;
+
+                return { user, score };
+            })
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(item => item.user)
+            .slice(offset, offset + limit);
+
+        return users;
+    }
+
+    async getAllUsers(options = {}) {
+        const { limit = 50, offset = 0, status = 'active' } = options;
+
+        let users = [...this.data.users];
+
+        if (status !== 'all') {
+            users = users.filter(user => user.status === status || user.is_online);
+        }
+
+        return users.slice(offset, offset + limit);
+    }
+
+    async updateUser(userId, updates) {
+        const userIndex = this.data.users.findIndex(user => user.id === userId);
+        if (userIndex === -1) {
+            throw new Error('User not found');
+        }
+
+        this.data.users[userIndex] = {
+            ...this.data.users[userIndex],
+            ...updates,
+            updated_at: new Date()
+        };
+
+        return this.data.users[userIndex];
+    }
+
+    // Levenshtein distance for fuzzy matching
+    levenshteinDistance(str1, str2) {
+        const matrix = [];
+
+        for (let i = 0; i <= str2.length; i++) {
+            matrix[i] = [i];
+        }
+
+        for (let j = 0; j <= str1.length; j++) {
+            matrix[0][j] = j;
+        }
+
+        for (let i = 1; i <= str2.length; i++) {
+            for (let j = 1; j <= str1.length; j++) {
+                if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+                }
+            }
+        }
+
+        return matrix[str2.length][str1.length];
+    }
+
     async createUser(userData) {
         const {
             nickname,
-            email,
+            email = null,
             password_hash,
             display_name = nickname,
             bio = 'Hey there! I am using Talk pAI.',
@@ -194,7 +297,9 @@ class FallbackDatabase {
             created_at: new Date(),
             updated_at: new Date(),
             last_seen: new Date(),
-            is_online: true
+            is_online: true,
+            theme: 'auto',
+            status: 'online'
         };
 
         this.data.users.push(newUser);
@@ -393,6 +498,169 @@ class FallbackDatabase {
             results.push(participant);
         }
         return results;
+    }
+
+    async removeChatParticipant(chatId, userId) {
+        const index = this.data.chat_participants.findIndex(
+            cp => cp.chat_id === chatId.toString() && cp.user_id === userId
+        );
+
+        if (index !== -1) {
+            this.data.chat_participants.splice(index, 1);
+        }
+
+        return true;
+    }
+
+    async updateParticipantRole(chatId, userId, role) {
+        const participant = this.data.chat_participants.find(
+            cp => cp.chat_id === chatId.toString() && cp.user_id === userId
+        );
+
+        if (participant) {
+            participant.role = role;
+        }
+
+        return participant;
+    }
+
+    async getChatParticipants(chatId) {
+        return this.data.chat_participants
+            .filter(cp => cp.chat_id === chatId.toString())
+            .map(cp => {
+                const user = this.data.users.find(u => u.id === cp.user_id);
+                return {
+                    ...cp,
+                    user: user ? {
+                        id: user.id,
+                        nickname: user.nickname,
+                        display_name: user.display_name,
+                        avatar: user.avatar,
+                        is_online: user.is_online
+                    } : null
+                };
+            });
+    }
+
+    async deleteChat(chatId) {
+        // Remove chat
+        const chatIndex = this.data.chats.findIndex(chat => chat.id === chatId.toString());
+        if (chatIndex !== -1) {
+            this.data.chats.splice(chatIndex, 1);
+        }
+
+        // Remove participants
+        this.data.chat_participants = this.data.chat_participants.filter(
+            cp => cp.chat_id !== chatId.toString()
+        );
+
+        // Remove messages
+        this.data.messages = this.data.messages.filter(
+            msg => msg.chat_id !== chatId.toString()
+        );
+
+        return true;
+    }
+
+    async updateChat(chatId, updates) {
+        const chatIndex = this.data.chats.findIndex(chat => chat.id === chatId.toString());
+        if (chatIndex === -1) {
+            throw new Error('Chat not found');
+        }
+
+        this.data.chats[chatIndex] = {
+            ...this.data.chats[chatIndex],
+            ...updates,
+            updated_at: new Date()
+        };
+
+        return this.data.chats[chatIndex];
+    }
+
+    async markChatAsRead(chatId, userId) {
+        const participant = this.data.chat_participants.find(
+            cp => cp.chat_id === chatId.toString() && cp.user_id === userId
+        );
+
+        if (participant) {
+            participant.last_read_at = new Date();
+        }
+
+        return true;
+    }
+
+    // ================================
+    // NOTIFICATION METHODS
+    // ================================
+
+    async getUserNotifications(userId, options = {}) {
+        // Since we don't have notifications in the fallback DB, return empty array
+        // In a real implementation, this would fetch user notifications
+        return [];
+    }
+
+    async markNotificationAsRead(notificationId, userId) {
+        // Placeholder for notification read marking
+        return true;
+    }
+
+    // ================================
+    // ENHANCED DEMO DATA
+    // ================================
+
+    async addMoreDemoUsers() {
+        const demoUsers = [
+            {
+                id: 'demo-user-2',
+                nickname: 'john_doe',
+                email: 'john@example.com',
+                password_hash: 'hashed_password123',
+                display_name: 'John Doe',
+                bio: 'Senior Developer passionate about clean code',
+                account_type: 'personal',
+                avatar: null,
+                created_at: new Date(),
+                updated_at: new Date(),
+                last_seen: new Date(),
+                is_online: true,
+                theme: 'dark',
+                status: 'online'
+            },
+            {
+                id: 'demo-user-3',
+                nickname: 'sarah_wilson',
+                email: 'sarah@company.com',
+                password_hash: 'hashed_password456',
+                display_name: 'Sarah Wilson',
+                bio: 'Product Manager | UX enthusiast',
+                account_type: 'business',
+                avatar: null,
+                created_at: new Date(),
+                updated_at: new Date(),
+                last_seen: new Date(),
+                is_online: false,
+                theme: 'light',
+                status: 'away'
+            },
+            {
+                id: 'demo-user-4',
+                nickname: 'tech_lead',
+                email: 'lead@talkpai.com',
+                password_hash: 'hashed_password789',
+                display_name: 'Tech Lead',
+                bio: 'Leading innovation in messaging',
+                account_type: 'enterprise',
+                avatar: null,
+                created_at: new Date(),
+                updated_at: new Date(),
+                last_seen: new Date(),
+                is_online: true,
+                theme: 'auto',
+                status: 'busy'
+            }
+        ];
+
+        this.data.users.push(...demoUsers);
     }
 
     // ================================
