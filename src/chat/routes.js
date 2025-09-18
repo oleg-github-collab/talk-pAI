@@ -12,7 +12,10 @@ class ChatRoutes {
   }
 
   setupRoutes() {
-    // Apply authentication middleware to all routes
+    // Demo route without authentication for testing
+    this.router.post('/demo/message', this.sendDemoMessage.bind(this));
+
+    // Apply authentication middleware to all routes except demo
     this.router.use(this.authenticate.bind(this));
 
     // Chat management
@@ -338,6 +341,50 @@ class ChatRoutes {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async sendDemoMessage(req, res) {
+    try {
+      const { content, messageType = 'text', chatId = 1 } = req.body;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
+
+      // Create demo message object
+      const message = {
+        id: Date.now(),
+        chatId: parseInt(chatId),
+        senderId: 'demo-user',
+        senderName: 'Demo User',
+        senderAvatar: 'DU',
+        content: content.trim(),
+        messageType: messageType || 'text',
+        timestamp: new Date(),
+        created_at: new Date()
+      };
+
+      // Emit to Socket.io if available
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`chat-${chatId}`).emit('message', message);
+      }
+
+      console.log('📤 Demo message sent:', message);
+
+      res.json({
+        success: true,
+        message,
+        demo: true
+      });
+    } catch (error) {
+      console.error('Send demo message error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        demo: true
+      });
+    }
   }
 
   getRouter() {

@@ -1,29 +1,43 @@
 const fs = require('fs');
 const path = require('path');
 
-// PostgreSQL-only Database Initializer for Railway
+// Database Initializer with PostgreSQL primary and fallback support
 class DatabaseInitializer {
     constructor() {
         this.isConnected = false;
         this.client = null;
         this.connectionType = 'postgresql';
+        this.fallbackDb = null;
     }
 
     async connect() {
         try {
-            if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes('postgres')) {
-                throw new Error('PostgreSQL DATABASE_URL is required. Please set your Railway PostgreSQL connection string.');
+            // Try PostgreSQL first
+            if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+                console.log('🔗 Connecting to PostgreSQL database...');
+                await this.connectPostgreSQL();
+                console.log(`✅ Database connected successfully (${this.connectionType})`);
+                await this.initializeSchema();
+                return true;
+            } else {
+                // Fall back to in-memory database
+                console.log('🔗 PostgreSQL not available, using fallback database...');
+                await this.connectFallback();
+                console.log(`✅ Fallback database connected successfully (${this.connectionType})`);
+                return true;
             }
-
-            console.log('🔗 Connecting to PostgreSQL database...');
-            await this.connectPostgreSQL();
-
-            console.log(`✅ Database connected successfully (${this.connectionType})`);
-            await this.initializeSchema();
-            return true;
         } catch (error) {
-            console.error('❌ Database connection failed:', error.message);
-            return false;
+            console.error('❌ PostgreSQL connection failed:', error.message);
+            console.log('🔄 Attempting fallback database...');
+
+            try {
+                await this.connectFallback();
+                console.log(`✅ Fallback database connected successfully (${this.connectionType})`);
+                return true;
+            } catch (fallbackError) {
+                console.error('❌ Fallback database also failed:', fallbackError.message);
+                return false;
+            }
         }
     }
 
@@ -46,6 +60,19 @@ class DatabaseInitializer {
 
         } catch (error) {
             console.error('PostgreSQL connection failed:', error.message);
+            throw error;
+        }
+    }
+
+    async connectFallback() {
+        try {
+            const FallbackDatabase = require('./fallback-database');
+            this.fallbackDb = new FallbackDatabase();
+            await this.fallbackDb.connect();
+            this.isConnected = true;
+            this.connectionType = 'fallback';
+        } catch (error) {
+            console.error('Fallback database connection failed:', error.message);
             throw error;
         }
     }
@@ -112,6 +139,10 @@ class DatabaseInitializer {
             throw new Error('Database not connected');
         }
 
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.query(sql, params);
+        }
+
         try {
             // Convert ? placeholders to $1, $2, etc. for PostgreSQL
             let pgSql = sql;
@@ -133,21 +164,39 @@ class DatabaseInitializer {
     }
 
     async close() {
-        if (this.client) {
+        if (this.connectionType === 'fallback' && this.fallbackDb) {
+            await this.fallbackDb.close();
+        } else if (this.client) {
             await this.client.end();
-            this.isConnected = false;
-            console.log('🔐 PostgreSQL connection closed');
         }
+        this.isConnected = false;
+        console.log(`🔐 ${this.connectionType} database connection closed`);
     }
 
-    // Utility methods for common operations (PostgreSQL specific)
+    // Utility methods for common operations
     async getUserByNickname(nickname) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.getUserByNickname(nickname);
+        }
         const sql = 'SELECT * FROM users WHERE nickname = $1';
         const result = await this.query(sql, [nickname]);
         return result[0] || null;
     }
 
+    async getUserByEmail(email) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.getUserByEmail(email);
+        }
+        const sql = 'SELECT * FROM users WHERE email = $1';
+        const result = await this.query(sql, [email]);
+        return result[0] || null;
+    }
+
     async createUser(userData) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.createUser(userData);
+        }
+
         const {
             nickname,
             email,
@@ -168,7 +217,12 @@ class DatabaseInitializer {
         return result[0];
     }
 
-    async getMessages(chatId, limit = 50, offset = 0) {
+    async getMessages(options) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.getMessages(options);
+        }
+
+        const { chatId, limit = 50, offset = 0, before, after } = options;
         const sql = `
             SELECT m.*, u.nickname as sender_nickname, u.display_name as sender_display_name, u.avatar as sender_avatar
             FROM messages m
@@ -183,11 +237,15 @@ class DatabaseInitializer {
     }
 
     async createMessage(messageData) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.createMessage(messageData);
+        }
+
         const {
             chat_id,
             sender_id,
             content,
-            message_type = 'text',
+            content_type = 'text',
             reply_to_id = null,
             metadata = '{}'
         } = messageData;
@@ -202,7 +260,7 @@ class DatabaseInitializer {
             chat_id,
             sender_id,
             content,
-            message_type,
+            content_type,
             reply_to_id,
             typeof metadata === 'string' ? metadata : JSON.stringify(metadata)
         ];
@@ -226,24 +284,34 @@ class DatabaseInitializer {
     }
 
     async createChat(chatData) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.createChat(chatData);
+        }
+
         const {
             name,
             type = 'private',
+            description = '',
+            workspace_id = null,
             created_by
         } = chatData;
 
         const sql = `
-            INSERT INTO chats (name, type, created_by)
-            VALUES ($1, $2, $3)
+            INSERT INTO chats (name, type, description, workspace_id, created_by)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *
         `;
 
-        const params = [name, type, created_by];
+        const params = [name, type, description, workspace_id, created_by];
         const result = await this.query(sql, params);
         return result[0];
     }
 
     async getChatsByUserId(userId) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.getChatsByUserId(userId);
+        }
+
         const sql = `
             SELECT c.*, cp.role, cp.joined_at
             FROM chats c
@@ -255,7 +323,37 @@ class DatabaseInitializer {
         return await this.query(sql, [userId]);
     }
 
+    async getChats(options = {}) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.getChats(options);
+        }
+
+        const { userId, workspaceId, type, limit = 50, offset = 0 } = options;
+        let sql = 'SELECT * FROM chats WHERE 1=1';
+        const params = [];
+        let paramIndex = 1;
+
+        if (type) {
+            sql += ` AND type = $${paramIndex++}`;
+            params.push(type);
+        }
+
+        if (workspaceId) {
+            sql += ` AND workspace_id = $${paramIndex++}`;
+            params.push(workspaceId);
+        }
+
+        sql += ` ORDER BY updated_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+        params.push(limit, offset);
+
+        return await this.query(sql, params);
+    }
+
     async addUserToChat(chatId, userId, role = 'member') {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.addUserToChat(chatId, userId, role);
+        }
+
         const sql = `
             INSERT INTO chat_participants (chat_id, user_id, role)
             VALUES ($1, $2, $3)
@@ -268,8 +366,29 @@ class DatabaseInitializer {
         return result[0];
     }
 
+    async addChatParticipant(chatId, userId, role = 'member') {
+        return this.addUserToChat(chatId, userId, role);
+    }
+
+    async addChatParticipants(chatId, userIds) {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.addChatParticipants(chatId, userIds);
+        }
+
+        const results = [];
+        for (const userId of userIds) {
+            const participant = await this.addUserToChat(chatId, userId);
+            results.push(participant);
+        }
+        return results;
+    }
+
     // Health check method
     async healthCheck() {
+        if (this.connectionType === 'fallback') {
+            return this.fallbackDb.healthCheck();
+        }
+
         try {
             const result = await this.client.query('SELECT NOW() as current_time, version() as pg_version');
             return {

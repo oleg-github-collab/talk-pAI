@@ -36,6 +36,26 @@ try {
   };
 }
 
+// Initialize advanced logging and error handling
+let logger, errorHandler;
+try {
+  const AdvancedLogger = require('./src/utils/advanced-logger');
+  const { ErrorHandler } = require('./src/utils/error-handler');
+
+  logger = new AdvancedLogger({
+    appName: 'TalkPAI',
+    logLevel: process.env.LOG_LEVEL || 'info',
+    enableFile: process.env.NODE_ENV === 'production'
+  });
+
+  errorHandler = new ErrorHandler(logger);
+  logger.info('Advanced logging and error handling initialized');
+} catch (error) {
+  console.warn('⚠️ Using basic logging:', error.message);
+  logger = console;
+  errorHandler = null;
+}
+
 // Initialize PostgreSQL database
 let database;
 try {
@@ -47,12 +67,12 @@ try {
   process.exit(1);
 }
 
-// Initialize logger
-let Logger;
+// Initialize fallback logger class
+let FallbackLogger;
 try {
-  Logger = require('./src/utils/enhanced-logger');
+  FallbackLogger = require('./src/utils/enhanced-logger');
 } catch (error) {
-  Logger = class FallbackLogger {
+  FallbackLogger = class FallbackLogger {
     constructor(name) { this.name = name; }
     static createRequestLogger() { return (req, res, next) => next(); }
     debug(msg) { console.log(`[DEBUG] ${msg}`); }
@@ -89,7 +109,7 @@ const io = new Server(server, {
   transports: config.socketOptions.transports
 });
 
-const logger = new Logger('Server');
+const serverLogger = new FallbackLogger('Server');
 
 // Trust proxy for Railway deployment
 app.set('trust proxy', 1);
@@ -123,7 +143,13 @@ app.use(helmet(config.helmetOptions));
 app.use(compression());
 app.use(cors(config.corsOptions));
 app.use(generalLimiter);
-app.use(Logger.createRequestLogger());
+
+// Advanced request logging
+if (logger && logger.createRequestLogger) {
+  app.use(logger.createRequestLogger());
+} else if (serverLogger) {
+  app.use(serverLogger.createRequestLogger());
+}
 
 // Uploads directory
 if (require('fs').existsSync('uploads')) {
@@ -134,15 +160,30 @@ if (require('fs').existsSync('uploads')) {
 app.set('io', io);
 
 // API Routes - clean SOLID architecture with rate limiting
-app.use('/api/auth', authLimiter, new AuthRoutes(database, logger).getRouter());
-app.use('/api/chat', new ChatRoutes(database, logger).getRouter());
-app.use('/api/ai', new AIRoutes(database, logger).getRouter());
-app.use('/api/aiden', new AidenRoutes(database, logger).getRouter());
-app.use('/api/corporate', new CorporateRoutes(database, logger).getRouter());
-app.use('/api/search', new SearchRoutes(database, logger).getRouter());
-app.use('/api/enterprise', new EnterpriseRoutes(database, logger).getRouter());
-app.use('/api/enhanced', new EnhancedRoutes(database, logger).getRouter());
-app.use('/api/contacts', new ContactsAPI(database, logger).getRouter());
+app.use('/api/auth', authLimiter, new AuthRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/chat', new ChatRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/ai', new AIRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/aiden', new AidenRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/corporate', new CorporateRoutes(database, logger || serverLogger).getRouter());
+
+// Comprehensive API v2 with advanced features
+try {
+  const ComprehensiveAPI = require('./src/routes/comprehensive-api-minimal');
+  const comprehensiveAPI = new ComprehensiveAPI(database, logger || serverLogger, errorHandler);
+  app.use('/api/v2', comprehensiveAPI.getRouter());
+  (logger || serverLogger).info('✨ Comprehensive API v2 routes initialized');
+} catch (error) {
+  (logger || serverLogger).warn('⚠️ Comprehensive API not available:', error.message);
+}
+app.use('/api/search', new SearchRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/enterprise', new EnterpriseRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/enhanced', new EnhancedRoutes(database, logger || serverLogger).getRouter());
+app.use('/api/contacts', new ContactsAPI(database, logger || serverLogger).getRouter());
+
+// Global error handling middleware (must be last)
+if (errorHandler) {
+  app.use(errorHandler.middleware());
+}
 
 // Main route - serve the ultra-modern glassmorphism messenger
 app.get('/', (req, res) => {

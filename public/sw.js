@@ -62,6 +62,13 @@ self.addEventListener('activate', (event) => {
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
     const { request } = event;
+
+    // Skip chrome-extension and non-http(s) requests entirely
+    if (request.url.startsWith('chrome-extension://') ||
+        (!request.url.startsWith('http://') && !request.url.startsWith('https://'))) {
+        return;
+    }
+
     const url = new URL(request.url);
 
     // Handle different types of requests
@@ -88,13 +95,18 @@ self.addEventListener('fetch', (event) => {
 // Cache first strategy (for static assets)
 async function cacheFirstStrategy(request) {
     try {
+        // Skip chrome-extension requests to prevent the error
+        if (request.url.startsWith('chrome-extension://')) {
+            return fetch(request);
+        }
+
         const cachedResponse = await caches.match(request);
         if (cachedResponse) {
             return cachedResponse;
         }
 
         const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
+        if (networkResponse.ok && request.url.startsWith('http')) {
             const cache = await caches.open(STATIC_CACHE);
             cache.put(request, networkResponse.clone());
         }

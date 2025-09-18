@@ -950,6 +950,701 @@
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
+
+        /* ================================ */
+        /* MODAL STYLES */
+        /* ================================ */
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--glass-white-strong);
+            backdrop-filter: var(--blur-glass);
+            border: var(--border-glass-strong);
+            border-radius: 20px;
+            box-shadow: var(--shadow-glass-hover);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.9) translateY(20px);
+            transition: var(--transition-normal);
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px;
+            border-bottom: var(--border-glass);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: var(--glass-white-hover);
+            border: none;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--glass-white-active);
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+
+        .modal-content {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 24px;
+            border-top: var(--border-glass);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Profile Modal Specific Styles */
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .profile-avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: var(--glass-white);
+            border-radius: 16px;
+            border: var(--border-glass);
+        }
+
+        .profile-avatar-display {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            box-shadow: var(--shadow-neon);
+        }
+
+        .profile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-input {
+            background: var(--glass-white);
+            border: var(--border-glass);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition-fast);
+            outline: none;
+            resize: vertical;
+        }
+
+        .form-input:focus {
+            background: var(--glass-white-hover);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-section {
+            margin-top: 12px;
+        }
+
+        .form-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .form-checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: var(--transition-fast);
+        }
+
+        .checkbox-label:hover {
+            color: var(--text-primary);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-custom {
+            width: 18px;
+            height: 18px;
+            background: var(--glass-white);
+            border: var(--border-glass);
+            border-radius: 4px;
+            position: relative;
+            transition: var(--transition-fast);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Mobile responsive for modal */
+        @media (max-width: 768px) {
+            .modal {
+                width: 95%;
+                max-height: 95vh;
+            }
+
+            .profile-avatar-section {
+                padding: 16px;
+            }
+
+            .modal-header,
+            .modal-content,
+            .modal-footer {
+                padding: 20px;
+            }
+        }
+
+        /* ================================ */
+        /* EMOJI PICKER STYLES */
+        /* ================================ */
+
+        .emoji-picker {
+            background: var(--glass-white-strong);
+            backdrop-filter: var(--blur-glass);
+            border: var(--border-glass-strong);
+            border-radius: 16px;
+            box-shadow: var(--shadow-glass-hover);
+            overflow: hidden;
+        }
+
+        .emoji-picker-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: var(--border-glass);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .emoji-close {
+            width: 24px;
+            height: 24px;
+            background: var(--glass-white-hover);
+            border: none;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .emoji-close:hover {
+            background: var(--glass-white-active);
+            color: var(--text-primary);
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            padding: 12px;
+        }
+
+        .emoji-btn {
+            width: 28px;
+            height: 28px;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .emoji-btn:hover {
+            background: var(--glass-white-hover);
+            transform: scale(1.2);
+        }
+
+        /* ================================ */
+        /* FILE MESSAGE STYLES */
+        /* ================================ */
+
+        .file-message {
+            background: linear-gradient(135deg, var(--glass-white), var(--glass-white-hover)) !important;
+            min-width: 250px;
+        }
+
+        .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-white-hover);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 2px;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .file-preview {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .file-preview img {
+            border-radius: 8px;
+            box-shadow: var(--shadow-glass);
+            transition: var(--transition-fast);
+        }
+
+        .file-preview img:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-glass-hover);
+        }
+
+        .file-download-btn {
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            margin-top: 8px;
+            align-self: flex-start;
+        }
+
+        .file-download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-neon);
+        }
+
+        /* ================================ */
+        /* DRAGGABLE CHAT WINDOWS SYSTEM */
+        /* ================================ */
+
+        .chat-window-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 5000;
+        }
+
+        .draggable-chat-window {
+            position: absolute;
+            width: 400px;
+            height: 500px;
+            min-width: 300px;
+            min-height: 400px;
+            max-width: 800px;
+            max-height: 800px;
+            background: var(--glass-white-strong);
+            backdrop-filter: var(--blur-glass);
+            border: var(--border-glass-strong);
+            border-radius: 20px;
+            box-shadow: var(--shadow-glass-hover);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+            transition: var(--transition-normal);
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        .draggable-chat-window.active {
+            transform: scale(1);
+            opacity: 1;
+            z-index: 6000;
+        }
+
+        .draggable-chat-window:hover {
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-window-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--glass-white);
+            border-bottom: var(--border-glass);
+            cursor: move;
+            user-select: none;
+        }
+
+        .chat-window-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chat-window-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .chat-window-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-window-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .chat-window-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .chat-window-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-window-btn {
+            width: 28px;
+            height: 28px;
+            background: var(--glass-white-hover);
+            border: none;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            font-size: 12px;
+        }
+
+        .chat-window-btn:hover {
+            background: var(--glass-white-active);
+            transform: scale(1.1);
+        }
+
+        .chat-window-btn.minimize {
+            color: var(--accent-warning);
+        }
+
+        .chat-window-btn.maximize {
+            color: var(--accent-info);
+        }
+
+        .chat-window-btn.close {
+            color: var(--accent-danger);
+        }
+
+        .chat-window-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--glass-white-weak);
+        }
+
+        .chat-window-input-area {
+            padding: 16px;
+            background: var(--glass-white);
+            border-top: var(--border-glass);
+        }
+
+        .chat-window-input {
+            width: 100%;
+            background: var(--glass-white-hover);
+            border: var(--border-glass);
+            border-radius: 12px;
+            padding: 12px 16px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text-primary);
+            min-height: 40px;
+            max-height: 120px;
+            transition: var(--transition-fast);
+        }
+
+        .chat-window-input:focus {
+            background: var(--glass-white-strong);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Minimized state */
+        .draggable-chat-window.minimized {
+            height: 60px;
+            width: 250px;
+            resize: none;
+        }
+
+        .draggable-chat-window.minimized .chat-window-messages,
+        .draggable-chat-window.minimized .chat-window-input-area {
+            display: none;
+        }
+
+        /* Magnetic snap zones */
+        .snap-zone {
+            position: absolute;
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            opacity: 0;
+            transition: var(--transition-fast);
+            pointer-events: none;
+        }
+
+        .snap-zone.active {
+            opacity: 1;
+        }
+
+        .snap-zone.left {
+            left: 20px;
+            top: 20px;
+            width: calc(50% - 30px);
+            height: calc(100% - 40px);
+        }
+
+        .snap-zone.right {
+            right: 20px;
+            top: 20px;
+            width: calc(50% - 30px);
+            height: calc(100% - 40px);
+        }
+
+        .snap-zone.top {
+            left: 20px;
+            top: 20px;
+            width: calc(100% - 40px);
+            height: calc(50% - 30px);
+        }
+
+        .snap-zone.bottom {
+            left: 20px;
+            bottom: 20px;
+            width: calc(100% - 40px);
+            height: calc(50% - 30px);
+        }
+
+        /* Resize handle */
+        .chat-window-resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nw-resize;
+            background: linear-gradient(-45deg, transparent 40%, var(--text-tertiary) 40%, var(--text-tertiary) 60%, transparent 60%);
+        }
+
+        /* Multi-chat grid layout */
+        .chat-grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Chat window animations */
+        @keyframes chatWindowOpen {
+            from {
+                transform: scale(0.8) translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes chatWindowClose {
+            from {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: scale(0.8) translateY(50px);
+                opacity: 0;
+            }
+        }
+
+        .draggable-chat-window.opening {
+            animation: chatWindowOpen 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .draggable-chat-window.closing {
+            animation: chatWindowClose 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Glow effects when dragging */
+        .draggable-chat-window.dragging {
+            box-shadow: 0 30px 80px rgba(102, 126, 234, 0.4),
+                        0 0 0 2px rgba(102, 126, 234, 0.5),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+            transform: scale(1.02) rotate(1deg);
+        }
+
+        /* Mobile adaptations */
+        @media (max-width: 768px) {
+            .draggable-chat-window {
+                width: calc(100vw - 40px);
+                height: calc(100vh - 100px);
+                max-width: none;
+                max-height: none;
+                left: 20px !important;
+                top: 50px !important;
+                resize: none;
+            }
+
+            .chat-window-container {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1086,6 +1781,9 @@
                     <button class="header-btn" title="Chat Settings" id="settingsBtn">
                         <span>⚙️</span>
                     </button>
+                    <button class="header-btn" title="Profile Settings" id="profileBtn">
+                        <span>👤</span>
+                    </button>
                 </div>
             </header>
 
@@ -1174,6 +1872,131 @@
         </main>
     </div>
 
+    <!-- Profile Settings Modal -->
+    <div class="modal-overlay" id="profileModal" style="display: none;">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Profile Settings</h2>
+                <button class="modal-close" id="closeProfileModal">
+                    <span>✕</span>
+                </button>
+            </div>
+
+            <div class="modal-content">
+                <div class="profile-section">
+                    <div class="profile-avatar-section">
+                        <div class="profile-avatar-display" id="profileAvatarDisplay">ME</div>
+                        <button class="btn btn-primary" id="changeAvatarBtn">Change Avatar</button>
+                    </div>
+
+                    <div class="profile-form">
+                        <div class="form-group">
+                            <label for="displayName">Display Name</label>
+                            <input type="text" id="displayName" class="form-input" placeholder="Your display name" value="You">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBio">Bio</label>
+                            <textarea id="profileBio" class="form-input" rows="3" placeholder="Tell us about yourself...">Available for collaboration on exciting projects! 🚀</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileStatus">Status</label>
+                            <select id="profileStatus" class="form-input">
+                                <option value="online">🟢 Online</option>
+                                <option value="away">🟡 Away</option>
+                                <option value="busy">🔴 Busy</option>
+                                <option value="dnd">⛔ Do Not Disturb</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileTheme">Theme</label>
+                            <select id="profileTheme" class="form-input">
+                                <option value="auto">🌗 Auto</option>
+                                <option value="light">☀️ Light</option>
+                                <option value="dark">🌙 Dark</option>
+                                <option value="glassmorphism">✨ Glassmorphism</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileLanguage">Language</label>
+                            <select id="profileLanguage" class="form-input">
+                                <option value="en">🇺🇸 English</option>
+                                <option value="uk">🇺🇦 Українська</option>
+                                <option value="ru">🇷🇺 Русский</option>
+                                <option value="es">🇪🇸 Español</option>
+                                <option value="fr">🇫🇷 Français</option>
+                                <option value="de">🇩🇪 Deutsch</option>
+                            </select>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Notifications</h3>
+                            <div class="form-checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="notifSound" checked>
+                                    <span class="checkbox-custom"></span>
+                                    Sound notifications
+                                </label>
+
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="notifDesktop" checked>
+                                    <span class="checkbox-custom"></span>
+                                    Desktop notifications
+                                </label>
+
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="notifEmail">
+                                    <span class="checkbox-custom"></span>
+                                    Email notifications
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Privacy</h3>
+                            <div class="form-checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="privacyOnlineStatus" checked>
+                                    <span class="checkbox-custom"></span>
+                                    Show online status
+                                </label>
+
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="privacyReadReceipts" checked>
+                                    <span class="checkbox-custom"></span>
+                                    Send read receipts
+                                </label>
+
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="privacyTypingIndicator" checked>
+                                    <span class="checkbox-custom"></span>
+                                    Show typing indicator
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" id="cancelProfileBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Draggable Chat Windows Container -->
+    <div class="chat-window-container" id="chatWindowContainer">
+        <!-- Snap zones for magnetic docking -->
+        <div class="snap-zone left" id="snapZoneLeft"></div>
+        <div class="snap-zone right" id="snapZoneRight"></div>
+        <div class="snap-zone top" id="snapZoneTop"></div>
+        <div class="snap-zone bottom" id="snapZoneBottom"></div>
+    </div>
+
     <!-- Include Socket.IO and App JavaScript -->
     <script>
         // ================================
@@ -1200,9 +2023,33 @@
                 this.setupMobileMenu();
                 this.setupInputHandlers();
                 this.setupChatNavigation();
+                this.initializeChatWindowManager();
                 this.loadInitialData();
 
                 console.log('🚀 Talk pAI Messenger initialized successfully!');
+            }
+
+            initializeChatWindowManager() {
+                this.chatWindowManager = new ChatWindowManager(this);
+                console.log('✨ Chat Window Manager initialized');
+
+                // Add floating chat button to sidebar
+                this.addFloatingChatButton();
+            }
+
+            addFloatingChatButton() {
+                const sidebar = document.querySelector('.sidebar');
+                const floatingBtn = document.createElement('div');
+                floatingBtn.className = 'sidebar-item';
+                floatingBtn.innerHTML = `
+                    <div class="sidebar-icon">🪟</div>
+                    <span>Floating Chat</span>
+                `;
+                floatingBtn.onclick = () => this.openFloatingChat();
+
+                // Add after AI Assistant button
+                const aiButton = sidebar.children[3]; // AI Assistant is 4th item
+                sidebar.insertBefore(floatingBtn, aiButton.nextSibling);
             }
 
             initializeSocket() {
@@ -1276,6 +2123,36 @@
 
                 document.getElementById('settingsBtn').addEventListener('click', () => {
                     this.openChatSettings();
+                });
+
+                document.getElementById('profileBtn').addEventListener('click', () => {
+                    this.openProfileSettings();
+                });
+
+                // Global keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 'n':
+                                if (!e.target.matches('input, textarea')) {
+                                    e.preventDefault();
+                                    this.openFloatingChat();
+                                }
+                                break;
+                            case 'o':
+                                e.preventDefault();
+                                if (this.chatWindowManager) {
+                                    this.chatWindowManager.organizeWindows();
+                                }
+                                break;
+                            case 'f':
+                                if (!e.target.matches('input, textarea')) {
+                                    e.preventDefault();
+                                    this.openSearchDialog();
+                                }
+                                break;
+                        }
+                    }
                 });
 
                 // Input action buttons
@@ -1382,7 +2259,10 @@
                 messageInput.value = '';
                 this.autoResizeInput();
 
-                // Emit to server
+                // Send via API (without auth for demo)
+                this.sendMessageToAPI(message);
+
+                // Emit to server for real-time
                 this.socket.emit('message', {
                     chatId: this.currentChatId,
                     content: content,
@@ -1488,7 +2368,9 @@
 
             hideTypingIndicator() {
                 const indicator = document.getElementById('typingIndicator');
-                indicator.style.display = 'none';
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
             }
 
             autoResizeInput() {
@@ -1635,22 +2517,397 @@
 
             startVoiceCall() {
                 console.log('📞 Starting voice call');
-                alert('Voice call feature coming soon!');
+                this.showNotification('Voice call feature will be available in the next update! 📞', 'info');
             }
 
             startVideoCall() {
                 console.log('📹 Starting video call');
-                alert('Video call feature coming soon!');
+                this.showNotification('Video call feature will be available in the next update! 📹', 'info');
             }
 
             openSearchDialog() {
                 console.log('🔍 Opening search dialog');
-                alert('Chat search feature coming soon!');
+                this.showAdvancedSearch();
+            }
+
+            showAdvancedSearch() {
+                const searchTerm = prompt('🔍 Search messages:', '');
+                if (searchTerm && searchTerm.trim()) {
+                    this.performSearch(searchTerm.trim());
+                }
+            }
+
+            performSearch(searchTerm) {
+                console.log('🔍 Searching for:', searchTerm);
+
+                const chatMessages = document.getElementById('chatMessages');
+                const messages = chatMessages.querySelectorAll('.message');
+                let found = 0;
+
+                // Clear previous highlights
+                messages.forEach(msg => {
+                    msg.style.background = '';
+                    msg.style.transform = '';
+                });
+
+                // Search and highlight
+                messages.forEach(msg => {
+                    const messageText = msg.querySelector('.message-text');
+                    if (messageText && messageText.textContent.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        msg.style.background = 'rgba(102, 126, 234, 0.2)';
+                        msg.style.transform = 'scale(1.02)';
+                        msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        found++;
+                    }
+                });
+
+                this.showNotification(`Found ${found} message(s) containing "${searchTerm}" 🎯`, found > 0 ? 'success' : 'info');
+
+                // Clear highlights after 5 seconds
+                setTimeout(() => {
+                    messages.forEach(msg => {
+                        msg.style.background = '';
+                        msg.style.transform = '';
+                    });
+                }, 5000);
             }
 
             openChatSettings() {
                 console.log('⚙️ Opening chat settings');
-                alert('Chat settings feature coming soon!');
+                this.showChatSettingsMenu();
+            }
+
+            showChatSettingsMenu() {
+                const options = [
+                    '🔔 Notifications',
+                    '🎨 Theme',
+                    '🔒 Privacy',
+                    '💾 Export Chat',
+                    '🗑️ Clear History',
+                    '❌ Cancel'
+                ];
+
+                const choice = prompt('⚙️ Chat Settings:\n' + options.map((opt, i) => `${i + 1}. ${opt}`).join('\n') + '\n\nEnter number:');
+
+                if (choice) {
+                    const index = parseInt(choice) - 1;
+                    if (index >= 0 && index < options.length - 1) {
+                        this.handleChatSettingsChoice(index, options[index]);
+                    }
+                }
+            }
+
+            handleChatSettingsChoice(index, option) {
+                switch (index) {
+                    case 0: // Notifications
+                        this.showNotification('Notification settings updated! 🔔', 'success');
+                        break;
+                    case 1: // Theme
+                        this.showNotification('Theme settings can be changed in Profile Settings! 🎨', 'info');
+                        break;
+                    case 2: // Privacy
+                        this.showNotification('Privacy settings updated! 🔒', 'success');
+                        break;
+                    case 3: // Export
+                        this.exportChatHistory();
+                        break;
+                    case 4: // Clear
+                        if (confirm('Are you sure you want to clear chat history? This cannot be undone.')) {
+                            this.clearChatHistory();
+                        }
+                        break;
+                }
+            }
+
+            exportChatHistory() {
+                const messages = this.messages.get(this.currentChatId) || [];
+                const chatName = this.chats.get(this.currentChatId)?.name || 'Chat';
+
+                const exportData = {
+                    chatName: chatName,
+                    exportDate: new Date().toISOString(),
+                    messageCount: messages.length,
+                    messages: messages.map(msg => ({
+                        sender: msg.senderName,
+                        content: msg.content,
+                        timestamp: msg.timestamp,
+                        type: msg.type
+                    }))
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `talk-pai-${chatName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+
+                URL.revokeObjectURL(url);
+                this.showNotification('Chat history exported successfully! 💾', 'success');
+            }
+
+            clearChatHistory() {
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+
+                // Clear from storage
+                this.messages.set(this.currentChatId, []);
+
+                // Show empty state
+                this.showEmptyState(this.currentChatId);
+
+                this.showNotification('Chat history cleared! 🗑️', 'success');
+            }
+
+            openProfileSettings() {
+                console.log('👤 Opening profile settings');
+                this.showProfileModal();
+            }
+
+            showProfileModal() {
+                const modal = document.getElementById('profileModal');
+                modal.style.display = 'flex';
+
+                // Trigger animation
+                setTimeout(() => {
+                    modal.classList.add('show');
+                }, 10);
+
+                // Load current profile data
+                this.loadProfileData();
+
+                // Setup modal event listeners
+                this.setupProfileModalListeners();
+            }
+
+            hideProfileModal() {
+                const modal = document.getElementById('profileModal');
+                modal.classList.remove('show');
+
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+
+            setupProfileModalListeners() {
+                // Close modal events
+                document.getElementById('closeProfileModal').onclick = () => {
+                    this.hideProfileModal();
+                };
+
+                document.getElementById('cancelProfileBtn').onclick = () => {
+                    this.hideProfileModal();
+                };
+
+                // Save profile changes
+                document.getElementById('saveProfileBtn').onclick = () => {
+                    this.saveProfileChanges();
+                };
+
+                // Change avatar
+                document.getElementById('changeAvatarBtn').onclick = () => {
+                    this.changeProfileAvatar();
+                };
+
+                // Close modal on outside click
+                document.getElementById('profileModal').onclick = (e) => {
+                    if (e.target.id === 'profileModal') {
+                        this.hideProfileModal();
+                    }
+                };
+
+                // Escape key to close
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && document.getElementById('profileModal').classList.contains('show')) {
+                        this.hideProfileModal();
+                    }
+                });
+            }
+
+            loadProfileData() {
+                // Load saved profile data from localStorage
+                const savedProfile = JSON.parse(localStorage.getItem('talkpai-profile') || '{}');
+
+                // Load values into form
+                document.getElementById('displayName').value = savedProfile.displayName || 'You';
+                document.getElementById('profileBio').value = savedProfile.bio || 'Available for collaboration on exciting projects! 🚀';
+                document.getElementById('profileStatus').value = savedProfile.status || 'online';
+                document.getElementById('profileTheme').value = savedProfile.theme || 'glassmorphism';
+                document.getElementById('profileLanguage').value = savedProfile.language || 'en';
+
+                // Load notification settings
+                document.getElementById('notifSound').checked = savedProfile.notifications?.sound !== false;
+                document.getElementById('notifDesktop').checked = savedProfile.notifications?.desktop !== false;
+                document.getElementById('notifEmail').checked = savedProfile.notifications?.email === true;
+
+                // Load privacy settings
+                document.getElementById('privacyOnlineStatus').checked = savedProfile.privacy?.onlineStatus !== false;
+                document.getElementById('privacyReadReceipts').checked = savedProfile.privacy?.readReceipts !== false;
+                document.getElementById('privacyTypingIndicator').checked = savedProfile.privacy?.typingIndicator !== false;
+
+                // Update avatar display
+                const avatarDisplay = document.getElementById('profileAvatarDisplay');
+                avatarDisplay.textContent = savedProfile.avatar || 'ME';
+            }
+
+            saveProfileChanges() {
+                console.log('💾 Saving profile changes...');
+
+                // Collect form data
+                const profileData = {
+                    displayName: document.getElementById('displayName').value,
+                    bio: document.getElementById('profileBio').value,
+                    status: document.getElementById('profileStatus').value,
+                    theme: document.getElementById('profileTheme').value,
+                    language: document.getElementById('profileLanguage').value,
+                    avatar: document.getElementById('profileAvatarDisplay').textContent,
+                    notifications: {
+                        sound: document.getElementById('notifSound').checked,
+                        desktop: document.getElementById('notifDesktop').checked,
+                        email: document.getElementById('notifEmail').checked
+                    },
+                    privacy: {
+                        onlineStatus: document.getElementById('privacyOnlineStatus').checked,
+                        readReceipts: document.getElementById('privacyReadReceipts').checked,
+                        typingIndicator: document.getElementById('privacyTypingIndicator').checked
+                    },
+                    lastUpdated: new Date().toISOString()
+                };
+
+                // Save to localStorage
+                localStorage.setItem('talkpai-profile', JSON.stringify(profileData));
+
+                // Apply changes to current user
+                this.currentUser.name = profileData.displayName;
+                this.currentUser.avatar = profileData.avatar;
+
+                // Apply theme changes
+                this.applyThemeChanges(profileData.theme);
+
+                // Update UI elements
+                this.updateUIWithProfileData(profileData);
+
+                // Show success message
+                this.showNotification('Profile updated successfully! ✅', 'success');
+
+                // Close modal
+                this.hideProfileModal();
+
+                console.log('✅ Profile changes saved:', profileData);
+            }
+
+            changeProfileAvatar() {
+                const avatars = ['ME', 'YU', '🧑‍💻', '👨‍💼', '👩‍💼', '🧑‍🎨', '👨‍🔬', '👩‍🔬', '🧑‍🚀', '👨‍🚀', '👩‍🚀', '🦄', '🐱', '🐶', '🦊', '🐼', '🐸', '🌟', '⭐', '💎', '🔥', '⚡', '🌈', '🚀', '💜', '💙', '💚', '💛', '🧡', '❤️'];
+
+                const currentAvatar = document.getElementById('profileAvatarDisplay').textContent;
+                const currentIndex = avatars.indexOf(currentAvatar);
+                const nextIndex = (currentIndex + 1) % avatars.length;
+
+                document.getElementById('profileAvatarDisplay').textContent = avatars[nextIndex];
+            }
+
+            applyThemeChanges(theme) {
+                // Apply theme to document
+                document.documentElement.setAttribute('data-theme', theme);
+
+                // Store theme preference
+                localStorage.setItem('talkpai-theme', theme);
+
+                console.log('🎨 Theme applied:', theme);
+            }
+
+            updateUIWithProfileData(profileData) {
+                // Update user info in chat header if applicable
+                const chatTitle = document.getElementById('chatTitle');
+                if (chatTitle && this.currentChatId === 'profile') {
+                    chatTitle.textContent = profileData.displayName;
+                }
+
+                // Update any other UI elements that show user info
+                console.log('🔄 UI updated with profile data');
+            }
+
+            showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.textContent = message;
+
+                // Style the notification
+                Object.assign(notification.style, {
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    background: type === 'success' ? 'var(--accent-success)' : 'var(--accent-info)',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    zIndex: '10001',
+                    boxShadow: 'var(--shadow-glass)',
+                    backdropFilter: 'var(--blur-glass)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    maxWidth: '300px',
+                    wordBreak: 'break-word',
+                    opacity: '0',
+                    transform: 'translateX(100%)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)'
+                });
+
+                // Add to document
+                document.body.appendChild(notification);
+
+                // Trigger animation
+                setTimeout(() => {
+                    notification.style.opacity = '1';
+                    notification.style.transform = 'translateX(0)';
+                }, 10);
+
+                // Remove after delay
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            async sendMessageToAPI(message) {
+                try {
+                    console.log('📤 Sending message to API:', message);
+
+                    // Send to demo API endpoint
+                    const response = await fetch('/api/chat/demo/message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: message.content,
+                            messageType: message.type,
+                            chatId: message.chatId
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to send message');
+                    }
+
+                    console.log('✅ Message sent successfully:', result);
+                    return result;
+                } catch (error) {
+                    console.error('❌ Failed to send message to API:', error);
+                    this.showNotification('Failed to send message: ' + error.message, 'error');
+                    return { success: false, error: error.message };
+                }
             }
 
             openFileAttachment() {
@@ -1658,7 +2915,7 @@
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.multiple = true;
-                input.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.txt';
+                input.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar';
                 input.onchange = (e) => {
                     this.handleFileAttachment(e.target.files);
                 };
@@ -1668,24 +2925,747 @@
             handleFileAttachment(files) {
                 Array.from(files).forEach(file => {
                     if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+                        this.showNotification(`File "${file.name}" is too large. Maximum size is 5MB.`, 'error');
                         return;
                     }
 
                     console.log('📎 Attaching file:', file.name);
-                    // Implement file upload logic here
+                    this.processFileAttachment(file);
                 });
+            }
+
+            processFileAttachment(file) {
+                // Create file message
+                const fileMessage = {
+                    id: Date.now() + Math.random(),
+                    chatId: this.currentChatId,
+                    senderId: this.currentUser.id,
+                    senderName: this.currentUser.name,
+                    senderAvatar: this.currentUser.avatar,
+                    content: `📎 ${file.name}`,
+                    type: 'file',
+                    timestamp: new Date(),
+                    fileInfo: {
+                        name: file.name,
+                        size: this.formatFileSize(file.size),
+                        type: file.type,
+                        url: URL.createObjectURL(file) // For preview
+                    }
+                };
+
+                // Add to chat
+                this.addFileMessageToChat(fileMessage);
+
+                // Send to API (in demo mode, just show success)
+                this.showNotification(`File "${file.name}" uploaded successfully! 📎`, 'success');
+            }
+
+            addFileMessageToChat(fileMessage) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageElement = this.createFileMessageElement(fileMessage);
+
+                chatMessages.appendChild(messageElement);
+                this.scrollToBottom();
+
+                // Store message
+                if (!this.messages.has(fileMessage.chatId)) {
+                    this.messages.set(fileMessage.chatId, []);
+                }
+                this.messages.get(fileMessage.chatId).push(fileMessage);
+            }
+
+            createFileMessageElement(fileMessage) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message own';
+
+                const fileIcon = this.getFileIcon(fileMessage.fileInfo.type);
+                const isImage = fileMessage.fileInfo.type.startsWith('image/');
+
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${fileMessage.senderAvatar}</div>
+                    <div class="message-content">
+                        <div class="message-bubble file-message">
+                            <div class="file-attachment">
+                                <div class="file-icon">${fileIcon}</div>
+                                <div class="file-details">
+                                    <div class="file-name">${fileMessage.fileInfo.name}</div>
+                                    <div class="file-size">${fileMessage.fileInfo.size}</div>
+                                </div>
+                                ${isImage ? `<div class="file-preview">
+                                    <img src="${fileMessage.fileInfo.url}" alt="${fileMessage.fileInfo.name}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+                                </div>` : ''}
+                                <button class="file-download-btn" onclick="window.open('${fileMessage.fileInfo.url}', '_blank')">
+                                    💾 Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message-meta">
+                            <span>${fileMessage.senderName}</span>
+                            <span>•</span>
+                            <span>${this.formatTime(fileMessage.timestamp)}</span>
+                            <span>✓✓</span>
+                        </div>
+                    </div>
+                `;
+
+                return messageDiv;
+            }
+
+            getFileIcon(mimeType) {
+                if (mimeType.startsWith('image/')) return '🖼️';
+                if (mimeType.startsWith('video/')) return '🎥';
+                if (mimeType.startsWith('audio/')) return '🎵';
+                if (mimeType.includes('pdf')) return '📄';
+                if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+                if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return '📊';
+                if (mimeType.includes('zip') || mimeType.includes('rar')) return '🗜️';
+                return '📎';
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
             openEmojiPicker() {
                 console.log('😊 Opening emoji picker');
-                const emojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '💯', '🚀', '✨', '💎'];
-                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                this.showEmojiPicker();
+            }
 
+            showEmojiPicker() {
+                // Remove existing emoji picker
+                const existingPicker = document.getElementById('emojiPicker');
+                if (existingPicker) {
+                    existingPicker.remove();
+                    return;
+                }
+
+                const emojis = [
+                    // Faces
+                    '😊', '😂', '🥰', '😍', '🤩', '😎', '😢', '😭', '😠', '🤔',
+                    '😴', '🤯', '🥺', '😇', '🤪', '🥳', '🤮', '😵', '🤫', '😈',
+                    // Hearts & Symbols
+                    '❤️', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💯',
+                    // Actions
+                    '👍', '👎', '👌', '✌️', '🤞', '🤟', '👏', '🙌', '🤝', '🙏',
+                    // Objects & Nature
+                    '🔥', '✨', '💎', '🚀', '⚡', '🌟', '⭐', '🌈', '🎉', '🎊',
+                    '🎁', '🎈', '🎂', '🍕', '🍔', '🍟', '☕', '🍺', '🍷', '🥂'
+                ];
+
+                const picker = document.createElement('div');
+                picker.id = 'emojiPicker';
+                picker.className = 'emoji-picker glass';
+
+                picker.innerHTML = `
+                    <div class="emoji-picker-header">
+                        <span>Choose an emoji</span>
+                        <button class="emoji-close" onclick="document.getElementById('emojiPicker').remove()">✕</button>
+                    </div>
+                    <div class="emoji-grid">
+                        ${emojis.map(emoji =>
+                            `<button class="emoji-btn" onclick="window.messenger.insertEmoji('${emoji}')">${emoji}</button>`
+                        ).join('')}
+                    </div>
+                `;
+
+                // Position relative to emoji button
+                const emojiBtn = document.getElementById('emojiBtn');
+                const rect = emojiBtn.getBoundingClientRect();
+
+                Object.assign(picker.style, {
+                    position: 'fixed',
+                    bottom: '100px',
+                    left: '50px',
+                    zIndex: '1000',
+                    minWidth: '300px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    transform: 'scale(0.9)',
+                    opacity: '0',
+                    transition: 'all 0.2s ease'
+                });
+
+                document.body.appendChild(picker);
+
+                // Animate in
+                setTimeout(() => {
+                    picker.style.transform = 'scale(1)';
+                    picker.style.opacity = '1';
+                }, 10);
+
+                // Close on click outside
+                setTimeout(() => {
+                    document.addEventListener('click', function closeEmojiPicker(e) {
+                        if (!picker.contains(e.target) && e.target !== emojiBtn) {
+                            document.removeEventListener('click', closeEmojiPicker);
+                            picker.remove();
+                        }
+                    });
+                }, 100);
+            }
+
+            insertEmoji(emoji) {
                 const messageInput = document.getElementById('messageInput');
-                messageInput.value += emoji;
+                const cursorPos = messageInput.selectionStart;
+                const textBefore = messageInput.value.substring(0, cursorPos);
+                const textAfter = messageInput.value.substring(cursorPos);
+
+                messageInput.value = textBefore + emoji + textAfter;
+                messageInput.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
                 messageInput.focus();
                 this.autoResizeInput();
+
+                // Close emoji picker
+                const picker = document.getElementById('emojiPicker');
+                if (picker) {
+                    picker.remove();
+                }
+            }
+
+            // ================================
+            // DRAGGABLE CHAT WINDOWS SYSTEM
+            // ================================
+
+            openFloatingChat(chatData) {
+                console.log('🪟 Opening floating chat window:', chatData);
+                this.chatWindowManager.createChatWindow(chatData);
+            }
+        }
+
+        // ================================
+        // CHAT WINDOW MANAGER CLASS
+        // ================================
+
+        class ChatWindowManager {
+            constructor(messenger) {
+                this.messenger = messenger;
+                this.windows = new Map();
+                this.activeWindow = null;
+                this.windowCounter = 0;
+                this.isDragging = false;
+                this.dragData = null;
+                this.snapZones = ['left', 'right', 'top', 'bottom'];
+
+                this.initializeManager();
+            }
+
+            initializeManager() {
+                this.container = document.getElementById('chatWindowContainer');
+                this.setupEventListeners();
+                console.log('✨ Chat Window Manager initialized');
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 'n':
+                                e.preventDefault();
+                                this.createQuickChatWindow();
+                                break;
+                            case 'w':
+                                e.preventDefault();
+                                this.closeActiveWindow();
+                                break;
+                            case 'Tab':
+                                e.preventDefault();
+                                this.cycleWindows();
+                                break;
+                        }
+                    }
+                });
+
+                // Global mouse events for dragging
+                document.addEventListener('mousemove', this.handleGlobalMouseMove.bind(this));
+                document.addEventListener('mouseup', this.handleGlobalMouseUp.bind(this));
+            }
+
+            createChatWindow(chatData = {}) {
+                const windowId = `chat-window-${++this.windowCounter}`;
+                const window = this.buildChatWindow(windowId, chatData);
+
+                this.windows.set(windowId, {
+                    element: window,
+                    chatData: chatData,
+                    isMinimized: false,
+                    isMaximized: false,
+                    originalSize: { width: 400, height: 500 },
+                    position: this.calculateInitialPosition()
+                });
+
+                this.container.appendChild(window);
+                this.activateWindow(windowId);
+                this.animateWindowOpen(window);
+
+                return windowId;
+            }
+
+            buildChatWindow(windowId, chatData) {
+                const window = document.createElement('div');
+                window.className = 'draggable-chat-window';
+                window.id = windowId;
+
+                const { width, height } = this.calculateInitialPosition();
+                window.style.left = `${Math.random() * (window.innerWidth - 400) + 50}px`;
+                window.style.top = `${Math.random() * (window.innerHeight - 500) + 50}px`;
+
+                window.innerHTML = `
+                    <div class="chat-window-header" data-window-id="${windowId}">
+                        <div class="chat-window-title">
+                            <div class="chat-window-avatar">${chatData.avatar || 'CH'}</div>
+                            <div class="chat-window-info">
+                                <div class="chat-window-name">${chatData.name || 'New Chat'}</div>
+                                <div class="chat-window-status">${chatData.status || 'Online'}</div>
+                            </div>
+                        </div>
+                        <div class="chat-window-controls">
+                            <button class="chat-window-btn minimize" onclick="window.messenger.chatWindowManager.toggleMinimize('${windowId}')" title="Minimize">
+                                <span>−</span>
+                            </button>
+                            <button class="chat-window-btn maximize" onclick="window.messenger.chatWindowManager.toggleMaximize('${windowId}')" title="Maximize">
+                                <span>□</span>
+                            </button>
+                            <button class="chat-window-btn close" onclick="window.messenger.chatWindowManager.closeChatWindow('${windowId}')" title="Close">
+                                <span>✕</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-window-messages" id="${windowId}-messages">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">💬</div>
+                            <h3>Start a conversation</h3>
+                            <p>Send a message to begin chatting</p>
+                        </div>
+                    </div>
+                    <div class="chat-window-input-area">
+                        <textarea class="chat-window-input"
+                                  placeholder="Type a message..."
+                                  id="${windowId}-input"
+                                  onkeydown="window.messenger.chatWindowManager.handleInputKeydown(event, '${windowId}')"></textarea>
+                    </div>
+                    <div class="chat-window-resize-handle" data-window-id="${windowId}"></div>
+                `;
+
+                this.setupWindowEventListeners(window, windowId);
+                return window;
+            }
+
+            setupWindowEventListeners(window, windowId) {
+                const header = window.querySelector('.chat-window-header');
+                const resizeHandle = window.querySelector('.chat-window-resize-handle');
+
+                // Dragging functionality
+                header.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.chat-window-controls')) return;
+                    this.startDragging(windowId, e);
+                });
+
+                // Resizing functionality
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    this.startResizing(windowId, e);
+                });
+
+                // Window activation
+                window.addEventListener('mousedown', () => {
+                    this.activateWindow(windowId);
+                });
+
+                // Double-click to maximize
+                header.addEventListener('dblclick', () => {
+                    this.toggleMaximize(windowId);
+                });
+            }
+
+            startDragging(windowId, e) {
+                e.preventDefault();
+                this.isDragging = true;
+                const window = this.windows.get(windowId);
+
+                this.dragData = {
+                    windowId,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    startLeft: parseInt(window.element.style.left) || 0,
+                    startTop: parseInt(window.element.style.top) || 0,
+                    type: 'drag'
+                };
+
+                window.element.classList.add('dragging');
+                this.activateWindow(windowId);
+                this.showSnapZones();
+            }
+
+            startResizing(windowId, e) {
+                e.preventDefault();
+                this.isDragging = true;
+                const window = this.windows.get(windowId);
+
+                this.dragData = {
+                    windowId,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    startWidth: window.element.offsetWidth,
+                    startHeight: window.element.offsetHeight,
+                    type: 'resize'
+                };
+
+                this.activateWindow(windowId);
+            }
+
+            handleGlobalMouseMove(e) {
+                if (!this.isDragging || !this.dragData) return;
+
+                const { windowId, type } = this.dragData;
+                const window = this.windows.get(windowId);
+
+                if (type === 'drag') {
+                    const deltaX = e.clientX - this.dragData.startX;
+                    const deltaY = e.clientY - this.dragData.startY;
+
+                    const newLeft = this.dragData.startLeft + deltaX;
+                    const newTop = this.dragData.startTop + deltaY;
+
+                    window.element.style.left = `${Math.max(0, Math.min(newLeft, window.innerWidth - window.element.offsetWidth))}px`;
+                    window.element.style.top = `${Math.max(0, Math.min(newTop, window.innerHeight - window.element.offsetHeight))}px`;
+
+                    this.checkSnapZones(e.clientX, e.clientY);
+                } else if (type === 'resize') {
+                    const deltaX = e.clientX - this.dragData.startX;
+                    const deltaY = e.clientY - this.dragData.startY;
+
+                    const newWidth = Math.max(300, this.dragData.startWidth + deltaX);
+                    const newHeight = Math.max(400, this.dragData.startHeight + deltaY);
+
+                    window.element.style.width = `${newWidth}px`;
+                    window.element.style.height = `${newHeight}px`;
+                }
+            }
+
+            handleGlobalMouseUp(e) {
+                if (!this.isDragging) return;
+
+                const { windowId, type } = this.dragData;
+                const window = this.windows.get(windowId);
+
+                if (type === 'drag') {
+                    window.element.classList.remove('dragging');
+                    this.hideSnapZones();
+                    this.snapToZoneIfNeeded(e.clientX, e.clientY, windowId);
+                }
+
+                this.isDragging = false;
+                this.dragData = null;
+            }
+
+            showSnapZones() {
+                this.snapZones.forEach(zone => {
+                    const element = document.getElementById(`snapZone${zone.charAt(0).toUpperCase() + zone.slice(1)}`);
+                    if (element) element.classList.add('active');
+                });
+            }
+
+            hideSnapZones() {
+                this.snapZones.forEach(zone => {
+                    const element = document.getElementById(`snapZone${zone.charAt(0).toUpperCase() + zone.slice(1)}`);
+                    if (element) element.classList.remove('active');
+                });
+            }
+
+            checkSnapZones(x, y) {
+                const threshold = 50;
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+
+                // Check proximity to edges
+                if (x < threshold) this.highlightSnapZone('left');
+                else if (x > windowWidth - threshold) this.highlightSnapZone('right');
+                else if (y < threshold) this.highlightSnapZone('top');
+                else if (y > windowHeight - threshold) this.highlightSnapZone('bottom');
+                else this.clearSnapZoneHighlights();
+            }
+
+            highlightSnapZone(zone) {
+                this.clearSnapZoneHighlights();
+                const element = document.getElementById(`snapZone${zone.charAt(0).toUpperCase() + zone.slice(1)}`);
+                if (element) {
+                    element.style.background = 'rgba(102, 126, 234, 0.3)';
+                    element.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+                }
+            }
+
+            clearSnapZoneHighlights() {
+                this.snapZones.forEach(zone => {
+                    const element = document.getElementById(`snapZone${zone.charAt(0).toUpperCase() + zone.slice(1)}`);
+                    if (element) {
+                        element.style.background = 'rgba(102, 126, 234, 0.1)';
+                        element.style.borderColor = 'rgba(102, 126, 234, 0.3)';
+                    }
+                });
+            }
+
+            snapToZoneIfNeeded(x, y, windowId) {
+                const threshold = 50;
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                const window = this.windows.get(windowId);
+
+                if (x < threshold) {
+                    this.snapToZone(windowId, 'left');
+                } else if (x > windowWidth - threshold) {
+                    this.snapToZone(windowId, 'right');
+                } else if (y < threshold) {
+                    this.snapToZone(windowId, 'top');
+                } else if (y > windowHeight - threshold) {
+                    this.snapToZone(windowId, 'bottom');
+                }
+            }
+
+            snapToZone(windowId, zone) {
+                const window = this.windows.get(windowId);
+                const padding = 20;
+
+                switch (zone) {
+                    case 'left':
+                        window.element.style.left = `${padding}px`;
+                        window.element.style.top = `${padding}px`;
+                        window.element.style.width = `calc(50% - ${padding * 1.5}px)`;
+                        window.element.style.height = `calc(100% - ${padding * 2}px)`;
+                        break;
+                    case 'right':
+                        window.element.style.left = `calc(50% + ${padding / 2}px)`;
+                        window.element.style.top = `${padding}px`;
+                        window.element.style.width = `calc(50% - ${padding * 1.5}px)`;
+                        window.element.style.height = `calc(100% - ${padding * 2}px)`;
+                        break;
+                    case 'top':
+                        window.element.style.left = `${padding}px`;
+                        window.element.style.top = `${padding}px`;
+                        window.element.style.width = `calc(100% - ${padding * 2}px)`;
+                        window.element.style.height = `calc(50% - ${padding * 1.5}px)`;
+                        break;
+                    case 'bottom':
+                        window.element.style.left = `${padding}px`;
+                        window.element.style.top = `calc(50% + ${padding / 2}px)`;
+                        window.element.style.width = `calc(100% - ${padding * 2}px)`;
+                        window.element.style.height = `calc(50% - ${padding * 1.5}px)`;
+                        break;
+                }
+
+                this.messenger.showNotification(`Window snapped to ${zone}! ⚡`, 'success');
+            }
+
+            toggleMinimize(windowId) {
+                const window = this.windows.get(windowId);
+                window.isMinimized = !window.isMinimized;
+
+                if (window.isMinimized) {
+                    window.element.classList.add('minimized');
+                    this.messenger.showNotification('Window minimized 📦', 'info');
+                } else {
+                    window.element.classList.remove('minimized');
+                    this.activateWindow(windowId);
+                }
+            }
+
+            toggleMaximize(windowId) {
+                const window = this.windows.get(windowId);
+                window.isMaximized = !window.isMaximized;
+
+                if (window.isMaximized) {
+                    // Store original size and position
+                    window.originalSize = {
+                        width: window.element.offsetWidth,
+                        height: window.element.offsetHeight,
+                        left: window.element.style.left,
+                        top: window.element.style.top
+                    };
+
+                    // Maximize
+                    window.element.style.left = '20px';
+                    window.element.style.top = '20px';
+                    window.element.style.width = 'calc(100vw - 40px)';
+                    window.element.style.height = 'calc(100vh - 40px)';
+                    this.messenger.showNotification('Window maximized 🔳', 'info');
+                } else {
+                    // Restore original size
+                    window.element.style.width = `${window.originalSize.width}px`;
+                    window.element.style.height = `${window.originalSize.height}px`;
+                    window.element.style.left = window.originalSize.left;
+                    window.element.style.top = window.originalSize.top;
+                }
+
+                this.activateWindow(windowId);
+            }
+
+            closeChatWindow(windowId) {
+                const window = this.windows.get(windowId);
+                if (!window) return;
+
+                this.animateWindowClose(window.element, () => {
+                    this.container.removeChild(window.element);
+                    this.windows.delete(windowId);
+
+                    if (this.activeWindow === windowId) {
+                        this.activeWindow = null;
+                        // Activate another window if available
+                        const remainingWindows = Array.from(this.windows.keys());
+                        if (remainingWindows.length > 0) {
+                            this.activateWindow(remainingWindows[0]);
+                        }
+                    }
+                });
+
+                this.messenger.showNotification('Chat window closed 🗑️', 'info');
+            }
+
+            activateWindow(windowId) {
+                // Deactivate all windows
+                this.windows.forEach((window, id) => {
+                    window.element.classList.remove('active');
+                });
+
+                // Activate selected window
+                const window = this.windows.get(windowId);
+                if (window) {
+                    window.element.classList.add('active');
+                    this.activeWindow = windowId;
+
+                    // Bring to front
+                    const maxZ = Math.max(...Array.from(this.windows.values()).map(w =>
+                        parseInt(w.element.style.zIndex) || 6000
+                    ));
+                    window.element.style.zIndex = maxZ + 1;
+                }
+            }
+
+            handleInputKeydown(e, windowId) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessageFromWindow(windowId);
+                }
+            }
+
+            sendMessageFromWindow(windowId) {
+                const input = document.getElementById(`${windowId}-input`);
+                const content = input.value.trim();
+
+                if (content) {
+                    this.addMessageToWindow(windowId, {
+                        content,
+                        senderId: this.messenger.currentUser.id,
+                        senderName: this.messenger.currentUser.name,
+                        senderAvatar: this.messenger.currentUser.avatar,
+                        timestamp: new Date(),
+                        type: 'text'
+                    });
+
+                    input.value = '';
+                    this.messenger.showNotification('Message sent! 📤', 'success');
+                }
+            }
+
+            addMessageToWindow(windowId, message) {
+                const messagesContainer = document.getElementById(`${windowId}-messages`);
+
+                // Remove empty state if present
+                const emptyState = messagesContainer.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                const messageElement = this.messenger.createMessageElement(message);
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            createQuickChatWindow() {
+                const chatData = {
+                    name: `Quick Chat ${this.windowCounter + 1}`,
+                    avatar: 'QC',
+                    status: 'Ready to chat'
+                };
+
+                this.createChatWindow(chatData);
+                this.messenger.showNotification('Quick chat window created! ⚡', 'success');
+            }
+
+            closeActiveWindow() {
+                if (this.activeWindow) {
+                    this.closeChatWindow(this.activeWindow);
+                }
+            }
+
+            cycleWindows() {
+                const windowIds = Array.from(this.windows.keys());
+                if (windowIds.length === 0) return;
+
+                const currentIndex = windowIds.indexOf(this.activeWindow);
+                const nextIndex = (currentIndex + 1) % windowIds.length;
+                this.activateWindow(windowIds[nextIndex]);
+            }
+
+            calculateInitialPosition() {
+                const offset = this.windowCounter * 30;
+                return {
+                    left: 100 + offset,
+                    top: 100 + offset,
+                    width: 400,
+                    height: 500
+                };
+            }
+
+            animateWindowOpen(windowElement) {
+                windowElement.classList.add('opening');
+                setTimeout(() => {
+                    windowElement.classList.remove('opening');
+                    windowElement.classList.add('active');
+                }, 300);
+            }
+
+            animateWindowClose(windowElement, callback) {
+                windowElement.classList.add('closing');
+                setTimeout(callback, 300);
+            }
+
+            // Grid layout for organizing windows
+            organizeWindows() {
+                const windowElements = Array.from(this.windows.values());
+                if (windowElements.length === 0) return;
+
+                const cols = Math.ceil(Math.sqrt(windowElements.length));
+                const rows = Math.ceil(windowElements.length / cols);
+
+                const containerWidth = window.innerWidth - 40;
+                const containerHeight = window.innerHeight - 40;
+
+                const windowWidth = (containerWidth / cols) - 20;
+                const windowHeight = (containerHeight / rows) - 20;
+
+                windowElements.forEach((window, index) => {
+                    const col = index % cols;
+                    const row = Math.floor(index / cols);
+
+                    window.element.style.left = `${20 + col * (windowWidth + 20)}px`;
+                    window.element.style.top = `${20 + row * (windowHeight + 20)}px`;
+                    window.element.style.width = `${windowWidth}px`;
+                    window.element.style.height = `${windowHeight}px`;
+                });
+
+                this.messenger.showNotification(`${windowElements.length} windows organized! 📐`, 'success');
+            }
+
+            getWindowStats() {
+                return {
+                    total: this.windows.size,
+                    active: this.activeWindow,
+                    minimized: Array.from(this.windows.values()).filter(w => w.isMinimized).length,
+                    maximized: Array.from(this.windows.values()).filter(w => w.isMaximized).length
+                };
             }
 
             startVoiceRecording() {
