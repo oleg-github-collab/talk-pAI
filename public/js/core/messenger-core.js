@@ -223,6 +223,45 @@ class TalkPAIMessenger {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
+
+    // Performance logging method expected by UI Events
+    logPerformance(operation, startTime) {
+        const duration = performance.now() - startTime;
+        console.log(`[TalkPAI Performance] ${operation}: ${duration.toFixed(2)}ms`);
+
+        if (duration > 100) {
+            console.warn(`[TalkPAI Performance Warning] ${operation} took ${duration.toFixed(2)}ms`);
+        }
+    }
+
+    // Error handling method expected by UI Events
+    handleError(error, context = 'Unknown') {
+        console.error(`[TalkPAI ${context}]`, error);
+
+        // Enhanced error logging for debugging
+        const errorDetails = {
+            timestamp: new Date().toISOString(),
+            context,
+            message: error.message || 'Unknown error',
+            stack: error.stack,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        // Store error for debugging (in production, send to logging service)
+        const errors = JSON.parse(localStorage.getItem('talkpai-errors') || '[]');
+        errors.push(errorDetails);
+
+        // Keep only last 50 errors to prevent storage overflow
+        if (errors.length > 50) {
+            errors.splice(0, errors.length - 50);
+        }
+
+        localStorage.setItem('talkpai-errors', JSON.stringify(errors));
+
+        // Show user-friendly error notification
+        this.showErrorNotification('An error occurred. Please try again.');
+    }
 }
 
 // Export for module usage
