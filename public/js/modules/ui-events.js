@@ -11,6 +11,17 @@ class UIEventsManager {
     }
 
     bindEvents() {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.initializeEventBindings();
+            });
+        } else {
+            this.initializeEventBindings();
+        }
+    }
+
+    initializeEventBindings() {
         this.bindSidebarEvents();
         this.bindNavigationEvents();
         this.bindChatEvents();
@@ -19,6 +30,9 @@ class UIEventsManager {
         this.bindDragDropEvents();
         this.bindModalEvents();
         this.bindKeyboardEvents();
+        this.bindMobileEvents();
+
+        console.log('🎯 All UI events bound successfully');
     }
 
     bindSidebarEvents() {
@@ -39,10 +53,18 @@ class UIEventsManager {
 
     bindNavigationEvents() {
         // Navigation items
-        document.querySelectorAll('.nav-item').forEach(item => {
+        const navItems = document.querySelectorAll('.nav-item');
+        console.log('🔗 Found navigation items:', navItems.length);
+
+        navItems.forEach((item, index) => {
+            const navType = item.dataset.nav;
+            console.log(`🔗 Binding nav item ${index}: ${navType}`);
+
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.switchNavigation(item.dataset.nav);
+                e.stopPropagation();
+                console.log('🎯 Navigation clicked:', navType);
+                this.switchNavigation(navType);
             });
         });
 
@@ -61,10 +83,18 @@ class UIEventsManager {
 
     bindChatEvents() {
         // Chat items
-        document.querySelectorAll('.chat-item').forEach(item => {
+        const chatItems = document.querySelectorAll('.chat-item');
+        console.log('💬 Found chat items:', chatItems.length);
+
+        chatItems.forEach((item, index) => {
+            const chatId = item.dataset.chat;
+            console.log(`💬 Binding chat item ${index}: ${chatId}`);
+
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.selectChat(item.dataset.chat);
+                e.stopPropagation();
+                console.log('🎯 Chat clicked:', chatId);
+                this.selectChat(chatId);
             });
         });
 
@@ -221,6 +251,104 @@ class UIEventsManager {
         });
     }
 
+    bindMobileEvents() {
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                console.log('🔧 Mobile menu clicked');
+                this.toggleMobileSidebar();
+            });
+        }
+
+        // Mobile back button
+        const mobileBackBtn = document.getElementById('mobileBackBtn');
+        if (mobileBackBtn) {
+            mobileBackBtn.addEventListener('click', () => {
+                console.log('🔧 Mobile back clicked');
+                this.handleMobileBack();
+            });
+        }
+
+        // Touch events for better mobile experience
+        if ('ontouchstart' in window) {
+            this.bindTouchEvents();
+        }
+    }
+
+    bindTouchEvents() {
+        // Swipe gestures for mobile navigation
+        let startX = 0;
+        let startY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (!startX || !startY) return;
+
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+
+            // Swipe right to open sidebar (if closed)
+            if (deltaX > 100 && Math.abs(deltaY) < 50) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && !sidebar.classList.contains('mobile-open')) {
+                    this.toggleMobileSidebar();
+                }
+            }
+
+            // Swipe left to close sidebar (if open)
+            if (deltaX < -100 && Math.abs(deltaY) < 50) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('mobile-open')) {
+                    this.toggleMobileSidebar();
+                }
+            }
+
+            startX = 0;
+            startY = 0;
+        });
+    }
+
+    toggleMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('mobile-open');
+            console.log('📱 Mobile sidebar toggled:', sidebar.classList.contains('mobile-open'));
+        }
+    }
+
+    handleMobileBack() {
+        // Close any open modals first
+        const activeModal = document.querySelector('.modal.active');
+        if (activeModal) {
+            this.closeModal(activeModal);
+            return;
+        }
+
+        // Close emoji picker
+        const emojiPicker = document.getElementById('emojiPicker');
+        if (emojiPicker) {
+            emojiPicker.remove();
+            return;
+        }
+
+        // Close mobile sidebar
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('mobile-open')) {
+            this.toggleMobileSidebar();
+            return;
+        }
+
+        // Navigate to default view
+        this.switchNavigation('chats');
+    }
+
     // Event handler implementations
     switchNavigation(navType) {
         try {
@@ -318,6 +446,9 @@ class UIEventsManager {
 
             // Scroll to bottom
             this.scrollToBottom();
+
+            // Send message to backend
+            this.sendMessageToBackend(message);
 
             // Simulate typing indicator and response
             this.showTypingIndicator();
@@ -952,6 +1083,74 @@ class UIEventsManager {
         const searchInput = document.getElementById('globalSearch');
         if (searchInput) {
             searchInput.focus();
+        }
+    }
+
+    // Frontend-Backend Communication
+    async sendMessageToBackend(message) {
+        try {
+            const response = await fetch('/api/v2/demo/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: message,
+                    chatId: this.messenger.currentChat,
+                    type: 'text'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Message sent to backend:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ Failed to send message to backend:', error);
+            this.messenger.handleError(error, 'Backend Communication');
+            return null;
+        }
+    }
+
+    async loadChatsFromBackend() {
+        try {
+            const response = await fetch('/api/v2/demo/chats');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const chats = await response.json();
+            console.log('✅ Chats loaded from backend:', chats);
+            return chats;
+
+        } catch (error) {
+            console.error('❌ Failed to load chats from backend:', error);
+            this.messenger.handleError(error, 'Backend Communication');
+            return [];
+        }
+    }
+
+    async loadMessagesFromBackend(chatId) {
+        try {
+            const response = await fetch(`/chats/${chatId}/messages`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const messages = await response.json();
+            console.log('✅ Messages loaded from backend:', messages);
+            return messages;
+
+        } catch (error) {
+            console.error('❌ Failed to load messages from backend:', error);
+            this.messenger.handleError(error, 'Backend Communication');
+            return [];
         }
     }
 }

@@ -35,8 +35,6 @@ class TalkPAIMessenger {
     init() {
         this.setupTheme();
         this.setupSidebar();
-        this.setupDragAndDrop();
-        this.bindEvents();
         this.autoResize();
         this.loadDemoData();
 
