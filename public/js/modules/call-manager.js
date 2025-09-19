@@ -47,7 +47,56 @@ class CallManager {
 
             const startTime = performance.now();
 
-            // Request media permissions
+            console.log(`📞 Starting ${callType} call`);
+
+            // Use WebRTC client if available
+            if (window.webrtc && window.webrtc.isConnected) {
+                const targetUserId = contactId || 'demo-user-id';
+                await window.webrtc.initiateCall(targetUserId, callType);
+                return;
+            }
+
+            // Fallback to demo call interface
+            this.showDemoCallInterface(callType);
+
+            this.messenger.logPerformance('Start Call', startTime);
+        } catch (error) {
+            console.error('❌ Failed to start call:', error);
+            this.messenger.handleError(error, 'Start Call');
+        }
+    }
+
+    showDemoCallInterface(callType) {
+        // Create demo call interface
+        const callOverlay = document.createElement('div');
+        callOverlay.className = 'call-ui-overlay active';
+        callOverlay.innerHTML = `
+            <div class="call-interface calling">
+                <div class="call-info">
+                    <div class="call-avatar">${callType === 'video' ? '📹' : '📞'}</div>
+                    <h3>Demo ${callType === 'video' ? 'Video' : 'Voice'} Call</h3>
+                    <p>This is a demo call interface</p>
+                    <p>WebRTC server not connected</p>
+                </div>
+                <div class="call-controls">
+                    <button class="call-btn end-call" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        📞 End Call
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(callOverlay);
+
+        // Auto-close after 5 seconds for demo
+        setTimeout(() => {
+            if (callOverlay.parentNode) {
+                callOverlay.remove();
+            }
+        }, 5000);
+    }
+
+    // Request media permissions
             const constraints = {
                 audio: true,
                 video: callType === 'video'

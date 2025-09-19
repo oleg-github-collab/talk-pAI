@@ -38,7 +38,7 @@ class TalkPAIMessenger {
     init() {
         this.setupTheme();
         this.setupSidebar();
-        this.autoResize();
+        this.setupDragAndDrop();
         this.loadDemoData();
 
         // Initialize external components
@@ -59,6 +59,70 @@ class TalkPAIMessenger {
         const sidebar = document.getElementById('sidebar');
         if (this.sidebarCollapsed) {
             sidebar.classList.add('collapsed');
+        }
+    }
+
+    setupDragAndDrop() {
+        // Initialize drag counter
+        this.dragCounter = 0;
+
+        // Prevent default drag behaviors on window
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        // Handle drag enter
+        window.addEventListener('dragenter', (e) => {
+            this.dragCounter++;
+            if (this.dragCounter === 1) {
+                this.showDragOverlay();
+            }
+        });
+
+        // Handle drag leave
+        window.addEventListener('dragleave', (e) => {
+            this.dragCounter--;
+            if (this.dragCounter === 0) {
+                this.hideDragOverlay();
+            }
+        });
+
+        // Handle drop
+        window.addEventListener('drop', (e) => {
+            this.dragCounter = 0;
+            this.hideDragOverlay();
+            this.handleFileDrop(e);
+        });
+
+        console.log('🎯 Drag and drop initialized');
+    }
+
+    showDragOverlay() {
+        const overlay = document.getElementById('dragDropZone');
+        if (overlay) {
+            overlay.classList.add('active');
+            this.isDragActive = true;
+        }
+    }
+
+    hideDragOverlay() {
+        const overlay = document.getElementById('dragDropZone');
+        if (overlay) {
+            overlay.classList.remove('active');
+            this.isDragActive = false;
+        }
+    }
+
+    handleFileDrop(e) {
+        const files = Array.from(e.dataTransfer.files);
+        console.log('📁 Files dropped:', files);
+
+        // Show file preview if UI Events manager is available
+        if (window.app && window.app.uiEvents && typeof window.app.uiEvents.showFilePreview === 'function') {
+            window.app.uiEvents.showFilePreview(files);
         }
     }
 

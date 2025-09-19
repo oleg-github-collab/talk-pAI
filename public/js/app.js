@@ -45,6 +45,15 @@ class TalkPAIApp {
                 console.log('✅ Call Manager initialized');
             }
 
+            // Initialize WebRTC client
+            if (window.webrtc) {
+                // Register user with WebRTC server
+                const userId = 'demo-user-' + Math.random().toString(36).substr(2, 9);
+                const userName = 'Demo User';
+                window.webrtc.registerUser(userId, userName);
+                console.log('✅ WebRTC Client registered');
+            }
+
             // Set up global references
             this.setupGlobalReferences();
 

@@ -1,8 +1,26 @@
--- Talk pAI Production PostgreSQL Database Schema
+-- Talk pAI Production PostgreSQL Database Schema - COMPLETELY FIXED
 -- Ultra-modern glassmorphism messenger for Railway deployment
 
 -- Enable UUID extension for better primary keys
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Drop all tables in reverse order to avoid foreign key conflicts
+DROP TABLE IF EXISTS call_participants CASCADE;
+DROP TABLE IF EXISTS calls CASCADE;
+DROP TABLE IF EXISTS voice_notes CASCADE;
+DROP TABLE IF EXISTS file_attachments CASCADE;
+DROP TABLE IF EXISTS message_reactions CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS chat_participants CASCADE;
+DROP TABLE IF EXISTS chats CASCADE;
+DROP TABLE IF EXISTS rss_feeds CASCADE;
+DROP TABLE IF EXISTS team_members CASCADE;
+DROP TABLE IF EXISTS teams CASCADE;
+DROP TABLE IF EXISTS workspace_members CASCADE;
+DROP TABLE IF EXISTS workspaces CASCADE;
+DROP TABLE IF EXISTS user_settings CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- Users table with all required fields
 CREATE TABLE IF NOT EXISTS users (

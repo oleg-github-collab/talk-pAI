@@ -13,6 +13,10 @@
   --error-color: #e53e3e;
   --warning-color: #ed8936;
 
+  /* CRITICAL: Touch-friendly sizes */
+  --touch-target-min: 44px;
+  --touch-spacing: 8px;
+
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -940,5 +944,197 @@ body {
 
   .message-input-container {
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ===== CRITICAL MOBILE INTERACTION FIXES ===== */
+
+/* Ensure all clickable elements are touch-friendly */
+.nav-item,
+.chat-item,
+.btn,
+.modal-control-btn,
+.message-action-btn,
+[role="button"],
+button {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  padding: var(--touch-spacing);
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(103, 126, 234, 0.2);
+  tap-highlight-color: rgba(103, 126, 234, 0.2);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* Fix iOS double-tap zoom issue */
+* {
+  touch-action: manipulation;
+}
+
+/* Enhanced mobile click states */
+@media (hover: none) and (pointer: coarse) {
+  .nav-item:active,
+  .chat-item:active,
+  .btn:active,
+  button:active {
+    transform: scale(0.95);
+    background-color: rgba(103, 126, 234, 0.1);
+    transition: all 0.1s ease;
+  }
+
+  .nav-item.active {
+    background: var(--primary-gradient);
+    color: white;
+    transform: scale(1.02);
+  }
+
+  .chat-item.active {
+    background: rgba(103, 126, 234, 0.1);
+    border-left: 4px solid var(--primary-color);
+  }
+}
+
+/* Mobile-specific hover states */
+.nav-item:active,
+.chat-item:active {
+  background-color: rgba(103, 126, 234, 0.15);
+}
+
+/* Improved mobile modal handling */
+@media (max-width: 768px) {
+  .floating-modal {
+    width: 95vw !important;
+    height: 90vh !important;
+    margin: 5vh auto !important;
+    border-radius: 16px;
+  }
+
+  .modal-overlay {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Mobile message input improvements */
+@media (max-width: 768px) {
+  .message-input-container {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .message-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px 16px;
+    border-radius: 24px;
+    min-height: 44px;
+  }
+
+  .send-btn,
+  .emoji-btn,
+  .attach-btn {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile navigation enhancements */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    z-index: 1000;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .nav-section {
+    padding: 12px 8px;
+  }
+
+  .nav-item {
+    padding: 12px 16px;
+    margin: 4px 0;
+    border-radius: 12px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Mobile chat list */
+  .chat-list-panel {
+    transform: translateY(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .chat-list-panel.mobile-open {
+    transform: translateY(0);
+  }
+
+  .chat-item {
+    padding: 16px;
+    margin: 2px 0;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  .messages-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+
+  .chat-list {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+}
+
+/* Debug helper for mobile development */
+@media (max-width: 768px) {
+  .mobile-debug {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 9999;
+    pointer-events: none;
+  }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .message-input {
+    font-size: 16px; /* Prevents zoom */
+    transform: translateZ(0); /* Forces hardware acceleration */
+  }
+
+  .nav-item,
+  .chat-item {
+    -webkit-tap-highlight-color: transparent;
   }
 }
