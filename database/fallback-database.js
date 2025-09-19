@@ -664,6 +664,152 @@ class FallbackDatabase {
     }
 
     // ================================
+    // DATABASE MANAGEMENT
+    // ================================
+
+    async clearAllData() {
+        console.log('🧹 Clearing all fallback database data...');
+        this.data = {
+            users: [],
+            chats: [],
+            messages: [],
+            chat_participants: []
+        };
+        console.log('✅ Fallback database cleared');
+        return true;
+    }
+
+    async resetToDefaults() {
+        console.log('🔄 Resetting fallback database to defaults...');
+        await this.clearAllData();
+        await this.initializeDefaultData();
+        console.log('✅ Fallback database reset to defaults');
+        return true;
+    }
+
+    async initializeDefaultData() {
+        // Add default demo user and AI assistant
+        this.data.users = [
+            {
+                id: 'demo-user-1',
+                nickname: 'demo_user',
+                email: 'demo@talkpai.com',
+                password_hash: 'hashed_demo123',
+                display_name: 'Demo User',
+                bio: 'I am a demo user for Talk pAI!',
+                account_type: 'personal',
+                avatar: null,
+                created_at: new Date(),
+                updated_at: new Date(),
+                last_seen: new Date(),
+                is_online: true
+            },
+            {
+                id: 'ai-assistant',
+                nickname: 'ai_assistant',
+                email: 'ai@talkpai.com',
+                password_hash: null,
+                display_name: 'AI Assistant',
+                bio: 'I am your AI assistant, ready to help!',
+                account_type: 'bot',
+                avatar: '🤖',
+                created_at: new Date(),
+                updated_at: new Date(),
+                last_seen: new Date(),
+                is_online: true
+            }
+        ];
+
+        // Add default chats
+        this.data.chats = [
+            {
+                id: '1',
+                name: 'General',
+                type: 'public',
+                description: 'General discussion channel',
+                created_by: 'demo-user-1',
+                created_at: new Date(),
+                updated_at: new Date(),
+                avatar: null,
+                settings: {}
+            },
+            {
+                id: '2',
+                name: 'AI Assistant',
+                type: 'ai',
+                description: 'Chat with AI Assistant',
+                created_by: 'ai-assistant',
+                created_at: new Date(),
+                updated_at: new Date(),
+                avatar: '🤖',
+                settings: {}
+            }
+        ];
+
+        // Add chat participants
+        this.data.chat_participants = [
+            {
+                id: 'cp-1',
+                chat_id: '1',
+                user_id: 'demo-user-1',
+                role: 'admin',
+                joined_at: new Date(),
+                last_read_at: new Date()
+            },
+            {
+                id: 'cp-2',
+                chat_id: '2',
+                user_id: 'demo-user-1',
+                role: 'member',
+                joined_at: new Date(),
+                last_read_at: new Date()
+            },
+            {
+                id: 'cp-3',
+                chat_id: '2',
+                user_id: 'ai-assistant',
+                role: 'bot',
+                joined_at: new Date(),
+                last_read_at: new Date()
+            }
+        ];
+
+        // Add demo messages
+        this.data.messages = [
+            {
+                id: 'msg-1',
+                chat_id: '1',
+                sender_id: 'demo-user-1',
+                content: 'Welcome to Talk pAI! 🚀',
+                message_type: 'text',
+                reply_to_id: null,
+                metadata: {},
+                created_at: new Date(),
+                updated_at: new Date(),
+                edited: false,
+                sender_nickname: 'demo_user',
+                sender_display_name: 'Demo User',
+                sender_avatar: null
+            },
+            {
+                id: 'msg-2',
+                chat_id: '2',
+                sender_id: 'ai-assistant',
+                content: 'How can I help you today?',
+                message_type: 'text',
+                reply_to_id: null,
+                metadata: {},
+                created_at: new Date(),
+                updated_at: new Date(),
+                edited: false,
+                sender_nickname: 'ai_assistant',
+                sender_display_name: 'AI Assistant',
+                sender_avatar: '🤖'
+            }
+        ];
+    }
+
+    // ================================
     // HEALTH CHECK
     // ================================
 

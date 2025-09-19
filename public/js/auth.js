@@ -106,13 +106,29 @@ class AuthManager {
     }
 
     async handleRegister() {
-        const nickname = document.getElementById('registerUsername').value;
-        const email = document.getElementById('registerEmail').value;
+        const nickname = document.getElementById('registerUsername').value.trim();
+        const email = document.getElementById('registerEmail').value.trim();
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
-        if (!nickname || !password || !confirmPassword) {
-            this.showError('Please fill in all fields');
+        // Валідація nickname
+        if (!nickname) {
+            this.showError('Nickname is required');
+            return;
+        }
+
+        if (nickname.length < 3 || nickname.length > 30) {
+            this.showError('Nickname must be 3-30 characters');
+            return;
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(nickname)) {
+            this.showError('Nickname can only contain letters, numbers and underscores');
+            return;
+        }
+
+        if (!password || !confirmPassword) {
+            this.showError('Password is required');
             return;
         }
 
@@ -123,6 +139,12 @@ class AuthManager {
 
         if (password.length < 6) {
             this.showError('Password must be at least 6 characters');
+            return;
+        }
+
+        // Валідація email (якщо вказаний)
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            this.showError('Please enter a valid email address');
             return;
         }
 

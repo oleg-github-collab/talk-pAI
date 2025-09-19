@@ -3928,24 +3928,40 @@
         .form-group input {
             width: 100%;
             padding: var(--spacing-lg) var(--spacing-xl);
-            background: var(--glass-subtle);
-            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-md);
             color: var(--text-primary);
             font-size: var(--text-base);
-            transition: all var(--transition-fast);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
+            backdrop-filter: blur(10px);
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
-            background: var(--glass);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15),
+                        0 8px 25px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .form-group input:hover:not(:focus) {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .form-group input::placeholder {
-            color: var(--text-tertiary);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-group input:valid {
+            border-color: #10b981;
+        }
+
+        .form-group input:invalid:not(:placeholder-shown) {
+            border-color: #ef4444;
         }
 
         .auth-btn {
@@ -4743,11 +4759,15 @@
             <div class="auth-form" id="registerForm" style="display: none;">
                 <div class="form-group">
                     <label>Nickname</label>
-                    <input type="text" id="registerUsername" placeholder="Choose a nickname" required>
+                    <input type="text" id="registerUsername"
+                           placeholder="Choose a nickname (3-30 chars)"
+                           pattern="[a-zA-Z0-9_]{3,30}"
+                           title="Only letters, numbers and underscores (3-30 characters)"
+                           minlength="3" maxlength="30" required>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="registerEmail" placeholder="Enter your email" required>
+                    <label>Email (optional)</label>
+                    <input type="email" id="registerEmail" placeholder="Enter your email (optional)">
                 </div>
                 <div class="form-group">
                     <label>Password</label>

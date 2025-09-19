@@ -39,6 +39,7 @@ class ComprehensiveAPI {
         this.router.post('/auth/login', this.loginUser.bind(this));
         this.router.post('/auth/logout', this.logoutUser.bind(this));
         this.router.post('/auth/refresh', this.refreshToken.bind(this));
+        this.router.post('/auth/reset-database', this.resetDatabase.bind(this));
 
         // ================================
         // USER MANAGEMENT ENDPOINTS (Enhanced)
@@ -595,6 +596,22 @@ class ComprehensiveAPI {
                 success: true,
                 token: newToken,
                 user: this.sanitizeUser(user)
+            });
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    }
+
+    async resetDatabase(req, res) {
+        try {
+            if (this.db.clearAllData) {
+                await this.db.clearAllData();
+                this.logger?.info('Database reset successfully');
+            }
+
+            res.json({
+                success: true,
+                message: 'Database reset successfully'
             });
         } catch (error) {
             this.handleError(error, req, res);
