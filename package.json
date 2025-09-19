@@ -7,7 +7,13 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build": "echo 'Build completed - Ready for Railway deployment'",
-    "railway:start": "node server.js"
+    "railway:start": "node server.js",
+    "validate": "node scripts/deployment-validator.js pre-deployment",
+    "validate:runtime": "node scripts/deployment-validator.js runtime",
+    "validate:full": "node scripts/deployment-validator.js full",
+    "logs": "tail -f logs/talkpai.log",
+    "logs:error": "tail -f logs/talkpai-error.log",
+    "health": "curl -f http://localhost:${PORT:-3000}/health || echo 'Health check failed'"
   },
   "keywords": [
     "messenger",

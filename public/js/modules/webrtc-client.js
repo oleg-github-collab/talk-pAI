@@ -64,7 +64,10 @@ class TalkPAIWebRTC {
     }
 
     async connectToSignalingServer() {
-        const serverUrl = 'ws://localhost:3001'; // Fixed: removed process.env for browser
+        // Use relative URL for production, specific URL for development
+        const serverUrl = window.location.hostname === 'localhost' ?
+            'ws://localhost:3001' :
+            `wss://${window.location.hostname}:3001`;
 
         this.socket = io(serverUrl, {
             transports: ['websocket', 'polling'],
@@ -706,10 +709,5 @@ class TalkPAIWebRTC {
 
 // Global instance
 window.webrtc = new TalkPAIWebRTC();
-
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TalkPAIWebRTC;
-}
 
 console.log('🎥 Talk pAI WebRTC Client loaded successfully');

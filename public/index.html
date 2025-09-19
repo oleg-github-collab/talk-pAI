@@ -374,6 +374,32 @@
             animation: pulse 2s infinite;
         }
 
+        .logout-btn {
+            position: absolute;
+            right: var(--spacing-md);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .logout-btn:hover {
+            background: var(--glass-subtle);
+            color: var(--accent-primary);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .logout-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
         /* Sidebar Navigation */
         .sidebar-nav {
             flex: 1;
@@ -3820,6 +3846,167 @@
                 padding-bottom: 80px;
             }
         }
+        /* Authentication Modal Styles */
+        .auth-modal {
+            background: var(--glass);
+            backdrop-filter: blur(var(--glass-blur));
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--glass-border);
+            padding: var(--spacing-4xl);
+            min-width: 420px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .auth-header h2 {
+            color: var(--text-primary);
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-md);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+            opacity: 0.8;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: var(--glass-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xs);
+            margin-bottom: var(--spacing-3xl);
+            border: 1px solid var(--glass-border);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .auth-tab.active {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .auth-form {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: var(--spacing-md);
+            font-size: var(--text-sm);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: var(--glass-subtle);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: var(--text-base);
+            transition: all var(--transition-fast);
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+            background: var(--glass);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            border-radius: var(--radius-md);
+            border: none;
+            font-weight: 600;
+            font-size: var(--text-base);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            box-shadow: 0 8px 24px rgba(var(--accent-primary-rgb), 0.3);
+        }
+
+        .auth-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(var(--accent-primary-rgb), 0.4);
+        }
+
+        .auth-btn.secondary {
+            background: var(--glass);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            margin-bottom: 0;
+        }
+
+        .auth-btn.secondary:hover {
+            background: var(--glass-subtle);
+            transform: translateY(-1px);
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Hide main content when auth is shown */
+        body.auth-mode .main-container {
+            filter: blur(10px);
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body data-theme="light">
@@ -3852,6 +4039,13 @@
                             <span>Online</span>
                         </div>
                     </div>
+                    <button class="logout-btn" onclick="logout()" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16,17 21,12 16,7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -4520,6 +4714,54 @@
         </div>
     </div>
 
+    <!-- Authentication Modal -->
+    <div class="modal-overlay" id="authModalOverlay" style="display: flex;">
+        <div class="auth-modal" id="authModal">
+            <div class="auth-header">
+                <h2>🚀 Welcome to Talk pAI</h2>
+                <p>Ultra-modern messenger with AI assistance</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Login</button>
+                <button class="auth-tab" data-tab="register">Register</button>
+            </div>
+
+            <div class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label>Email or Username</label>
+                    <input type="text" id="loginEmail" placeholder="Enter your email or username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                <button class="auth-btn primary" onclick="handleLogin()">Login</button>
+                <button class="auth-btn secondary" onclick="demoLogin()">Demo Login</button>
+            </div>
+
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="registerUsername" placeholder="Choose a username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="registerEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="registerPassword" placeholder="Create a password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                </div>
+                <button class="auth-btn primary" onclick="handleRegister()">Register</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Load External Scripts -->
     <script src="theme-customizer.js"></script>
     <script src="emoji-picker.js"></script>
@@ -4527,12 +4769,13 @@
     <!-- Enhanced Modular JavaScript Architecture -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="js/utils/error-handler.js"></script>
-    <script src="js/core/messenger-core.js"></script>
-    <script src="js/modules/ui-events.js"></script>
-    <script src="js/modules/call-manager.js"></script>
-    <script src="js/modules/webrtc-client.js"></script>
-    <script src="js/components.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/auth.js?v=2"></script>
+    <script src="js/core/messenger-core.js?v=2"></script>
+    <script src="js/modules/ui-events.js?v=2"></script>
+    <script src="js/modules/call-manager.js?v=2"></script>
+    <script src="js/modules/webrtc-client.js?v=2"></script>
+    <script src="js/components.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
 
     <script>
         // ===== SIMPLIFIED INITIALIZATION =====

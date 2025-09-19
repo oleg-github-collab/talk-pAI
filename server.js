@@ -8,16 +8,48 @@ const http = require('http');
 const path = require('path');
 require('dotenv').config();
 
-// Global error handlers for production
+// Enhanced global error handlers with retry logic
+let serverCrashCount = 0;
+const MAX_CRASHES = 3;
+const CRASH_RESET_TIME = 5 * 60 * 1000; // 5 minutes
+
 process.on('uncaughtException', (error) => {
   console.error('🚨 Uncaught Exception:', error.message);
-  process.exit(1);
+  console.error('Stack:', error.stack);
+
+  serverCrashCount++;
+  if (serverCrashCount >= MAX_CRASHES) {
+    console.error('❌ Maximum crashes reached, exiting...');
+    process.exit(1);
+  }
+
+  console.log(`⚠️ Crash count: ${serverCrashCount}/${MAX_CRASHES}, attempting recovery...`);
+  setTimeout(() => { serverCrashCount = 0; }, CRASH_RESET_TIME);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  console.error('Stack:', reason?.stack || 'No stack trace available');
+
+  // Don't exit on unhandled rejections, just log them
+  console.log('⚠️ Continuing server operation despite rejection...');
 });
+
+// Memory monitoring
+setInterval(() => {
+  const memUsage = process.memoryUsage();
+  const memUsageMB = {
+    rss: Math.round(memUsage.rss / 1024 / 1024),
+    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+    external: Math.round(memUsage.external / 1024 / 1024)
+  };
+
+  // Alert if memory usage is too high
+  if (memUsageMB.heapUsed > 500) {
+    console.warn('⚠️ High memory usage detected:', memUsageMB);
+  }
+}, 60000); // Check every minute
 
 // Initialize config
 let config;
@@ -36,23 +68,53 @@ try {
   };
 }
 
-// Initialize advanced logging and error handling
+// Initialize production-grade logging and error handling
 let logger, errorHandler;
 try {
-  const AdvancedLogger = require('./src/utils/advanced-logger');
-  const { ErrorHandler } = require('./src/utils/error-handler');
+  const { ProductionLogger, FallbackLogger } = require('./src/utils/production-logger');
 
-  logger = new AdvancedLogger({
+  logger = new ProductionLogger({
     appName: 'TalkPAI',
     logLevel: process.env.LOG_LEVEL || 'info',
-    enableFile: process.env.NODE_ENV === 'production'
+    enableFile: process.env.ENABLE_FILE_LOGGING !== 'false',
+    enableConsole: true,
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxFiles: 5
   });
 
-  errorHandler = new ErrorHandler(logger);
-  logger.info('Advanced logging and error handling initialized');
+  // Enhanced error handler
+  errorHandler = {
+    middleware: () => (err, req, res, next) => {
+      logger.error('Express error middleware', {
+        error: err.message,
+        stack: err.stack,
+        url: req.url,
+        method: req.method,
+        ip: req.ip
+      });
+
+      res.status(err.status || 500).json({
+        success: false,
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+      });
+    }
+  };
+
+  logger.info('🚀 Production logging system initialized');
+
+  // Log system info on startup
+  logger.info('System Information', {
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    pid: process.pid,
+    environment: process.env.NODE_ENV || 'production'
+  });
+
 } catch (error) {
-  console.warn('⚠️ Using basic logging:', error.message);
-  logger = console;
+  console.warn('⚠️ Production logger failed, using fallback:', error.message);
+  const { FallbackLogger } = require('./src/utils/production-logger');
+  logger = new FallbackLogger('TalkPAI');
   errorHandler = null;
 }
 
@@ -190,23 +252,113 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health endpoints
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    ok: true,
-    timestamp: new Date().toISOString(),
-    database: database.isConnected,
-    environment: process.env.NODE_ENV || 'production'
-  });
+// Enhanced health endpoints with comprehensive monitoring
+app.get('/health', async (req, res) => {
+  try {
+    const healthData = {
+      status: 'healthy',
+      ok: true,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'production',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      database: {
+        connected: database.isConnected,
+        type: database.connectionType
+      }
+    };
+
+    // Get detailed database health if available
+    if (database.healthCheck) {
+      try {
+        const dbHealth = await database.healthCheck();
+        healthData.database = { ...healthData.database, ...dbHealth };
+      } catch (dbError) {
+        healthData.database.error = dbError.message;
+        healthData.database.connected = false;
+      }
+    }
+
+    // Add system stats
+    healthData.system = {
+      platform: process.platform,
+      nodeVersion: process.version,
+      pid: process.pid
+    };
+
+    res.json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      ok: false,
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 app.get('/healthz', (req, res) => {
-  res.json({ status: 'ready', timestamp: Date.now() });
+  res.json({
+    status: 'ready',
+    timestamp: Date.now(),
+    uptime: process.uptime()
+  });
 });
 
 app.get('/ping', (req, res) => {
-  res.json({ pong: true, timestamp: Date.now() });
+  res.json({
+    pong: true,
+    timestamp: Date.now(),
+    server: 'talk-pai'
+  });
+});
+
+// Database-specific health endpoint
+app.get('/health/database', async (req, res) => {
+  try {
+    if (database.healthCheck) {
+      const dbHealth = await database.healthCheck();
+      res.json(dbHealth);
+    } else {
+      res.json({
+        connected: database.isConnected,
+        type: database.connectionType,
+        message: 'Basic health check only'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      connected: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// System metrics endpoint
+app.get('/health/metrics', (req, res) => {
+  const memUsage = process.memoryUsage();
+  const cpuUsage = process.cpuUsage();
+
+  res.json({
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: {
+      rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+      external: Math.round(memUsage.external / 1024 / 1024) + 'MB'
+    },
+    cpu: {
+      user: cpuUsage.user,
+      system: cpuUsage.system
+    },
+    process: {
+      pid: process.pid,
+      platform: process.platform,
+      nodeVersion: process.version
+    }
+  });
 });
 
 // Socket.io real-time features
@@ -284,41 +436,247 @@ app.use('*', (req, res) => {
   });
 });
 
-// Server startup
+// Enhanced server startup with comprehensive validation
 async function startServer() {
-  try {
-    // Connect to database
-    const dbConnected = await database.connect();
+  let retryCount = 0;
+  const maxRetries = 5;
+  const retryDelay = 2000;
 
-    if (dbConnected) {
-      logger.info('✅ Database connected successfully');
-    } else {
-      logger.warn('⚠️ Database connection failed, using fallback');
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`🔄 Starting server attempt ${retryCount + 1}/${maxRetries}...`);
+
+      // Pre-startup validation
+      await validateEnvironment();
+
+      // Connect to database with retry logic
+      const dbConnected = await connectDatabaseWithRetry();
+
+      if (dbConnected) {
+        logger.info('✅ Database connected successfully');
+        await validateDatabaseSchema();
+      } else {
+        logger.warn('⚠️ Database connection failed, using fallback');
+      }
+
+      // Validate critical directories
+      await ensureCriticalDirectories();
+
+      // Start server with enhanced error handling
+      const PORT = config.port;
+      await new Promise((resolve, reject) => {
+        const serverInstance = server.listen(PORT, '0.0.0.0', () => {
+          console.log('🚀 Talk pAI server running on 0.0.0.0:' + PORT);
+          console.log('🌍 Environment:', config.nodeEnv);
+          console.log('💾 Database:', database.isConnected ? 'Connected' : 'Fallback');
+          console.log('🎯 Health check: http://0.0.0.0:' + PORT + '/health');
+          console.log('🔥 PRODUCTION MESSENGER READY!');
+
+          // Post-startup validation
+          setTimeout(() => validateServerHealth(PORT), 3000);
+          resolve();
+        });
+
+        serverInstance.on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️ Port ${PORT} is busy, trying ${PORT + 1}...`);
+            config.port = PORT + 1;
+            reject(new Error(`Port ${PORT} in use`));
+          } else {
+            reject(err);
+          }
+        });
+      });
+
+      // If we get here, startup was successful
+      break;
+
+    } catch (error) {
+      retryCount++;
+      logger.error(`❌ Server startup attempt ${retryCount} failed:`, error.message);
+
+      if (retryCount >= maxRetries) {
+        logger.error(`❌ Failed to start server after ${maxRetries} attempts`);
+        process.exit(1);
+      }
+
+      console.log(`⏳ Retrying in ${retryDelay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-
-    // Start server
-    const PORT = config.port;
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log('🚀 Talk pAI server running on 0.0.0.0:' + PORT);
-      console.log('🌍 Environment:', config.nodeEnv);
-      console.log('💾 Database:', database.isConnected ? 'Connected' : 'Fallback');
-      console.log('🎯 Health check: http://0.0.0.0:' + PORT + '/health');
-      console.log('🔥 PRODUCTION MESSENGER READY!');
-    });
-
-  } catch (error) {
-    logger.error('❌ Server startup failed:', error.message);
-    process.exit(1);
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('🔐 Server shutdown complete');
-    process.exit(0);
-  });
+// Environment validation
+async function validateEnvironment() {
+  console.log('🔍 Validating environment...');
+
+  const required = ['NODE_ENV'];
+  const missing = required.filter(env => !process.env[env]);
+
+  if (missing.length > 0) {
+    console.warn('⚠️ Missing environment variables:', missing.join(', '));
+  }
+
+  // Set defaults for missing variables
+  if (!process.env.NODE_ENV) process.env.NODE_ENV = 'production';
+  if (!process.env.PORT) process.env.PORT = '8080';
+
+  console.log('✅ Environment validation complete');
+}
+
+// Database connection with retry
+async function connectDatabaseWithRetry() {
+  const maxDbRetries = 3;
+  let dbRetryCount = 0;
+
+  while (dbRetryCount < maxDbRetries) {
+    try {
+      const connected = await database.connect();
+      if (connected) return true;
+
+      dbRetryCount++;
+      if (dbRetryCount < maxDbRetries) {
+        console.log(`⏳ Database retry ${dbRetryCount}/${maxDbRetries} in 2s...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } catch (error) {
+      dbRetryCount++;
+      console.error(`❌ Database connection attempt ${dbRetryCount} failed:`, error.message);
+
+      if (dbRetryCount < maxDbRetries) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  return false;
+}
+
+// Database schema validation
+async function validateDatabaseSchema() {
+  try {
+    if (database.connectionType === 'postgresql') {
+      const result = await database.query('SELECT table_name FROM information_schema.tables WHERE table_schema = \'public\'');
+      console.log(`✅ Database schema validation: ${result.length} tables found`);
+    }
+  } catch (error) {
+    console.warn('⚠️ Schema validation failed:', error.message);
+  }
+}
+
+// Ensure critical directories exist
+async function ensureCriticalDirectories() {
+  const fs = require('fs').promises;
+  const directories = ['uploads', 'logs'];
+
+  for (const dir of directories) {
+    try {
+      await fs.access(dir);
+    } catch {
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`📁 Created directory: ${dir}`);
+    }
+  }
+}
+
+// Post-startup health validation
+async function validateServerHealth(port) {
+  try {
+    const http = require('http');
+    const options = {
+      hostname: 'localhost',
+      port: port,
+      path: '/health',
+      timeout: 5000
+    };
+
+    const req = http.request(options, (res) => {
+      if (res.statusCode === 200) {
+        console.log('✅ Server health check passed');
+      } else {
+        console.warn(`⚠️ Health check returned status: ${res.statusCode}`);
+      }
+    });
+
+    req.on('error', (err) => {
+      console.warn('⚠️ Health check failed:', err.message);
+    });
+
+    req.setTimeout(5000, () => {
+      console.warn('⚠️ Health check timed out');
+      req.destroy();
+    });
+
+    req.end();
+  } catch (error) {
+    console.warn('⚠️ Could not perform health check:', error.message);
+  }
+}
+
+// Enhanced graceful shutdown with cleanup
+let isShuttingDown = false;
+
+const gracefulShutdown = async (signal) => {
+  if (isShuttingDown) {
+    console.log('⚠️ Shutdown already in progress...');
+    return;
+  }
+
+  isShuttingDown = true;
+  console.log(`\n${signal} received, initiating graceful shutdown...`);
+
+  // Set a timeout for forced shutdown
+  const forceShutdownTimer = setTimeout(() => {
+    console.error('❌ Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 30000); // 30 seconds max
+
+  try {
+    // Stop accepting new connections
+    server.close(async () => {
+      console.log('🔐 Server stopped accepting new connections');
+
+      try {
+        // Close database connections
+        if (database && database.close) {
+          await database.close();
+          console.log('💾 Database connections closed');
+        }
+
+        // Close Socket.IO connections
+        if (io) {
+          io.close();
+          console.log('🔌 Socket.IO connections closed');
+        }
+
+        clearTimeout(forceShutdownTimer);
+        console.log('✅ Graceful shutdown complete');
+        process.exit(0);
+
+      } catch (error) {
+        console.error('❌ Error during shutdown cleanup:', error.message);
+        clearTimeout(forceShutdownTimer);
+        process.exit(1);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error.message);
+    clearTimeout(forceShutdownTimer);
+    process.exit(1);
+  }
+};
+
+// Handle various shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // For nodemon
+
+// Handle worker process messages (for PM2 or similar)
+process.on('message', (msg) => {
+  if (msg === 'shutdown') {
+    gracefulShutdown('IPC:shutdown');
+  }
 });
 
 startServer();

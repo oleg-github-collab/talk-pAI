@@ -8,6 +8,11 @@ class DatabaseInitializer {
         this.client = null;
         this.connectionType = 'postgresql';
         this.fallbackDb = null;
+        this.pool = null;
+        this.connectionRetries = 0;
+        this.maxRetries = 5;
+        this.reconnectTimer = null;
+        this.healthCheckInterval = null;
     }
 
     async connect() {
@@ -43,24 +48,105 @@ class DatabaseInitializer {
 
     async connectPostgreSQL() {
         try {
-            const { Client } = require('pg');
+            const { Pool } = require('pg');
 
-            this.client = new Client({
+            // Use connection pooling for better performance and reliability
+            this.pool = new Pool({
                 connectionString: process.env.DATABASE_URL,
-                ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+                ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+                max: 20, // Maximum number of clients in the pool
+                idleTimeoutMillis: 30000, // How long a client is allowed to remain idle
+                connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection not acquired
+                maxUses: 7500, // Close and replace connection after 7500 uses
+                application_name: 'talk-pai-messenger'
             });
 
-            await this.client.connect();
+            // Test connection with retry logic
+            let connected = false;
+            for (let i = 0; i < this.maxRetries; i++) {
+                try {
+                    const client = await this.pool.connect();
+                    const result = await client.query('SELECT NOW(), version() as pg_version');
+                    client.release();
+
+                    console.log('📅 PostgreSQL connected at:', result.rows[0].now);
+                    console.log('🔧 PostgreSQL version:', result.rows[0].pg_version.split(' ')[0]);
+
+                    connected = true;
+                    break;
+                } catch (error) {
+                    console.warn(`⚠️ PostgreSQL connection attempt ${i + 1}/${this.maxRetries} failed:`, error.message);
+                    if (i < this.maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1))); // Exponential backoff
+                    }
+                }
+            }
+
+            if (!connected) {
+                throw new Error('Failed to connect to PostgreSQL after multiple attempts');
+            }
+
             this.isConnected = true;
             this.connectionType = 'postgresql';
+            this.connectionRetries = 0;
 
-            // Test connection
-            const result = await this.client.query('SELECT NOW()');
-            console.log('📅 PostgreSQL connected at:', result.rows[0].now);
+            // Set up connection monitoring
+            this.setupConnectionMonitoring();
+
+            // Handle pool errors
+            this.pool.on('error', (err) => {
+                console.error('❌ PostgreSQL pool error:', err.message);
+                this.handleConnectionError(err);
+            });
+
+            this.pool.on('connect', () => {
+                console.log('🔗 New PostgreSQL client connected');
+            });
 
         } catch (error) {
             console.error('PostgreSQL connection failed:', error.message);
             throw error;
+        }
+    }
+
+    setupConnectionMonitoring() {
+        // Health check every 30 seconds
+        this.healthCheckInterval = setInterval(async () => {
+            try {
+                const client = await this.pool.connect();
+                await client.query('SELECT 1');
+                client.release();
+            } catch (error) {
+                console.warn('⚠️ Database health check failed:', error.message);
+                this.handleConnectionError(error);
+            }
+        }, 30000);
+    }
+
+    async handleConnectionError(error) {
+        this.connectionRetries++;
+        console.error(`❌ Database connection error (${this.connectionRetries}/${this.maxRetries}):`, error.message);
+
+        if (this.connectionRetries >= this.maxRetries) {
+            console.error('💥 Maximum connection retries reached, switching to fallback');
+            this.isConnected = false;
+            await this.connectFallback();
+            return;
+        }
+
+        // Attempt reconnection
+        if (!this.reconnectTimer) {
+            this.reconnectTimer = setTimeout(async () => {
+                try {
+                    console.log('🔄 Attempting to reconnect to PostgreSQL...');
+                    await this.connectPostgreSQL();
+                    console.log('✅ Reconnected to PostgreSQL');
+                } catch (reconnectError) {
+                    console.error('❌ Reconnection failed:', reconnectError.message);
+                } finally {
+                    this.reconnectTimer = null;
+                }
+            }, 5000);
         }
     }
 
@@ -100,11 +186,27 @@ class DatabaseInitializer {
 
     async initializePostgreSQLSchema(schema) {
         try {
-            // Enable UUID extension first
-            await this.client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-            console.log('✅ UUID extension enabled');
+            // Enable UUID extension first (with retry logic)
+            let retryCount = 0;
+            const maxRetries = 3;
 
-            // Split and execute statements
+            while (retryCount < maxRetries) {
+                try {
+                    await this.client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+                    console.log('✅ UUID extension enabled');
+                    break;
+                } catch (extError) {
+                    retryCount++;
+                    console.warn(`⚠️ UUID extension attempt ${retryCount} failed:`, extError.message);
+                    if (retryCount === maxRetries) {
+                        console.log('🔄 Continuing without UUID extension...');
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            // Split and execute statements with better error handling
             const statements = schema
                 .split(';')
                 .map(stmt => stmt.trim())
@@ -143,6 +245,7 @@ class DatabaseInitializer {
             return this.fallbackDb.query(sql, params);
         }
 
+        let client;
         try {
             // Convert ? placeholders to $1, $2, etc. for PostgreSQL
             let pgSql = sql;
@@ -153,23 +256,48 @@ class DatabaseInitializer {
                 pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
             }
 
-            const result = await this.client.query(pgSql, pgParams);
+            // Use connection pool
+            client = await this.pool.connect();
+            const result = await client.query(pgSql, pgParams);
             return result.rows;
         } catch (error) {
             console.error('❌ Query error:', error.message);
-            console.error('❌ SQL:', sql);
+            console.error('❌ SQL:', sql.substring(0, 200) + (sql.length > 200 ? '...' : ''));
             console.error('❌ Params:', params);
+
+            // Handle connection errors
+            if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+                this.handleConnectionError(error);
+            }
+
             throw error;
+        } finally {
+            if (client) {
+                client.release();
+            }
         }
     }
 
     async close() {
+        // Clear monitoring intervals
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
+
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
         if (this.connectionType === 'fallback' && this.fallbackDb) {
             await this.fallbackDb.close();
-        } else if (this.client) {
-            await this.client.end();
+        } else if (this.pool) {
+            await this.pool.end();
         }
+
         this.isConnected = false;
+        this.connectionRetries = 0;
         console.log(`🔐 ${this.connectionType} database connection closed`);
     }
 
@@ -383,28 +511,92 @@ class DatabaseInitializer {
         return results;
     }
 
-    // Health check method
+    // Enhanced health check method
     async healthCheck() {
         if (this.connectionType === 'fallback') {
             return this.fallbackDb.healthCheck();
         }
 
+        let client;
         try {
-            const result = await this.client.query('SELECT NOW() as current_time, version() as pg_version');
+            client = await this.pool.connect();
+            const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
+
+            // Get pool statistics
+            const poolStats = {
+                totalCount: this.pool.totalCount,
+                idleCount: this.pool.idleCount,
+                waitingCount: this.pool.waitingCount
+            };
+
             return {
                 connected: true,
                 timestamp: result.rows[0].current_time,
                 version: result.rows[0].pg_version,
-                type: 'postgresql'
+                type: 'postgresql',
+                pool: poolStats,
+                retries: this.connectionRetries
             };
         } catch (error) {
             return {
                 connected: false,
                 error: error.message,
-                type: 'postgresql'
+                type: 'postgresql',
+                retries: this.connectionRetries
+            };
+        } finally {
+            if (client) {
+                client.release();
+            }
+        }
+    }
+
+    // Get database statistics
+    async getStats() {
+        if (this.connectionType === 'fallback') {
+            return { type: 'fallback', tables: 0 };
+        }
+
+        try {
+            const result = await this.query(`
+                SELECT
+                    schemaname,
+                    tablename,
+                    attname,
+                    n_distinct,
+                    null_frac
+                FROM pg_stats
+                WHERE schemaname = 'public'
+                LIMIT 10
+            `);
+
+            return {
+                type: 'postgresql',
+                sampleStats: result.length,
+                pool: {
+                    total: this.pool.totalCount,
+                    idle: this.pool.idleCount,
+                    waiting: this.pool.waitingCount
+                }
+            };
+        } catch (error) {
+            return {
+                type: 'postgresql',
+                error: error.message
             };
         }
     }
 }
 
 module.exports = DatabaseInitializer;
+
+// Handle graceful shutdown for database connections
+process.on('SIGTERM', async () => {
+    console.log('🔄 Closing database connections...');
+    // Note: Individual instances will handle their own cleanup
+});
+
+process.on('SIGINT', async () => {
+    console.log('🔄 Closing database connections...');
+    // Note: Individual instances will handle their own cleanup
+});

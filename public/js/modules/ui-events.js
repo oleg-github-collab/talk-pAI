@@ -1211,7 +1211,7 @@ class UIEventsManager {
     // Frontend-Backend Communication
     async sendMessageToBackend(message) {
         try {
-            const response = await fetch('http://localhost:3000/api/v2/demo/message', {
+            const response = await fetch('/api/v2/demo/message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1240,7 +1240,7 @@ class UIEventsManager {
 
     async loadChatsFromBackend() {
         try {
-            const response = await fetch('http://localhost:3000/api/v2/demo/chats');
+            const response = await fetch('/api/v2/demo/chats');
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
