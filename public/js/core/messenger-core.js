@@ -39,14 +39,7 @@ class TalkPAIMessenger {
         try {
             this.setupTheme();
             this.setupSidebar();
-
-            // Check if setupDragAndDrop exists
-            if (typeof this.setupDragAndDrop === 'function') {
-                this.setupDragAndDrop();
-            } else {
-                console.warn('⚠️ setupDragAndDrop method not found, skipping...');
-            }
-
+            this.setupDragAndDrop();
             this.loadDemoData();
 
             // Initialize external components

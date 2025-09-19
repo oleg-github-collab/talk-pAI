@@ -96,50 +96,6 @@ class CallManager {
         }, 5000);
     }
 
-    // Request media permissions
-            const constraints = {
-                audio: true,
-                video: callType === 'video'
-            };
-
-            this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-            // Update messenger state
-            this.messenger.callState = 'calling';
-            this.messenger.callType = callType;
-            this.messenger.callStartTime = Date.now();
-
-            // Show call interface
-            this.showCallInterface(callType, contactId);
-
-            // Setup local video if video call
-            if (callType === 'video') {
-                this.setupLocalVideo();
-            }
-
-            // Create peer connection
-            this.createPeerConnection();
-
-            // Add local stream to peer connection
-            this.localStream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, this.localStream);
-            });
-
-            // Start call timer
-            this.startCallTimer();
-
-            // Simulate connection process
-            this.simulateCallConnection();
-
-            this.messenger.logPerformance('Start Call', startTime);
-            console.log(`📞 ${callType} call started`);
-
-        } catch (error) {
-            this.messenger.handleError(error, 'Start Call');
-            this.showCallError('Failed to start call. Please check your permissions.');
-        }
-    }
-
     createPeerConnection() {
         this.peerConnection = new RTCPeerConnection(this.peerConnectionConfig);
 
