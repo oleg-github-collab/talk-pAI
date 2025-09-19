@@ -1,4 +1,4 @@
--- Talk pAI Production PostgreSQL Database Schema - COMPLETELY FIXED
+-- Talk pAI Production PostgreSQL Database Schema - FIXED VERSION
 -- Ultra-modern glassmorphism messenger for Railway deployment
 
 -- Enable UUID extension for better primary keys
@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Users table with all required fields
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nickname VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Sessions table for authentication
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     token VARCHAR(64) UNIQUE NOT NULL,
@@ -51,347 +51,282 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User settings table
+CREATE TABLE user_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    theme VARCHAR(20) DEFAULT 'auto',
+    language VARCHAR(10) DEFAULT 'en',
+    notifications JSONB DEFAULT '{"push": true, "email": true, "desktop": true}',
+    privacy JSONB DEFAULT '{"online_status": true, "read_receipts": true}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+
 -- Workspaces for enterprise features
-CREATE TABLE IF NOT EXISTS workspaces (
+CREATE TABLE workspaces (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    owner_id UUID REFERENCES users(id),
+    owner_id UUID REFERENCES users(id) ON DELETE SET NULL,
     settings JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Workspace members
+CREATE TABLE workspace_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) DEFAULT 'member',
+    permissions JSONB DEFAULT '{}',
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(workspace_id, user_id)
+);
+
 -- Teams within workspaces
-CREATE TABLE IF NOT EXISTS teams (
+CREATE TABLE teams (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    created_by UUID REFERENCES users(id),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     settings JSONB DEFAULT '{}',
+    is_private BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Team members
-CREATE TABLE IF NOT EXISTS team_members (
+CREATE TABLE team_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(50) DEFAULT 'member',
+    role VARCHAR(20) DEFAULT 'member',
     permissions JSONB DEFAULT '{}',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(team_id, user_id)
 );
 
--- Chats table with enhanced features
-CREATE TABLE IF NOT EXISTS chats (
+-- Chats table with ALL required columns including workspace_id
+CREATE TABLE chats (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100),
     description TEXT,
-    type VARCHAR(20) DEFAULT 'private',
-    workspace_id UUID REFERENCES workspaces(id),
-    team_id UUID REFERENCES teams(id),
-    created_by UUID REFERENCES users(id),
+    type VARCHAR(20) DEFAULT 'private' CHECK (type IN ('private', 'group', 'channel', 'direct')),
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     settings JSONB DEFAULT '{}',
     is_archived BOOLEAN DEFAULT FALSE,
+    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Chat participants with enhanced roles
-CREATE TABLE IF NOT EXISTS chat_participants (
+CREATE TABLE chat_participants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(20) DEFAULT 'member',
+    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'moderator', 'member')),
     permissions JSONB DEFAULT '{}',
     is_muted BOOLEAN DEFAULT FALSE,
-    last_read_at TIMESTAMP,
+    last_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(chat_id, user_id)
 );
 
--- Messages table with ALL required columns
-CREATE TABLE IF NOT EXISTS messages (
+-- Messages table with comprehensive features
+CREATE TABLE messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES users(id),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    parent_id UUID REFERENCES messages(id) ON DELETE SET NULL,
     content TEXT,
-    type VARCHAR(20) DEFAULT 'text',
-    message_type VARCHAR(20) DEFAULT 'text',
+    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'file', 'voice', 'system', 'call')),
     metadata JSONB DEFAULT '{}',
-    reply_to UUID REFERENCES messages(id),
-    reply_to_id UUID REFERENCES messages(id),
-    thread_id UUID,
-    is_pinned BOOLEAN DEFAULT FALSE,
+    is_edited BOOLEAN DEFAULT FALSE,
     is_deleted BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    delivered_at TIMESTAMP,
+    read_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Message reactions
-CREATE TABLE IF NOT EXISTS message_reactions (
+CREATE TABLE message_reactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    reaction VARCHAR(50) NOT NULL,
+    emoji VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(message_id, user_id, reaction)
+    UNIQUE(message_id, user_id, emoji)
 );
 
--- File uploads tracking
-CREATE TABLE IF NOT EXISTS file_uploads (
+-- File attachments
+CREATE TABLE file_attachments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
-    uploader_id UUID REFERENCES users(id),
+    filename VARCHAR(255) NOT NULL,
     original_name VARCHAR(255) NOT NULL,
-    stored_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_size BIGINT NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    checksum VARCHAR(64),
-    is_thumbnail BOOLEAN DEFAULT FALSE,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    file_type VARCHAR(100),
+    file_size BIGINT,
+    storage_path VARCHAR(500),
+    thumbnail_path VARCHAR(500),
+    upload_status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- AI conversations for context management
-CREATE TABLE IF NOT EXISTS ai_conversations (
+-- Voice notes
+CREATE TABLE voice_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    duration INTEGER, -- in seconds
+    file_size BIGINT,
+    storage_path VARCHAR(500),
+    waveform_data TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Calls table for voice/video functionality
+CREATE TABLE calls (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-    context JSONB DEFAULT '{}',
-    model_version VARCHAR(50),
+    initiated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    call_type VARCHAR(10) DEFAULT 'voice' CHECK (call_type IN ('voice', 'video')),
+    status VARCHAR(20) DEFAULT 'initiated' CHECK (status IN ('initiated', 'ringing', 'active', 'ended', 'failed')),
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    duration INTEGER DEFAULT 0,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Call participants
+CREATE TABLE call_participants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    call_id UUID REFERENCES calls(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP,
+    is_muted BOOLEAN DEFAULT FALSE,
+    video_enabled BOOLEAN DEFAULT FALSE,
+    UNIQUE(call_id, user_id)
+);
+
+-- RSS feeds for AI integration
+CREATE TABLE rss_feeds (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    url TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_fetched TIMESTAMP,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- RSS feeds for AI news aggregation
-CREATE TABLE IF NOT EXISTS rss_feeds (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    workspace_id UUID REFERENCES workspaces(id),
-    url VARCHAR(500) NOT NULL,
-    title VARCHAR(200),
-    description TEXT,
-    last_updated TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Indexes for performance optimization
+CREATE INDEX idx_users_nickname ON users(nickname);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_last_active ON users(last_active);
 
--- RSS summaries generated by AI
-CREATE TABLE IF NOT EXISTS rss_summaries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    feed_id UUID REFERENCES rss_feeds(id) ON DELETE CASCADE,
-    title VARCHAR(300),
-    summary TEXT,
-    original_content TEXT,
-    ai_analysis JSONB,
-    tags TEXT[],
-    sentiment_score DECIMAL(3,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_token ON sessions(token);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 
--- User preferences and settings
-CREATE TABLE IF NOT EXISTS user_preferences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
-    theme VARCHAR(20) DEFAULT 'auto',
-    language VARCHAR(10) DEFAULT 'en',
-    notifications JSONB DEFAULT '{"email": true, "push": true, "desktop": true}',
-    privacy JSONB DEFAULT '{"online_status": true, "read_receipts": true}',
-    ui_settings JSONB DEFAULT '{}',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE INDEX idx_workspace_members_workspace_id ON workspace_members(workspace_id);
+CREATE INDEX idx_workspace_members_user_id ON workspace_members(user_id);
 
--- Notification system
-CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    content TEXT,
-    data JSONB DEFAULT '{}',
-    is_read BOOLEAN DEFAULT FALSE,
-    is_dismissed BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE INDEX idx_teams_workspace_id ON teams(workspace_id);
+CREATE INDEX idx_team_members_team_id ON team_members(team_id);
+CREATE INDEX idx_team_members_user_id ON team_members(user_id);
 
--- Audit log for security and compliance
-CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id),
-    action VARCHAR(100) NOT NULL,
-    resource_type VARCHAR(50),
-    resource_id UUID,
-    details JSONB DEFAULT '{}',
-    ip_address INET,
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CRITICAL FIX: Create index ONLY AFTER table exists with the column
+CREATE INDEX idx_chats_workspace_id ON chats(workspace_id);
+CREATE INDEX idx_chats_team_id ON chats(team_id);
+CREATE INDEX idx_chats_created_by ON chats(created_by);
+CREATE INDEX idx_chats_type ON chats(type);
+CREATE INDEX idx_chats_last_message_at ON chats(last_message_at);
 
--- Performance indexes for production
-CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
--- Note: Email index disabled until email registration is implemented
--- CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
--- Note: Status index disabled until PostgreSQL migration is complete
--- CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
--- Note: user_id index disabled until PostgreSQL migration is complete
--- CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_chat_participants_chat_id ON chat_participants(chat_id);
+CREATE INDEX idx_chat_participants_user_id ON chat_participants(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_chats_workspace_id ON chats(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_chats_team_id ON chats(team_id);
-CREATE INDEX IF NOT EXISTS idx_chats_created_by ON chats(created_by);
-CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at);
+CREATE INDEX idx_messages_chat_id ON messages(chat_id);
+CREATE INDEX idx_messages_user_id ON messages(user_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_messages_parent_id ON messages(parent_id);
 
-CREATE INDEX IF NOT EXISTS idx_chat_participants_chat_id ON chat_participants(chat_id);
-CREATE INDEX IF NOT EXISTS idx_chat_participants_user_id ON chat_participants(user_id);
+CREATE INDEX idx_message_reactions_message_id ON message_reactions(message_id);
+CREATE INDEX idx_message_reactions_user_id ON message_reactions(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
-CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
-CREATE INDEX IF NOT EXISTS idx_messages_reply_to ON messages(reply_to);
-CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);
-CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(type);
+CREATE INDEX idx_file_attachments_message_id ON file_attachments(message_id);
+CREATE INDEX idx_voice_notes_message_id ON voice_notes(message_id);
 
-CREATE INDEX IF NOT EXISTS idx_message_reactions_message_id ON message_reactions(message_id);
-CREATE INDEX IF NOT EXISTS idx_message_reactions_user_id ON message_reactions(user_id);
+CREATE INDEX idx_calls_chat_id ON calls(chat_id);
+CREATE INDEX idx_calls_initiated_by ON calls(initiated_by);
+CREATE INDEX idx_calls_started_at ON calls(started_at);
 
-CREATE INDEX IF NOT EXISTS idx_file_uploads_message_id ON file_uploads(message_id);
-CREATE INDEX IF NOT EXISTS idx_file_uploads_uploader_id ON file_uploads(uploader_id);
+CREATE INDEX idx_call_participants_call_id ON call_participants(call_id);
+CREATE INDEX idx_call_participants_user_id ON call_participants(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_user_id ON ai_conversations(user_id);
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_chat_id ON ai_conversations(chat_id);
+CREATE INDEX idx_rss_feeds_workspace_id ON rss_feeds(workspace_id);
 
-CREATE INDEX IF NOT EXISTS idx_rss_feeds_user_id ON rss_feeds(user_id);
-CREATE INDEX IF NOT EXISTS idx_rss_feeds_workspace_id ON rss_feeds(workspace_id);
+-- Insert default data AFTER all tables are created
+INSERT INTO users (id, nickname, email, password_hash, display_name, bio, avatar) VALUES
+('00000000-0000-0000-0000-000000000001', 'ai_assistant', 'ai@talkpai.com', '$2a$12$dummy.hash.for.ai.assistant', 'AI Assistant', 'I am your helpful AI assistant, ready to chat!', '/avatars/ai-assistant.jpg'),
+('00000000-0000-0000-0000-000000000002', 'demo_user', 'demo@talkpai.com', '$2a$12$dummy.hash.for.demo.user.only', 'Demo User', 'This is a demo account for testing purposes.', '/avatars/demo-user.jpg')
+ON CONFLICT (id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_rss_summaries_feed_id ON rss_summaries(feed_id);
-CREATE INDEX IF NOT EXISTS idx_rss_summaries_created_at ON rss_summaries(created_at);
+INSERT INTO workspaces (id, name, description, owner_id) VALUES
+('00000000-0000-0000-0000-000000000001', 'Default Workspace', 'Default workspace for all users', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+-- NOW we can safely insert chats with workspace_id
+INSERT INTO chats (id, name, description, type, workspace_id, created_by) VALUES
+('00000000-0000-0000-0000-000000000001', 'General', 'General discussion chat', 'group', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
+('00000000-0000-0000-0000-000000000002', 'AI Assistant', 'Chat with AI Assistant', 'direct', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
+('00000000-0000-0000-0000-000000000003', 'Random', 'Random conversations', 'group', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002')
+ON CONFLICT (id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id);
-CREATE INDEX IF NOT EXISTS idx_team_members_user_id ON team_members(user_id);
+INSERT INTO chat_participants (chat_id, user_id, role) VALUES
+('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'owner'),
+('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'member'),
+('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'member'),
+('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'member'),
+('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'owner')
+ON CONFLICT (chat_id, user_id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+INSERT INTO messages (id, chat_id, user_id, content, message_type) VALUES
+('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Hello! Welcome to Talk pAI! 🚀 How can I help you today?', 'text'),
+('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Welcome to the General chat! Feel free to discuss anything here.', 'text'),
+('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'This is a test message in the Random chat!', 'text')
+ON CONFLICT (id) DO NOTHING;
 
--- Full-text search indexes for PostgreSQL
-CREATE INDEX IF NOT EXISTS idx_messages_content_fts ON messages USING gin(to_tsvector('english', content));
-CREATE INDEX IF NOT EXISTS idx_chats_name_fts ON chats USING gin(to_tsvector('english', name));
-CREATE INDEX IF NOT EXISTS idx_users_name_fts ON users USING gin(to_tsvector('english', display_name));
-
--- Create triggers for updated_at columns
+-- Update triggers for timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+   NEW.updated_at = CURRENT_TIMESTAMP;
+   RETURN NEW;
 END;
 $$ language 'plpgsql';
 
--- Apply updated_at triggers
-DROP TRIGGER IF EXISTS update_users_updated_at ON users;
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_teams_updated_at BEFORE UPDATE ON teams FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_rss_feeds_updated_at BEFORE UPDATE ON rss_feeds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_chats_updated_at ON chats;
-CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+VACUUM ANALYZE;
 
-DROP TRIGGER IF EXISTS update_workspaces_updated_at ON workspaces;
-CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_teams_updated_at ON teams;
-CREATE TRIGGER update_teams_updated_at BEFORE UPDATE ON teams
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_ai_conversations_updated_at ON ai_conversations;
-CREATE TRIGGER update_ai_conversations_updated_at BEFORE UPDATE ON ai_conversations
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Insert default system users
-INSERT INTO users (id, nickname, password_hash, salt, display_name, avatar, status, account_type)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'ai_assistant',
-    'no_password_hash',
-    'no_salt',
-    'AI Assistant',
-    '🤖',
-    'online',
-    'system'
-) ON CONFLICT (nickname) DO UPDATE SET
-    display_name = EXCLUDED.display_name,
-    avatar = EXCLUDED.avatar,
-    status = EXCLUDED.status;
-
-INSERT INTO users (id, nickname, password_hash, salt, display_name, avatar, status, account_type)
-VALUES (
-    '00000000-0000-0000-0000-000000000002',
-    'system',
-    'no_password_hash',
-    'no_salt',
-    'System',
-    '⚙️',
-    'online',
-    'system'
-) ON CONFLICT (nickname) DO UPDATE SET
-    display_name = EXCLUDED.display_name,
-    avatar = EXCLUDED.avatar,
-    status = EXCLUDED.status;
-
--- Create default workspace for new installations
-INSERT INTO workspaces (id, name, description, owner_id)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'Default Workspace',
-    'Default workspace for Talk pAI messenger',
-    '00000000-0000-0000-0000-000000000002'
-) ON CONFLICT (id) DO NOTHING;
-
--- Create general chat
-INSERT INTO chats (id, name, description, type, workspace_id, created_by)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'General',
-    'Welcome to Talk pAI! This is your general chat room.',
-    'public',
-    '00000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000002'
-) ON CONFLICT (id) DO NOTHING;
-
--- Add system users to general chat
-INSERT INTO chat_participants (chat_id, user_id, role)
-VALUES
-    ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'member'),
-    ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'admin')
-ON CONFLICT (chat_id, user_id) DO NOTHING;
-
--- Insert welcome messages
-INSERT INTO messages (id, chat_id, sender_id, content, type, created_at)
-VALUES (
-    'msg-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000002',
-    'Welcome to Talk pAI! 🚀 Your ultra-modern glassmorphism messenger is ready to use.',
-    'text',
-    NOW() - INTERVAL '1 hour'
-) ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO messages (id, chat_id, sender_id, content, type, created_at)
-VALUES (
-    'msg-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000001',
-    'Hello! I''m your AI assistant. I can help you with questions, analysis, and much more. How can I assist you today? 🤖✨',
-    'text',
-    NOW() - INTERVAL '30 minutes'
-) ON CONFLICT (id) DO NOTHING;
+-- Schema creation complete
+SELECT 'Talk pAI PostgreSQL Schema - FIXED VERSION - Created Successfully!' as status;

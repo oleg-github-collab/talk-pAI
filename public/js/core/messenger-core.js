@@ -36,19 +36,32 @@ class TalkPAIMessenger {
     }
 
     init() {
-        this.setupTheme();
-        this.setupSidebar();
-        this.setupDragAndDrop();
-        this.loadDemoData();
+        try {
+            this.setupTheme();
+            this.setupSidebar();
 
-        // Initialize external components
-        if (window.themeCustomizer) {
-            window.themeCustomizer.onThemeChange = (theme) => {
-                this.applyTheme(theme);
-            };
+            // Check if setupDragAndDrop exists
+            if (typeof this.setupDragAndDrop === 'function') {
+                this.setupDragAndDrop();
+            } else {
+                console.warn('⚠️ setupDragAndDrop method not found, skipping...');
+            }
+
+            this.loadDemoData();
+
+            // Initialize external components
+            if (window.themeCustomizer) {
+                window.themeCustomizer.onThemeChange = (theme) => {
+                    this.applyTheme(theme);
+                };
+            }
+
+            console.log('🚀 Talk pAI Messenger initialized with award-winning design!');
+        } catch (error) {
+            console.error('❌ Messenger initialization failed:', error);
+            // Continue with basic functionality
+            console.log('⚠️ Running in fallback mode');
         }
-
-        console.log('🚀 Talk pAI Messenger initialized with award-winning design!');
     }
 
     setupTheme() {

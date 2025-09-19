@@ -64,7 +64,7 @@ class TalkPAIWebRTC {
     }
 
     async connectToSignalingServer() {
-        const serverUrl = process.env.WEBRTC_SERVER_URL || 'ws://localhost:3001';
+        const serverUrl = 'ws://localhost:3001'; // Fixed: removed process.env for browser
 
         this.socket = io(serverUrl, {
             transports: ['websocket', 'polling'],
