@@ -166,7 +166,7 @@ class DatabaseInitializer {
         try {
             console.log('🔧 Initializing PostgreSQL database schema...');
 
-            const schemaPath = path.join(__dirname, 'production-schema.sql');
+            const schemaPath = path.join(__dirname, 'production-schema-simple.sql');
 
             if (!fs.existsSync(schemaPath)) {
                 throw new Error(`PostgreSQL schema file not found: ${schemaPath}`);

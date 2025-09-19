@@ -107,6 +107,7 @@ class AuthManager {
 
     async handleRegister() {
         const nickname = document.getElementById('registerUsername').value;
+        const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -131,7 +132,7 @@ class AuthManager {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ nickname, password, avatar: null })
+                body: JSON.stringify({ nickname, email, password, avatar: null })
             });
 
             const data = await response.json();
