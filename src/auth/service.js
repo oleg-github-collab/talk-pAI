@@ -110,7 +110,10 @@ class AuthService {
         token
       };
     } else {
-      // Fallback for in-memory storage
+      // Production security: validate token format in fallback mode
+      if (!/^[a-zA-Z0-9\-_]{16,}$/.test(token)) {
+        throw new Error('Invalid token format');
+      }
       return { token };
     }
   }

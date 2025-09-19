@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/webrtc-calls.css">
+    <link rel="stylesheet" href="css/mobile-native.css">
     <style>
         /* ===== AWARD-WINNING ULTRA-MODERN MESSENGER DESIGN SYSTEM ===== */
 
@@ -4759,7 +4760,7 @@
             <div class="auth-form" id="registerForm" style="display: none;">
                 <div class="form-group">
                     <label>Nickname</label>
-                    <input type="text" id="registerUsername"
+                    <input type="text" id="registerUsername" name="nickname"
                            placeholder="Choose a nickname (3-30 chars)"
                            pattern="[a-zA-Z0-9_]{3,30}"
                            title="Only letters, numbers and underscores (3-30 characters)"
@@ -4767,11 +4768,11 @@
                 </div>
                 <div class="form-group">
                     <label>Email (optional)</label>
-                    <input type="email" id="registerEmail" placeholder="Enter your email (optional)">
+                    <input type="email" id="registerEmail" name="email" placeholder="Enter your email (optional)">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="registerPassword" placeholder="Create a password" required>
+                    <input type="password" id="registerPassword" name="password" placeholder="Create a password" required>
                 </div>
                 <div class="form-group">
                     <label>Confirm Password</label>
@@ -4789,7 +4790,8 @@
     <!-- Enhanced Modular JavaScript Architecture -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="js/utils/error-handler.js"></script>
-    <script src="js/auth.js?v=2"></script>
+    <script src="js/auth.js?v=4"></script>
+    <script src="js/mobile-ux.js?v=1"></script>
     <script src="js/core/messenger-core.js?v=2"></script>
     <script src="js/modules/ui-events.js?v=2"></script>
     <script src="js/modules/call-manager.js?v=2"></script>

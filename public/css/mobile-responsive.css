@@ -1,6 +1,6 @@
 /* Mobile-First Responsive Design for Talk pAI - ENHANCED VERSION */
 
-/* Base Variables */
+/* Base Variables - Performance Optimized */
 :root {
   --primary-color: #667eea;
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -13,9 +13,10 @@
   --error-color: #e53e3e;
   --warning-color: #ed8936;
 
-  /* CRITICAL: Touch-friendly sizes */
+  /* PERFORMANCE: Optimized touch-friendly sizes */
   --touch-target-min: 44px;
   --touch-spacing: 8px;
+  --mobile-scroll-padding: env(safe-area-inset-bottom, 20px);
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -962,7 +963,6 @@ button {
   padding: var(--touch-spacing);
   cursor: pointer;
   -webkit-tap-highlight-color: rgba(103, 126, 234, 0.2);
-  tap-highlight-color: rgba(103, 126, 234, 0.2);
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
@@ -1101,12 +1101,10 @@ button {
 
   .messages-container {
     -webkit-overflow-scrolling: touch;
-    overflow-scrolling: touch;
   }
 
   .chat-list {
     -webkit-overflow-scrolling: touch;
-    overflow-scrolling: touch;
   }
 }
 

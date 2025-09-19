@@ -106,10 +106,13 @@ class AuthManager {
     }
 
     async handleRegister() {
+        console.log('🔧 handleRegister called');
         const nickname = document.getElementById('registerUsername').value.trim();
         const email = document.getElementById('registerEmail').value.trim();
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
+
+        console.log('📝 Form data:', { nickname, email, password: password ? '***' : 'empty', confirmPassword: confirmPassword ? '***' : 'empty' });
 
         // Валідація nickname
         if (!nickname) {
@@ -149,12 +152,15 @@ class AuthManager {
         }
 
         try {
+            const requestData = { nickname, email, password, avatar: null };
+            console.log('🚀 Sending request:', requestData);
+
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ nickname, email, password, avatar: null })
+                body: JSON.stringify(requestData)
             });
 
             const data = await response.json();
@@ -347,4 +353,4 @@ window.handleRegister = () => window.authManager.handleRegister();
 window.demoLogin = () => window.authManager.demoLogin();
 window.logout = () => window.authManager.logout();
 
-console.log('🔐 Authentication module loaded successfully');
+console.log('🔐 Authentication module loaded successfully v4');

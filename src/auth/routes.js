@@ -21,7 +21,9 @@ class AuthRoutes {
   async register(req, res) {
     try {
       this.logger.info('Registration attempt', { body: req.body });
-      const { nickname, password, avatar } = req.body;
+      // Support both 'nickname' and 'username' for compatibility
+      const nickname = req.body.nickname || req.body.username;
+      const { password, avatar } = req.body;
 
       if (!nickname || !password) {
         this.logger.warn('Registration failed: missing fields', { nickname: !!nickname, password: !!password });
@@ -45,7 +47,9 @@ class AuthRoutes {
   async login(req, res) {
     try {
       this.logger.info('Login attempt', { body: req.body });
-      const { nickname, password } = req.body;
+      // Support both 'nickname' and 'username' for compatibility
+      const nickname = req.body.nickname || req.body.username;
+      const { password } = req.body;
 
       if (!nickname || !password) {
         this.logger.warn('Login failed: missing fields', { nickname: !!nickname, password: !!password });
