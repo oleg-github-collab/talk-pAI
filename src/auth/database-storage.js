@@ -1,9 +1,12 @@
-const database = require('../database/optimized-connection');
 const CryptoService = require('../utils/crypto');
 
 class DatabaseStorage {
+  constructor(database) {
+    this.database = database;
+  }
+
   async createUser({ nickname, password, salt, avatar }) {
-    const result = await database.query(`
+    const result = await this.this.database.query(`
       INSERT INTO users (nickname, password_hash, salt, avatar)
       VALUES ($1, $2, $3, $4)
       RETURNING id, nickname, avatar, created_at
@@ -13,7 +16,7 @@ class DatabaseStorage {
   }
 
   async findUser(nickname) {
-    const result = await database.query(`
+    const result = await this.this.database.query(`
       SELECT id, nickname, password_hash, salt, avatar, created_at, last_login
       FROM users
       WHERE nickname = $1 AND is_active = true
@@ -36,7 +39,7 @@ class DatabaseStorage {
   }
 
   async findUserById(userId) {
-    const result = await database.query(`
+    const result = await this.database.query(`
       SELECT id, nickname, avatar, created_at, last_login
       FROM users
       WHERE id = $1 AND is_active = true
@@ -46,7 +49,7 @@ class DatabaseStorage {
   }
 
   async userExists(nickname) {
-    const result = await database.query(`
+    const result = await this.this.database.query(`
       SELECT 1 FROM users WHERE nickname = $1 AND is_active = true
     `, [nickname]);
 
@@ -54,7 +57,7 @@ class DatabaseStorage {
   }
 
   async updateLastLogin(userId) {
-    await database.query(`
+    await this.database.query(`
       UPDATE users
       SET last_login = CURRENT_TIMESTAMP
       WHERE id = $1
@@ -63,13 +66,13 @@ class DatabaseStorage {
 
   async createSession(userId, token) {
     // Clean up expired sessions
-    await database.query(`
+    await this.database.query(`
       UPDATE sessions
       SET is_active = false
       WHERE user_id = $1 AND expires_at < CURRENT_TIMESTAMP
     `, [userId]);
 
-    const result = await database.query(`
+    const result = await this.database.query(`
       INSERT INTO sessions (user_id, token, expires_at)
       VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '30 days')
       RETURNING id, token, created_at, expires_at
@@ -79,7 +82,7 @@ class DatabaseStorage {
   }
 
   async findSession(userId, token) {
-    const result = await database.query(`
+    const result = await this.database.query(`
       SELECT s.id, s.token, s.created_at, s.expires_at, u.id as user_id, u.nickname
       FROM sessions s
       JOIN users u ON s.user_id = u.id
@@ -92,7 +95,7 @@ class DatabaseStorage {
   }
 
   async findSessionByToken(token) {
-    const result = await database.query(`
+    const result = await this.database.query(`
       SELECT s.id, s.token, s.created_at, s.expires_at, u.id as user_id, u.nickname, u.avatar
       FROM sessions s
       JOIN users u ON s.user_id = u.id
@@ -105,7 +108,7 @@ class DatabaseStorage {
   }
 
   async deleteSession(userId, token) {
-    const result = await database.query(`
+    const result = await this.database.query(`
       UPDATE sessions
       SET is_active = false
       WHERE user_id = $1 AND token = $2
@@ -116,7 +119,7 @@ class DatabaseStorage {
   }
 
   async deleteAllUserSessions(userId) {
-    await database.query(`
+    await this.database.query(`
       UPDATE sessions
       SET is_active = false
       WHERE user_id = $1
@@ -124,7 +127,7 @@ class DatabaseStorage {
   }
 
   async getUserChats(userId) {
-    const result = await database.query(`
+    const result = await this.database.query(`
       SELECT c.id, c.name, c.type, c.created_at, c.updated_at,
              cp.role,
              (SELECT COUNT(*) FROM chat_participants WHERE chat_id = c.id) as participant_count,
@@ -143,7 +146,7 @@ class DatabaseStorage {
   }
 
   async getActiveUsers() {
-    const result = await database.query(`
+    const result = await this.database.query(`
       SELECT u.id, u.nickname, u.avatar, u.last_login,
              CASE
                WHEN s.created_at > CURRENT_TIMESTAMP - INTERVAL '5 minutes' THEN true

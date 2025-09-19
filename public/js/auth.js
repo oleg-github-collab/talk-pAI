@@ -45,7 +45,7 @@ class AuthManager {
 
     async validateToken() {
         try {
-            const response = await fetch('/api/auth/validate', {
+            const response = await fetch('/api/auth/me', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
@@ -66,10 +66,10 @@ class AuthManager {
     }
 
     async handleLogin() {
-        const email = document.getElementById('loginEmail').value;
+        const nickname = document.getElementById('loginEmail').value; // Using nickname field
         const password = document.getElementById('loginPassword').value;
 
-        if (!email || !password) {
+        if (!nickname || !password) {
             this.showError('Please fill in all fields');
             return;
         }
@@ -80,16 +80,22 @@ class AuthManager {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ nickname, password })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                this.setUser(data.user);
+                this.setUser({
+                    id: data.id,
+                    nickname: data.nickname,
+                    username: data.nickname,
+                    displayName: data.nickname,
+                    avatar: data.avatar
+                });
                 this.setToken(data.token);
                 this.hideAuthModal();
-                this.showSuccess('Login successful!');
+                this.showSuccess(data.message || 'Login successful!');
             } else {
                 this.showError(data.error || 'Login failed');
             }
@@ -100,12 +106,11 @@ class AuthManager {
     }
 
     async handleRegister() {
-        const username = document.getElementById('registerUsername').value;
-        const email = document.getElementById('registerEmail').value;
+        const nickname = document.getElementById('registerUsername').value;
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
-        if (!username || !email || !password || !confirmPassword) {
+        if (!nickname || !password || !confirmPassword) {
             this.showError('Please fill in all fields');
             return;
         }
@@ -126,16 +131,22 @@ class AuthManager {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, email, password })
+                body: JSON.stringify({ nickname, password, avatar: null })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                this.setUser(data.user);
-                this.setToken(data.token);
+                this.setUser({
+                    id: data.user.id,
+                    nickname: data.user.nickname,
+                    username: data.user.nickname,
+                    displayName: data.user.nickname,
+                    avatar: data.user.avatar
+                });
+                this.setToken(data.user.token);
                 this.hideAuthModal();
-                this.showSuccess('Registration successful! Welcome to Talk pAI!');
+                this.showSuccess(data.message || 'Registration successful! Welcome to Talk pAI!');
             } else {
                 this.showError(data.error || 'Registration failed');
             }

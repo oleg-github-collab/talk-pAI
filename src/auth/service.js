@@ -5,9 +5,11 @@ const DatabaseStorage = require('./database-storage');
 const database = require('../database/optimized-connection');
 
 class AuthService {
-  constructor() {
-    this.storage = database.isConnected ? new DatabaseStorage() : new InMemoryStorage();
-    this.useDatabase = database.isConnected;
+  constructor(dbConnection, logger) {
+    this.database = dbConnection || database;
+    this.logger = logger || console;
+    this.storage = this.database.isConnected ? new DatabaseStorage(this.database) : new InMemoryStorage();
+    this.useDatabase = this.database.isConnected;
   }
 
   async register({ nickname, password, avatar }) {

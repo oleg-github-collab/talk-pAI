@@ -16,7 +16,13 @@ const server = http.createServer(app);
 // Security middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'https://*.railway.app'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'https://*.railway.app',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8080'
+    ],
     credentials: true
 }));
 
@@ -39,7 +45,13 @@ app.use(express.json());
 // Socket.IO setup with enhanced security
 const io = socketIo(server, {
     cors: {
-        origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'https://*.railway.app'],
+        origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+            'http://localhost:3000',
+            'http://localhost:8080',
+            'https://*.railway.app',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:8080'
+        ],
         methods: ["GET", "POST"],
         credentials: true
     },

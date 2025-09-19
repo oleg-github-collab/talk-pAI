@@ -5,10 +5,9 @@ const path = require('path');
 class DatabaseInitializer {
     constructor() {
         this.isConnected = false;
-        this.client = null;
+        this.pool = null;
         this.connectionType = 'postgresql';
         this.fallbackDb = null;
-        this.pool = null;
         this.connectionRetries = 0;
         this.maxRetries = 5;
         this.reconnectTimer = null;
@@ -185,14 +184,18 @@ class DatabaseInitializer {
     }
 
     async initializePostgreSQLSchema(schema) {
+        let client;
         try {
+            // Get a client from the pool
+            client = await this.pool.connect();
+
             // Enable UUID extension first (with retry logic)
             let retryCount = 0;
             const maxRetries = 3;
 
             while (retryCount < maxRetries) {
                 try {
-                    await this.client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+                    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
                     console.log('✅ UUID extension enabled');
                     break;
                 } catch (extError) {
@@ -210,20 +213,25 @@ class DatabaseInitializer {
             const statements = schema
                 .split(';')
                 .map(stmt => stmt.trim())
-                .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+                .filter(stmt => stmt.length > 0 && !stmt.startsWith('--') && !stmt.match(/^\s*$/));
 
             console.log(`🔧 Executing ${statements.length} schema statements...`);
 
-            for (const statement of statements) {
+            for (let i = 0; i < statements.length; i++) {
+                const statement = statements[i];
                 try {
-                    await this.client.query(statement);
+                    console.log(`📝 Executing statement ${i + 1}/${statements.length}`);
+                    await client.query(statement);
+                    console.log(`✅ Statement ${i + 1} completed`);
                 } catch (error) {
-                    if (!error.message.includes('already exists')) {
-                        console.error('❌ PostgreSQL schema error:', error.message);
-                        console.error('❌ Statement:', statement.substring(0, 100) + '...');
-                        throw error;
+                    if (error.message.includes('already exists') ||
+                        error.message.includes('does not exist') ||
+                        error.message.includes('duplicate key')) {
+                        console.log(`⚠️ Skipping statement ${i + 1}: ${error.message}`);
                     } else {
-                        console.log('⚠️ Table/index already exists, skipping...');
+                        console.error(`❌ PostgreSQL schema error on statement ${i + 1}:`, error.message);
+                        console.error('❌ Statement:', statement.substring(0, 200) + '...');
+                        throw error;
                     }
                 }
             }
@@ -233,6 +241,10 @@ class DatabaseInitializer {
         } catch (error) {
             console.error('❌ PostgreSQL schema initialization failed:', error.message);
             throw error;
+        } finally {
+            if (client) {
+                client.release();
+            }
         }
     }
 

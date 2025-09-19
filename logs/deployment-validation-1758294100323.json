@@ -1,0 +1,221 @@
+{
+  "timestamp": "2025-09-19T15:01:40.323Z",
+  "summary": {
+    "duration": "2089ms",
+    "errors": 2,
+    "warnings": 0,
+    "totalChecks": 21,
+    "success": false,
+    "details": {
+      "errors": [
+        {
+          "message": "❌ Database validation failed",
+          "details": {
+            "error": "Cannot find module './database/init-database'\nRequire stack:\n- /Users/olehkaminskyi/Desktop/talk-pAI/scripts/deployment-validator.js"
+          }
+        },
+        {
+          "message": "❌ 1 errors found. Fix before deployment.",
+          "details": null
+        },
+        {
+          "message": "❌ 2 errors found. Fix before deployment.",
+          "details": null
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "checks": [
+    {
+      "timestamp": "2025-09-19T15:01:38.234Z",
+      "level": "info",
+      "message": "🚀 Starting runtime validation...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:38.243Z",
+      "level": "info",
+      "message": "🚀 Validating server startup on port 3000...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.264Z",
+      "level": "success",
+      "message": "✅ Server responding on port 3000",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.265Z",
+      "level": "info",
+      "message": "🩺 Validating health endpoints...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.272Z",
+      "level": "success",
+      "message": "✅ Health endpoint working: /health",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.276Z",
+      "level": "success",
+      "message": "✅ Health endpoint working: /healthz",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.279Z",
+      "level": "success",
+      "message": "✅ Health endpoint working: /ping",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.280Z",
+      "level": "info",
+      "message": "🔌 Validating API endpoints...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.290Z",
+      "level": "success",
+      "message": "✅ API endpoint accessible: /api/v2/demo/chats",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.307Z",
+      "level": "success",
+      "message": "✅ API endpoint accessible: /api/auth/health",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.317Z",
+      "level": "success",
+      "message": "✅ API endpoint accessible: /api/chat/health",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.317Z",
+      "level": "info",
+      "message": "🔌 Validating WebSocket connection...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.320Z",
+      "level": "success",
+      "message": "✅ Socket.IO endpoint responsive",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.320Z",
+      "level": "info",
+      "message": "🗄️ Validating database connection...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.321Z",
+      "level": "error",
+      "message": "❌ Database validation failed",
+      "details": {
+        "error": "Cannot find module './database/init-database'\nRequire stack:\n- /Users/olehkaminskyi/Desktop/talk-pAI/scripts/deployment-validator.js"
+      }
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.321Z",
+      "level": "info",
+      "message": "📝 Validating file permissions...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.322Z",
+      "level": "success",
+      "message": "✅ Directory permissions OK: uploads",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.322Z",
+      "level": "success",
+      "message": "✅ Directory permissions OK: logs",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.322Z",
+      "level": "success",
+      "message": "✅ Directory permissions OK: public",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.322Z",
+      "level": "info",
+      "message": "📊 Validation Summary",
+      "details": {
+        "duration": "2088ms",
+        "errors": 1,
+        "warnings": 0,
+        "totalChecks": 19,
+        "success": false,
+        "details": {
+          "errors": [
+            {
+              "message": "❌ Database validation failed",
+              "details": {
+                "error": "Cannot find module './database/init-database'\nRequire stack:\n- /Users/olehkaminskyi/Desktop/talk-pAI/scripts/deployment-validator.js"
+              }
+            },
+            {
+              "message": "❌ 1 errors found. Fix before deployment.",
+              "details": null
+            },
+            {
+              "message": "❌ 2 errors found. Fix before deployment.",
+              "details": null
+            }
+          ],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.322Z",
+      "level": "error",
+      "message": "❌ 1 errors found. Fix before deployment.",
+      "details": null
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.323Z",
+      "level": "info",
+      "message": "📊 Validation Summary",
+      "details": {
+        "duration": "2089ms",
+        "errors": 2,
+        "warnings": 0,
+        "totalChecks": 21,
+        "success": false,
+        "details": {
+          "errors": [
+            {
+              "message": "❌ Database validation failed",
+              "details": {
+                "error": "Cannot find module './database/init-database'\nRequire stack:\n- /Users/olehkaminskyi/Desktop/talk-pAI/scripts/deployment-validator.js"
+              }
+            },
+            {
+              "message": "❌ 1 errors found. Fix before deployment.",
+              "details": null
+            },
+            {
+              "message": "❌ 2 errors found. Fix before deployment.",
+              "details": null
+            }
+          ],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-19T15:01:40.323Z",
+      "level": "error",
+      "message": "❌ 2 errors found. Fix before deployment.",
+      "details": null
+    }
+  ]
+}

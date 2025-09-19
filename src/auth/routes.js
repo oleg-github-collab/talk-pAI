@@ -2,9 +2,11 @@ const express = require('express');
 const AuthService = require('./service');
 
 class AuthRoutes {
-  constructor() {
+  constructor(database, logger) {
     this.router = express.Router();
-    this.authService = new AuthService();
+    this.database = database;
+    this.logger = logger || console;
+    this.authService = new AuthService(database, logger);
     this.setupRoutes();
   }
 
@@ -18,25 +20,41 @@ class AuthRoutes {
 
   async register(req, res) {
     try {
+      this.logger.info('Registration attempt', { body: req.body });
       const { nickname, password, avatar } = req.body;
+
+      if (!nickname || !password) {
+        this.logger.warn('Registration failed: missing fields', { nickname: !!nickname, password: !!password });
+        return res.status(400).json({ error: 'Nickname and password are required' });
+      }
+
       const result = await this.authService.register({ nickname, password, avatar });
 
+      this.logger.info('Registration successful', { nickname });
       res.json({
         success: true,
         message: 'Registration successful',
         user: result.user
       });
     } catch (error) {
-      console.error('Registration error:', error);
+      this.logger.error('Registration error:', error);
       res.status(400).json({ error: error.message });
     }
   }
 
   async login(req, res) {
     try {
+      this.logger.info('Login attempt', { body: req.body });
       const { nickname, password } = req.body;
+
+      if (!nickname || !password) {
+        this.logger.warn('Login failed: missing fields', { nickname: !!nickname, password: !!password });
+        return res.status(400).json({ error: 'Nickname and password are required' });
+      }
+
       const result = await this.authService.login({ nickname, password });
 
+      this.logger.info('Login successful', { nickname });
       res.json({
         success: true,
         id: result.id,
@@ -47,7 +65,7 @@ class AuthRoutes {
         message: '🔐 Welcome back!'
       });
     } catch (error) {
-      console.error('Login error:', error);
+      this.logger.error('Login error:', error);
       res.status(401).json({ error: error.message });
     }
   }
