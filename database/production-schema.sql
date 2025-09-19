@@ -222,7 +222,8 @@ CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
 -- CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+-- Note: user_id index disabled until PostgreSQL migration is complete
+-- CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_chats_workspace_id ON chats(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_chats_team_id ON chats(team_id);

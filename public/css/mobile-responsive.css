@@ -683,7 +683,7 @@ body {
 
 /* Mobile Navigation Bar */
 .mobile-nav-bar {
-  display: none;
+  display: none !important;
   position: fixed;
   top: 0;
   left: 0;
@@ -725,7 +725,7 @@ body {
 
 @media (max-width: 968px) {
   .mobile-nav-bar {
-    display: flex;
+    display: flex !important;
   }
 
   .app-container {

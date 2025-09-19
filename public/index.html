@@ -4520,296 +4520,53 @@
     </div>
 
     <!-- Load External Scripts -->
-    <script src="/theme-customizer.js"></script>
-    <script src="/emoji-picker.js"></script>
+    <script src="theme-customizer.js"></script>
+    <script src="emoji-picker.js"></script>
 
     <!-- Enhanced Modular JavaScript Architecture -->
-    <script src="/js/utils/error-handler.js"></script>
-    <script src="/js/core/messenger-core.js"></script>
-    <script src="/js/modules/ui-events.js"></script>
-    <script src="/js/modules/call-manager.js"></script>
+    <script src="js/utils/error-handler.js"></script>
+    <script src="js/core/messenger-core.js"></script>
+    <script src="js/modules/ui-events.js"></script>
+    <script src="js/modules/call-manager.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/app.js"></script>
 
     <script>
-        // ===== MODULAR TALKPAI MESSENGER INITIALIZATION =====
+        // ===== SIMPLIFIED INITIALIZATION =====
+        // All complex logic is handled by the modular app.js architecture
 
-        class ModularTalkPAIApp {
-            constructor() {
-                this.errorHandler = null;
-                this.messenger = null;
-                this.uiEvents = null;
-                this.callManager = null;
+        console.log('🚀 TalkPAI Messenger - Ultra-Modern Edition');
+        console.log('📦 All functionality managed by modular architecture');
 
-                this.init();
+        // Simple initialization hook
+        window.addEventListener('talkpai:initialized', function(event) {
+            console.log('✅ TalkPAI fully loaded and ready!');
+            console.log('💡 Try typing in the message input and clicking send');
+            console.log('🎮 Access demo functions via: demoFunctions.sendDemoMessage()');
+        });
+
+        // Debug panel toggle
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                toggleDebugPanel();
             }
+        });
 
-            async init() {
-                try {
-                    // Initialize error handler first
-                    this.errorHandler = initializeErrorHandler();
-
-                    // Initialize core messenger
-                    this.messenger = new TalkPAIMessenger();
-
-                    // Initialize UI events manager
-                    this.uiEvents = new UIEventsManager(this.messenger);
-
-                    // Initialize call manager
-                    this.callManager = new CallManager(this.messenger);
-
-                    // Bind call manager methods to messenger
-                    this.messenger.toggleMute = () => this.callManager.toggleMute();
-                    this.messenger.toggleVideo = () => this.callManager.toggleVideo();
-                    this.messenger.toggleSpeaker = () => this.callManager.toggleSpeaker();
-                    this.messenger.toggleScreenShare = () => this.callManager.toggleScreenShare();
-
-                    // Make app globally accessible for UI interactions
-                    window.app = this;
-
-                    // Initialize external components
-                    this.initializeExternalComponents();
-
-                    // Load demo data
-                    this.loadDemoData();
-
-                    // Setup global API
-                    this.setupGlobalAPI();
-
-                    this.errorHandler.log('info', '🚀 Modular TalkPAI Messenger initialized successfully');
-
-                } catch (error) {
-                    console.error('Failed to initialize TalkPAI Messenger:', error);
-                    if (this.errorHandler) {
-                        this.errorHandler.handleError(error, 'App Initialization');
-                    }
-                }
-            }
-
-            initializeExternalComponents() {
-                // Initialize theme customizer integration
-                if (window.themeCustomizer) {
-                    window.themeCustomizer.onThemeChange = (theme) => {
-                        this.applyTheme(theme);
-                    };
-                }
-
-                // Initialize emoji picker integration
-                if (window.emojiPicker) {
-                    this.setupEmojiPicker();
-                }
-            }
-
-            setupEmojiPicker() {
-                const emojiBtn = document.getElementById('emojiBtn');
-                if (emojiBtn) {
-                    emojiBtn.addEventListener('click', () => {
-                        window.emojiPicker.toggle();
-                    });
-                }
-            }
-
-            loadDemoData() {
-                // Load demo messages for current chat
-                this.loadChatMessages(this.messenger.currentChat);
-            }
-
-            loadChatMessages(chatId) {
-                const container = document.querySelector('.messages-container');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="typing-indicator" style="display: none;">
-                            <div class="typing-avatar">
-                                <img src="https://images.unsplash.com/photo-1494790108755-2616b612b3b4?w=40&h=40&fit=crop&crop=face" alt="User">
-                            </div>
-                            <div class="typing-bubble">
-                                <div class="typing-dot"></div>
-                                <div class="typing-dot"></div>
-                                <div class="typing-dot"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Add demo messages
-                const demoMessages = [
-                    {
-                        id: 1,
-                        content: "Hey! How's your day going?",
-                        sender: 'other',
-                        timestamp: new Date(Date.now() - 3600000).toISOString()
-                    },
-                    {
-                        id: 2,
-                        content: "Pretty good! Just working on some new features for the app.",
-                        sender: 'me',
-                        timestamp: new Date(Date.now() - 3000000).toISOString()
-                    },
-                    {
-                        id: 3,
-                        content: "That's awesome! Can't wait to see what you've been building.",
-                        sender: 'other',
-                        timestamp: new Date(Date.now() - 1800000).toISOString()
-                    }
-                ];
-
-                demoMessages.forEach(message => {
-                    this.addMessageToUI(message);
-                });
-            }
-
-            addMessageToUI(message) {
-                const messagesContainer = document.querySelector('.messages-container');
-                const messageElement = this.createMessageElement(message);
-                messagesContainer.appendChild(messageElement);
-                this.scrollToBottom();
-            }
-
-            createMessageElement(message) {
-                const div = document.createElement('div');
-                div.className = `message ${message.sender === 'me' ? 'sent' : 'received'}`;
-
-                const isSent = message.sender === 'me';
-                const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                div.innerHTML = `
-                    <div class="message-bubble ${isSent ? 'sent' : 'received'}">
-                        <p>${this.escapeHtml(message.content)}</p>
-                        <span class="message-time">${time}</span>
-                        ${isSent ? '<span class="message-status">✓✓</span>' : ''}
-                    </div>
-                `;
-
-                return div;
-            }
-
-            applyTheme(theme) {
-                this.messenger.currentTheme = theme.id;
-                document.body.setAttribute('data-theme', theme.id);
-                localStorage.setItem('talkpai-theme', theme.id);
-
-                if (theme.colors) {
-                    const root = document.documentElement;
-                    Object.entries(theme.colors).forEach(([key, value]) => {
-                        root.style.setProperty(`--${key}`, value);
-                    });
-                }
-            }
-
-            setupGlobalAPI() {
-                // Make components available globally
-                window.talkPAI = this.messenger;
-                window.talkPAIApp = this;
-
-                // Demo functions for console testing
-                window.demoFunctions = {
-                    showCallInterface: () => this.callManager.startCall('voice'),
-                    showVideoCall: () => this.callManager.startCall('video'),
-                    sendDemoMessage: () => {
-                        const messages = [
-                            "This is a test message!",
-                            "Check out this awesome feature 🚀",
-                            "The UI is looking fantastic!",
-                            "Great work on the design system!",
-                            "This messenger is really impressive!"
-                        ];
-                        const message = messages[Math.floor(Math.random() * messages.length)];
-                        document.getElementById('messageInput').value = message;
-                        this.uiEvents.sendMessage();
-                    },
-                    simulateIncomingCall: () => {
-                        this.callManager.handleIncomingCall({
-                            type: 'voice',
-                            from: 'user_123',
-                            fromName: 'Sarah Wilson'
-                        });
-                    },
-                    toggleDragZone: () => {
-                        if (this.messenger.isDragActive) {
-                            this.uiEvents.hideDragZone();
-                        } else {
-                            this.uiEvents.showDragZone();
-                        }
-                    }
-                };
-
-                this.showConsoleWelcome();
-            }
-
-            showConsoleWelcome() {
-                console.log(`
-%c🚀 TalkPAI Messenger - Modular Architecture
-%c────────────────────────────────────────────────
-
-%c📱 Demo Functions Available:
-%c• demoFunctions.showCallInterface()  - Show voice call
-• demoFunctions.showVideoCall()       - Show video call
-• demoFunctions.sendDemoMessage()     - Send random message
-• demoFunctions.simulateIncomingCall() - Show incoming call
-• demoFunctions.toggleDragZone()      - Toggle drag zone
-
-%c🎮 Direct API Access:
-%c• talkPAI.toggleSidebar()           - Toggle sidebar
-• talkPAI.toggleTheme()              - Switch theme
-• talkPAIApp.callManager.startCall('video') - Start video call
-• talkPAIApp.uiEvents.sendMessage()  - Send current message
-
-%c🛡️ Error Handling:
-%c• talkPAIApp.errorHandler.getErrorReport() - Get error report
-• talkPAIApp.errorHandler.clearErrors()     - Clear error logs
-• talkPAIApp.errorHandler.setLogLevel('debug') - Set log level
-
-%c📞 Call Controls:
-%c• talkPAI.toggleMute()           - Toggle mute/unmute
-• talkPAI.toggleVideo()          - Toggle camera on/off
-• talkPAI.toggleScreenShare()    - Toggle screen sharing
-
-%c🎨 Architecture:
-%c• Modular design with separation of concerns
-• Enhanced error handling and logging
-• Performance monitoring and optimization
-• Corporate-grade reliability and security
-%c────────────────────────────────────────
-%c🚀 Ready for production use!
-            `,
-                'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 16px;',
-                'color: #666; font-size: 12px;',
-                'color: #2563eb; font-weight: bold; font-size: 14px;',
-                'color: #666; font-size: 12px; font-family: monospace;',
-                'color: #059669; font-weight: bold; font-size: 14px;',
-                'color: #666; font-size: 12px; font-family: monospace;',
-                'color: #dc2626; font-weight: bold; font-size: 14px;',
-                'color: #666; font-size: 12px; font-family: monospace;',
-                'color: #7c3aed; font-weight: bold; font-size: 14px;',
-                'color: #666; font-size: 12px; font-family: monospace;',
-                'color: #ea580c; font-weight: bold; font-size: 14px;',
-                'color: #666; font-size: 12px; font-family: monospace;',
-                'color: #666; font-size: 12px;',
-                'color: #10b981; font-weight: bold;'
-            );
-            }
-
-            // Utility methods
-            escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            scrollToBottom() {
-                const container = document.querySelector('.messages-container');
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            }
+        function toggleDebugPanel() {
+            console.log('🔍 Debug info:', {
+                app: window.app,
+                messenger: window.messenger,
+                uiEvents: window.uiEvents,
+                initialized: window.app ? window.app.isInitialized() : false
+            });
         }
-
-        // Initialize the modular application
-        const app = new ModularTalkPAIApp();
 
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
-                .then(registration => console.log('SW registered'))
-                .catch(error => console.log('SW registration failed'));
+                .then(registration => console.log('✅ SW registered'))
+                .catch(error => console.log('❌ SW registration failed:', error));
         }
     </script>
 </body>

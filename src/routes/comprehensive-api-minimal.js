@@ -15,10 +15,11 @@ class ComprehensiveAPI {
     }
 
     setupRoutes() {
-        // ================================
-        // DEMO ENDPOINTS (Working)
-        // ================================
-        this.router.post('/demo/message', this.sendDemoMessage.bind(this));
+        try {
+            // ================================
+            // DEMO ENDPOINTS (Working)
+            // ================================
+            this.router.post('/demo/message', this.sendDemoMessage.bind(this));
         this.router.get('/demo/chats', this.getDemoChats.bind(this));
 
         // ================================
@@ -42,40 +43,47 @@ class ComprehensiveAPI {
         // ================================
         // USER MANAGEMENT ENDPOINTS (Enhanced)
         // ================================
-        this.router.get('/users/search', this.searchUsers.bind(this));
-        this.router.get('/users/profile', this.getUserProfile.bind(this));
-        this.router.put('/users/profile', this.updateUserProfile.bind(this));
-        this.router.post('/users/avatar', this.uploadAvatar.bind(this));
-        this.router.get('/users/:userId', this.getUserById.bind(this));
-        this.router.get('/users', this.getAllUsers.bind(this));
+        this.router.get('/users/search', this.notImplementedHandler.bind(this));
+        this.router.get('/users/profile', this.notImplementedHandler.bind(this));
+        this.router.put('/users/profile', this.notImplementedHandler.bind(this));
+        this.router.post('/users/avatar', this.notImplementedHandler.bind(this));
+        this.router.get('/users/:userId', this.notImplementedHandler.bind(this));
+        this.router.get('/users', this.notImplementedHandler.bind(this));
 
         // ================================
         // FILE MANAGEMENT ENDPOINTS
         // ================================
-        this.router.post('/files/upload', this.uploadFile.bind(this));
-        this.router.get('/files/:fileId', this.getFile.bind(this));
-        this.router.delete('/files/:fileId', this.deleteFile.bind(this));
+        this.router.post('/files/upload', this.notImplementedHandler.bind(this));
+        this.router.get('/files/:fileId', this.notImplementedHandler.bind(this));
+        this.router.delete('/files/:fileId', this.notImplementedHandler.bind(this));
 
         // ================================
-        // ADVANCED FEATURES
+        // ADVANCED FEATURES - TODO: Implement
         // ================================
-        this.router.get('/chats/:chatId/participants', this.getChatParticipants.bind(this));
-        this.router.post('/chats/:chatId/participants', this.addChatParticipant.bind(this));
-        this.router.delete('/chats/:chatId/participants/:userId', this.removeChatParticipant.bind(this));
-        this.router.put('/chats/:chatId/participants/:userId/role', this.updateParticipantRole.bind(this));
+        this.router.get('/chats/:chatId/participants', this.notImplementedHandler.bind(this));
+        this.router.post('/chats/:chatId/participants', this.notImplementedHandler.bind(this));
+        this.router.delete('/chats/:chatId/participants/:userId', this.notImplementedHandler.bind(this));
+        this.router.put('/chats/:chatId/participants/:userId/role', this.notImplementedHandler.bind(this));
 
         // ================================
-        // REAL-TIME FEATURES
+        // REAL-TIME FEATURES - TODO: Implement
         // ================================
-        this.router.post('/chats/:chatId/typing', this.setTypingStatus.bind(this));
-        this.router.put('/chats/:chatId/read', this.markAsRead.bind(this));
-        this.router.get('/notifications', this.getNotifications.bind(this));
-        this.router.put('/notifications/:notificationId/read', this.markNotificationAsRead.bind(this));
+        this.router.post('/chats/:chatId/typing', this.notImplementedHandler.bind(this));
+        this.router.put('/chats/:chatId/read', this.notImplementedHandler.bind(this));
+        this.router.get('/notifications', this.notImplementedHandler.bind(this));
+        this.router.put('/notifications/:notificationId/read', this.notImplementedHandler.bind(this));
 
         // ================================
         // PLACEHOLDER ENDPOINTS (Return 501 Not Implemented)
         // ================================
         this.router.all('*', this.notImplementedHandler.bind(this));
+
+        } catch (error) {
+            console.error('Error setting up routes:', error);
+            if (this.logger) {
+                this.logger.error('Failed to setup routes:', error.message);
+            }
+        }
     }
 
     // ================================

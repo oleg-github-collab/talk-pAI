@@ -14,25 +14,30 @@ class UIEventsManager {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                this.initializeEventBindings();
+                setTimeout(() => this.initializeEventBindings(), 100);
             });
         } else {
-            this.initializeEventBindings();
+            setTimeout(() => this.initializeEventBindings(), 100);
         }
     }
 
     initializeEventBindings() {
-        this.bindSidebarEvents();
-        this.bindNavigationEvents();
-        this.bindChatEvents();
-        this.bindMessageEvents();
-        this.bindCallEvents();
-        this.bindDragDropEvents();
-        this.bindModalEvents();
-        this.bindKeyboardEvents();
-        this.bindMobileEvents();
+        try {
+            this.bindSidebarEvents();
+            this.bindNavigationEvents();
+            this.bindChatEvents();
+            this.bindMessageEvents();
+            this.bindCallEvents();
+            this.bindDragDropEvents();
+            this.bindModalEvents();
+            this.bindKeyboardEvents();
+            this.bindMobileEvents();
 
-        console.log('🎯 All UI events bound successfully');
+            console.log('🎯 All UI events bound successfully');
+        } catch (error) {
+            console.error('❌ Error binding UI events:', error);
+            this.messenger.handleError(error, 'UI Events Initialization');
+        }
     }
 
     bindSidebarEvents() {
@@ -52,40 +57,82 @@ class UIEventsManager {
     }
 
     bindNavigationEvents() {
-        // Navigation items
-        const navItems = document.querySelectorAll('.nav-item');
-        console.log('🔗 Found navigation items:', navItems.length);
+        try {
+            // Navigation items with event delegation
+            const navItems = document.querySelectorAll('.nav-item');
+            console.log('🔗 Found navigation items:', navItems.length);
 
-        navItems.forEach((item, index) => {
-            const navType = item.dataset.nav;
-            console.log(`🔗 Binding nav item ${index}: ${navType}`);
+            // Direct event binding
+            navItems.forEach((item, index) => {
+                const navType = item.dataset.nav;
+                if (navType) {
+                    console.log(`🔗 Binding nav item ${index}: ${navType}`);
 
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎯 Navigation clicked:', navType);
-                this.switchNavigation(navType);
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🎯 Navigation clicked:', navType);
+                        this.switchNavigation(navType);
+                    });
+                }
             });
-        });
 
-        // Search functionality
-        const searchInput = document.getElementById('globalSearch');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
+            // Event delegation as fallback
+            document.addEventListener('click', (e) => {
+                const navItem = e.target.closest('.nav-item');
+                if (navItem && navItem.dataset.nav) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🎯 Navigation clicked (delegation):', navItem.dataset.nav);
+                    this.switchNavigation(navItem.dataset.nav);
+                }
             });
+
+            // Search functionality
+            const searchInput = document.getElementById('globalSearch');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.handleSearch(e.target.value);
+                    }, 300);
+                });
+                console.log('🔍 Global search bound');
+            } else {
+                console.log('⚠️ Global search input not found');
+            }
+
+            // Profile button
+            const profileBtn = document.getElementById('profileBtn');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.messenger.showProfileModal();
+                });
+                console.log('👤 Profile button bound');
+            }
+
+            // Find users button
+            const findUsersBtn = document.getElementById('findUsersBtn');
+            if (findUsersBtn) {
+                findUsersBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.messenger.showSearchModal();
+                });
+                console.log('🔍 Find users button bound');
+            }
+        } catch (error) {
+            console.error('❌ Error binding navigation events:', error);
         }
     }
 
     bindChatEvents() {
-        // Chat items
+        // Chat items with event delegation
         const chatItems = document.querySelectorAll('.chat-item');
         console.log('💬 Found chat items:', chatItems.length);
 
+        // Direct event binding
         chatItems.forEach((item, index) => {
             const chatId = item.dataset.chat;
             console.log(`💬 Binding chat item ${index}: ${chatId}`);
@@ -96,6 +143,17 @@ class UIEventsManager {
                 console.log('🎯 Chat clicked:', chatId);
                 this.selectChat(chatId);
             });
+        });
+
+        // Event delegation as fallback
+        document.addEventListener('click', (e) => {
+            const chatItem = e.target.closest('.chat-item');
+            if (chatItem && chatItem.dataset.chat) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎯 Chat clicked (delegation):', chatItem.dataset.chat);
+                this.selectChat(chatItem.dataset.chat);
+            }
         });
 
         // New chat button
@@ -147,12 +205,21 @@ class UIEventsManager {
     }
 
     bindCallEvents() {
-        // Voice call button
+        // Header call buttons
+        document.getElementById('callBtn')?.addEventListener('click', () => {
+            this.startCall('voice');
+        });
+
+        document.getElementById('videoBtn')?.addEventListener('click', () => {
+            this.startCall('video');
+        });
+
+        // Voice call button (if exists)
         document.getElementById('voiceCallBtn')?.addEventListener('click', () => {
             this.startCall('voice');
         });
 
-        // Video call button
+        // Video call button (if exists)
         document.getElementById('videoCallBtn')?.addEventListener('click', () => {
             this.startCall('video');
         });
@@ -177,6 +244,8 @@ class UIEventsManager {
         document.getElementById('screenShareBtn')?.addEventListener('click', () => {
             this.messenger.toggleScreenShare();
         });
+
+        console.log('📞 Call events bound');
     }
 
     bindDragDropEvents() {
@@ -210,24 +279,65 @@ class UIEventsManager {
     }
 
     bindModalEvents() {
-        // Profile edit modal
-        document.getElementById('editProfileBtn')?.addEventListener('click', () => {
-            this.showProfileEditModal();
+        // Profile modal close buttons
+        document.getElementById('profileCloseBtn')?.addEventListener('click', () => {
+            this.messenger.closeModal('profileModal');
         });
 
-        // Search users modal
-        document.getElementById('searchUsersBtn')?.addEventListener('click', () => {
-            this.showSearchModal();
+        // User search modal close buttons
+        document.getElementById('userSearchCloseBtn')?.addEventListener('click', () => {
+            this.messenger.closeModal('userSearchModal');
         });
 
-        // Modal close buttons
-        document.querySelectorAll('.modal-close, .modal-overlay').forEach(element => {
-            element.addEventListener('click', (e) => {
-                if (e.target === element) {
-                    this.closeModal(e.target.closest('.modal'));
-                }
+        // Profile modal overlay
+        document.getElementById('profileModalOverlay')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                this.messenger.closeModal('profileModal');
+            }
+        });
+
+        // User search modal overlay
+        document.getElementById('userSearchModalOverlay')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                this.messenger.closeModal('userSearchModal');
+            }
+        });
+
+        // Modal minimize/maximize buttons
+        document.getElementById('profileMinimizeBtn')?.addEventListener('click', () => {
+            console.log('Profile modal minimize clicked');
+        });
+
+        document.getElementById('profileMaximizeBtn')?.addEventListener('click', () => {
+            console.log('Profile modal maximize clicked');
+        });
+
+        // User search input
+        const userSearchInput = document.getElementById('userSearchInput');
+        if (userSearchInput) {
+            let searchTimeout;
+            userSearchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleUserSearch(e.target.value);
+                }, 300);
             });
+        }
+
+        // File upload buttons
+        document.getElementById('fileCancelBtn')?.addEventListener('click', () => {
+            this.hideFilePreview();
         });
+
+        document.getElementById('fileSendBtn')?.addEventListener('click', () => {
+            this.sendSelectedFiles();
+        });
+
+        document.getElementById('filePreviewClose')?.addEventListener('click', () => {
+            this.hideFilePreview();
+        });
+
+        console.log('🪟 Modal events bound');
     }
 
     bindKeyboardEvents() {
@@ -353,33 +463,10 @@ class UIEventsManager {
     switchNavigation(navType) {
         try {
             const startTime = performance.now();
+            console.log('🎯 Navigation switch triggered:', navType);
 
-            // Remove active class from all nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            // Add active class to clicked item
-            const activeItem = document.querySelector(`[data-nav="${navType}"]`);
-            if (activeItem) {
-                activeItem.classList.add('active');
-            }
-
-            // Handle navigation logic
-            switch (navType) {
-                case 'chats':
-                    this.showChatsView();
-                    break;
-                case 'calls':
-                    this.showCallsView();
-                    break;
-                case 'contacts':
-                    this.showContactsView();
-                    break;
-                case 'settings':
-                    this.showSettingsView();
-                    break;
-            }
+            // Use messenger's navigation method
+            this.messenger.switchNavigation(navType);
 
             this.messenger.logPerformance('Navigation Switch', startTime);
         } catch (error) {
@@ -390,31 +477,10 @@ class UIEventsManager {
     selectChat(chatId) {
         try {
             const startTime = performance.now();
+            console.log('🎯 Chat selection triggered:', chatId);
 
-            // Remove active class from all chat items
-            document.querySelectorAll('.chat-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            // Add active class to selected chat
-            const activeChat = document.querySelector(`[data-chat="${chatId}"]`);
-            if (activeChat) {
-                activeChat.classList.add('active');
-            }
-
-            // Update current chat
-            this.messenger.currentChat = chatId;
-
-            // Load chat messages
-            this.loadChatMessages(chatId);
-
-            // Update chat header
-            this.updateChatHeader(chatId);
-
-            // Close chat list on mobile
-            if (window.innerWidth <= 968) {
-                this.toggleChatList(false);
-            }
+            // Use messenger's chat selection method
+            this.messenger.selectChat(chatId);
 
             this.messenger.logPerformance('Chat Selection', startTime);
         } catch (error) {
@@ -430,33 +496,17 @@ class UIEventsManager {
             if (!message) return;
 
             const startTime = performance.now();
+            console.log('📤 Sending message:', message);
 
-            // Add message to UI
-            this.addMessageToUI({
-                id: Date.now(),
-                content: message,
-                sender: 'me',
-                timestamp: new Date().toISOString(),
-                type: 'text'
-            });
+            // Use messenger's send message method
+            this.messenger.sendMessage(message);
 
             // Clear input
             messageInput.value = '';
             this.messenger.autoResizeTextarea(messageInput);
 
-            // Scroll to bottom
-            this.scrollToBottom();
-
             // Send message to backend
             this.sendMessageToBackend(message);
-
-            // Simulate typing indicator and response
-            this.showTypingIndicator();
-
-            setTimeout(() => {
-                this.hideTypingIndicator();
-                this.addAutoResponse(message);
-            }, 1000 + Math.random() * 2000);
 
             this.messenger.logPerformance('Send Message', startTime);
         } catch (error) {
@@ -466,45 +516,13 @@ class UIEventsManager {
 
     handleSearch(query) {
         try {
-            if (!query || query.length < 2) {
-                this.clearSearchResults();
-                return;
-            }
-
             const startTime = performance.now();
+            console.log('🔍 Search triggered:', query);
 
-            // Show loading state
-            this.showSearchLoading();
+            // Use messenger's search method
+            this.messenger.handleSearch(query);
 
-            // Simulate API call with timeout
-            setTimeout(() => {
-                // Filter chats based on query
-                const chatItems = document.querySelectorAll('.chat-item');
-                let visibleCount = 0;
-
-                chatItems.forEach(item => {
-                    const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
-                    const chatPreview = item.querySelector('.chat-preview').textContent.toLowerCase();
-                    const searchTerm = query.toLowerCase();
-
-                    const isMatch = chatName.includes(searchTerm) || chatPreview.includes(searchTerm);
-
-                    if (isMatch) {
-                        item.style.display = 'flex';
-                        visibleCount++;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                this.hideSearchLoading();
-                this.messenger.logPerformance('Search', startTime);
-
-                if (visibleCount === 0) {
-                    this.showNoSearchResults();
-                }
-            }, 300);
-
+            this.messenger.logPerformance('Search', startTime);
         } catch (error) {
             this.messenger.handleError(error, 'Search');
         }
@@ -512,7 +530,7 @@ class UIEventsManager {
 
     // Helper methods
     showDragZone() {
-        const dragZone = document.getElementById('dragZone');
+        const dragZone = document.getElementById('dragDropZone');
         if (dragZone) {
             dragZone.classList.add('active');
             this.messenger.isDragActive = true;
@@ -520,7 +538,7 @@ class UIEventsManager {
     }
 
     hideDragZone() {
-        const dragZone = document.getElementById('dragZone');
+        const dragZone = document.getElementById('dragDropZone');
         if (dragZone) {
             dragZone.classList.remove('active');
             this.messenger.isDragActive = false;
@@ -1062,6 +1080,7 @@ class UIEventsManager {
     handleFileDrop(e) {
         const files = Array.from(e.dataTransfer.files);
         console.log('Files dropped:', files);
+        this.showFilePreview(files);
     }
 
     handlePaste(e) {
@@ -1070,9 +1089,112 @@ class UIEventsManager {
             if (item.type.indexOf('image') !== -1) {
                 const file = item.getAsFile();
                 console.log('Image pasted:', file);
+                this.showFilePreview([file]);
                 e.preventDefault();
             }
         }
+    }
+
+    showFilePreview(files) {
+        const preview = document.getElementById('filePreview');
+        const fileList = document.getElementById('fileList');
+
+        if (!preview || !fileList) return;
+
+        fileList.innerHTML = '';
+
+        files.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${this.formatFileSize(file.size)}</div>
+                </div>
+                <button class="file-remove" onclick="this.parentElement.remove()">×</button>
+            `;
+            fileList.appendChild(fileItem);
+        });
+
+        preview.classList.add('active');
+    }
+
+    hideFilePreview() {
+        const preview = document.getElementById('filePreview');
+        if (preview) {
+            preview.classList.remove('active');
+        }
+    }
+
+    sendSelectedFiles() {
+        console.log('Sending selected files...');
+        this.hideFilePreview();
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    handleUserSearch(query) {
+        const resultsContainer = document.getElementById('searchResults');
+        if (!resultsContainer || !query || query.length < 2) {
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="search-placeholder">
+                        <div class="search-placeholder-icon">👥</div>
+                        <div class="search-placeholder-text">Start typing to search for users</div>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        // Simulate user search with demo data
+        const demoUsers = [
+            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', status: 'online', avatar: 'AJ' },
+            { id: 2, name: 'Bob Smith', email: 'bob@example.com', status: 'away', avatar: 'BS' },
+            { id: 3, name: 'Carol Brown', email: 'carol@example.com', status: 'offline', avatar: 'CB' },
+            { id: 4, name: 'David Wilson', email: 'david@example.com', status: 'online', avatar: 'DW' }
+        ];
+
+        const filteredUsers = demoUsers.filter(user =>
+            user.name.toLowerCase().includes(query.toLowerCase()) ||
+            user.email.toLowerCase().includes(query.toLowerCase())
+        );
+
+        resultsContainer.innerHTML = filteredUsers.map(user => `
+            <div class="user-result" onclick="window.app?.uiEvents?.selectUser('${user.id}')">
+                <div class="user-result-avatar">${user.avatar}</div>
+                <div class="user-result-info">
+                    <div class="user-result-name">${user.name}</div>
+                    <div class="user-result-details">${user.email}</div>
+                    <div class="user-result-status">
+                        <div class="status-indicator ${user.status}"></div>
+                        <span>${user.status}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        if (filteredUsers.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-placeholder">
+                    <div class="search-placeholder-icon">❌</div>
+                    <div class="search-placeholder-text">No users found</div>
+                </div>
+            `;
+        }
+    }
+
+    selectUser(userId) {
+        console.log('User selected:', userId);
+        // Add user to contacts or start chat
+        this.messenger.closeModal('userSearchModal');
     }
 
     handleTyping() {
