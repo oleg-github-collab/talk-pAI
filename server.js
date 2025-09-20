@@ -584,7 +584,7 @@ async function validateServerHealth(port) {
   try {
     const http = require('http');
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port: port,
       path: '/health',
       timeout: 5000

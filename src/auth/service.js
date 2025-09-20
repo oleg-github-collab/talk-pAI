@@ -8,8 +8,8 @@ class AuthService {
   constructor(dbConnection, logger) {
     this.database = dbConnection || database;
     this.logger = logger || console;
-    this.storage = this.database.isConnected ? new DatabaseStorage(this.database) : new InMemoryStorage();
-    this.useDatabase = this.database.isConnected;
+    this.storage = new DatabaseStorage(this.database);
+    this.useDatabase = true;
   }
 
   async register({ nickname, password, avatar }) {
@@ -98,46 +98,32 @@ class AuthService {
       throw new Error('Authentication required');
     }
 
-    if (this.useDatabase) {
-      const session = await this.storage.findSessionByToken(token);
-      if (!session) {
-        throw new Error('Invalid session');
-      }
-      return {
-        id: session.user_id,
-        nickname: session.nickname,
-        avatar: session.avatar,
-        token
-      };
-    } else {
-      // Production security: validate token format in fallback mode
-      if (!/^[a-zA-Z0-9\-_]{16,}$/.test(token)) {
-        throw new Error('Invalid token format');
-      }
-      return { token };
+    const session = await this.storage.findSessionByToken(token);
+    if (!session) {
+      throw new Error('Invalid session');
     }
+    return {
+      id: session.user_id,
+      nickname: session.nickname,
+      avatar: session.avatar,
+      token
+    };
   }
 
   async logout(token) {
-    if (this.useDatabase) {
-      const session = await this.storage.findSessionByToken(token);
-      if (session) {
-        await this.storage.deleteSession(session.user_id, token);
-      }
+    const session = await this.storage.findSessionByToken(token);
+    if (session) {
+      await this.storage.deleteSession(session.user_id, token);
     }
     return { success: true };
   }
 
   async getUserChats(userId) {
-    if (this.useDatabase) {
-      return await this.storage.getUserChats(userId);
-    }
-    return [];
+    return await this.storage.getUserChats(userId);
   }
 
   async getActiveUsers() {
-    if (this.useDatabase) {
-      return await this.storage.getActiveUsers();
+    return await this.storage.getActiveUsers();
     }
     return [];
   }
