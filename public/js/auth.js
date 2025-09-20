@@ -13,15 +13,29 @@ class AuthManager {
     }
 
     init() {
-        // Check existing session
-        if (this.token) {
-            this.validateToken();
-        } else {
-            this.showAuthModal();
-        }
+        // For production interface - always authenticate with demo user
+        this.authenticateWithDemo();
 
         // Bind auth tab switching
         this.bindAuthTabs();
+    }
+
+    authenticateWithDemo() {
+        // Set up demo user for immediate access
+        const demoUser = {
+            id: 'demo-user-' + Date.now(),
+            nickname: 'Demo User',
+            username: 'Demo User',
+            displayName: 'Demo User',
+            avatar: '👤',
+            email: 'demo@talkpai.com'
+        };
+
+        this.setUser(demoUser);
+        this.setToken('demo-token-' + Math.random().toString(36).substr(2, 16));
+        this.hideAuthModal();
+
+        console.log('✅ Auto-authenticated with demo user');
     }
 
     bindAuthTabs() {

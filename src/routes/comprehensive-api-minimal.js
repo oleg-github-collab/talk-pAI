@@ -1,5 +1,8 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const { ErrorHandler, ValidationError, NotFoundError, AuthenticationError } = require('../utils/error-handler');
+const uploadMiddleware = require('../middleware/upload');
 
 /**
  * Minimal Comprehensive API Routes for Talk pAI
@@ -54,7 +57,7 @@ class ComprehensiveAPI {
         // ================================
         // FILE MANAGEMENT ENDPOINTS
         // ================================
-        this.router.post('/files/upload', this.notImplementedHandler.bind(this));
+        this.router.post('/files/upload', uploadMiddleware.handleFileUpload(), this.uploadFile.bind(this));
         this.router.get('/files/:fileId', this.notImplementedHandler.bind(this));
         this.router.delete('/files/:fileId', this.notImplementedHandler.bind(this));
 
@@ -815,20 +818,54 @@ class ComprehensiveAPI {
 
     async uploadFile(req, res) {
         try {
-            // In a real implementation, this would handle file uploads
-            // For now, return a placeholder response
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No file provided'
+                });
+            }
+
+            const file = req.file;
+            const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const fileUrl = `/uploads/${file.filename}`;
+
+            // Store file info in database
+            if (this.db && this.db.query) {
+                try {
+                    await this.db.query(`
+                        INSERT INTO files (id, filename, original_name, path, mimetype, size, uploaded_by, created_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+                    `, [
+                        fileId,
+                        file.filename,
+                        file.originalname,
+                        file.path,
+                        file.mimetype,
+                        file.size,
+                        req.user?.id || 'anonymous'
+                    ]);
+                } catch (dbError) {
+                    console.warn('Could not save file to database:', dbError.message);
+                    // Continue anyway - file is uploaded to disk
+                }
+            }
+
             res.json({
                 success: true,
                 file: {
-                    id: `file_${Date.now()}`,
-                    filename: 'uploaded_file.jpg',
-                    url: '/uploads/uploaded_file.jpg',
-                    size: 1024000,
-                    type: 'image/jpeg'
+                    id: fileId,
+                    filename: file.filename,
+                    originalName: file.originalname,
+                    url: fileUrl,
+                    size: file.size,
+                    type: file.mimetype,
+                    uploadedAt: new Date().toISOString()
                 },
                 message: 'File uploaded successfully'
             });
+
         } catch (error) {
+            console.error('File upload error:', error);
             this.handleError(error, req, res);
         }
     }

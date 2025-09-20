@@ -93,7 +93,7 @@ class AidenCompanion {
 
       this.isReady = true;
       this.logger.info('Aiden AI Companion initialized successfully', {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         capabilities: this.personality.capabilities.length
       });
 
@@ -242,7 +242,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
 
   async generateResponse(conversationMessages, userId) {
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: conversationMessages,
       max_tokens: 2000,
       temperature: 0.7,
@@ -540,7 +540,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
     try {
       // Test with a simple request
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 10
       });
@@ -548,7 +548,7 @@ Respond naturally as Aiden would, incorporating your personality and the user's 
       return {
         status: 'healthy',
         response_time: 'normal',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         active_memories: this.conversationMemory.size
       };
     } catch (error) {
@@ -1023,7 +1023,7 @@ Respond naturally as Aiden would, incorporating your personality and enhanced ca
 
   async generateEnhancedResponse(conversationMessages, userId) {
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: conversationMessages,
       max_tokens: 2000,
       temperature: 0.7,
@@ -1089,7 +1089,7 @@ Respond naturally as Aiden would, incorporating your personality and enhanced ca
       ).join('\n\n');
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
