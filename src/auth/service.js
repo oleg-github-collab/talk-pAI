@@ -124,8 +124,6 @@ class AuthService {
 
   async getActiveUsers() {
     return await this.storage.getActiveUsers();
-    }
-    return [];
   }
 }
 

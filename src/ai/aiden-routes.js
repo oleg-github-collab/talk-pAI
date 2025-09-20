@@ -12,6 +12,10 @@ class AidenRoutes {
     this.initializeRoutes();
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   initializeRoutes() {
     // Apply authentication to all Aiden routes
     this.router.use(authMiddleware);

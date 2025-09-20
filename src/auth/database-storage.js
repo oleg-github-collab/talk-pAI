@@ -6,7 +6,7 @@ class DatabaseStorage {
   }
 
   async createUser({ nickname, password, salt, avatar }) {
-    const result = await this.this.database.query(`
+    const result = await this.database.query(`
       INSERT INTO users (nickname, password_hash, salt, avatar)
       VALUES ($1, $2, $3, $4)
       RETURNING id, nickname, avatar, created_at
@@ -16,7 +16,7 @@ class DatabaseStorage {
   }
 
   async findUser(nickname) {
-    const result = await this.this.database.query(`
+    const result = await this.database.query(`
       SELECT id, nickname, password_hash, salt, avatar, created_at, last_login
       FROM users
       WHERE nickname = $1 AND is_active = true
@@ -49,7 +49,7 @@ class DatabaseStorage {
   }
 
   async userExists(nickname) {
-    const result = await this.this.database.query(`
+    const result = await this.database.query(`
       SELECT 1 FROM users WHERE nickname = $1 AND is_active = true
     `, [nickname]);
 

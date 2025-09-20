@@ -10,6 +10,10 @@ class AIRoutes {
     this.setupRoutes();
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   setupRoutes() {
     // Apply authentication middleware to all routes
     this.router.use(this.authenticate.bind(this));

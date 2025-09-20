@@ -11,6 +11,10 @@ class SearchRoutes {
     this.initializeRoutes();
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   initializeRoutes() {
     // Apply authentication to all search routes
     this.router.use(authMiddleware);

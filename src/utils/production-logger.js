@@ -17,6 +17,14 @@ class ProductionLogger {
         this.maxFiles = options.maxFiles || 5;
         this.dateFormat = options.dateFormat || 'YYYY-MM-DD HH:mm:ss';
 
+        // Initialize the logger - simplified for immediate use
+        this.isReady = false;
+        this.initializeLogger().catch(err => {
+            console.warn('Logger initialization failed, using console fallback:', err.message);
+            this.enableFile = false;
+            this.isReady = true;
+        });
+
         this.levels = {
             error: 0,
             warn: 1,

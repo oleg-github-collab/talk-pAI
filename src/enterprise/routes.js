@@ -15,6 +15,10 @@ class EnterpriseRoutes {
     this.initializeRoutes();
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   initializeRoutes() {
     // Apply authentication to all enterprise routes
     this.router.use(authMiddleware);

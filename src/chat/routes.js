@@ -11,6 +11,10 @@ class ChatRoutes {
     this.setupRoutes();
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   setupRoutes() {
     // Demo route without authentication for testing
     this.router.post('/demo/message', this.sendDemoMessage.bind(this));

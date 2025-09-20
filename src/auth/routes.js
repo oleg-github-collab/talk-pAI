@@ -18,6 +18,10 @@ class AuthRoutes {
     this.router.get('/users', this.getActiveUsers.bind(this));
   }
 
+  getRouter() {
+    return this.router;
+  }
+
   async register(req, res) {
     try {
       this.logger.info('Registration attempt', { body: req.body });
