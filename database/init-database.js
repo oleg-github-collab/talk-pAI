@@ -33,7 +33,7 @@ class DatabaseInitializer {
             // Use connection pooling for better performance and reliability
             this.pool = new Pool({
                 connectionString: process.env.DATABASE_URL,
-                ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+                ssl: false, // Disable SSL for local PostgreSQL
                 max: 20,
                 idleTimeoutMillis: 30000,
                 connectionTimeoutMillis: 10000,
@@ -72,36 +72,102 @@ class DatabaseInitializer {
         }
     }
 
+    parseSchemaStatements(schema) {
+        const statements = [];
+        let currentStatement = '';
+        let inFunction = false;
+        let dollarQuoteDepth = 0;
+
+        const lines = schema.split('\n');
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+
+            // Skip comments and empty lines when not inside a function
+            if (!inFunction && (!trimmedLine || trimmedLine.startsWith('--'))) {
+                continue;
+            }
+
+            // Check if we're entering a function definition
+            if (!inFunction && (trimmedLine.toLowerCase().includes('create') ||
+                              currentStatement.toLowerCase().includes('create')) &&
+                (trimmedLine.toLowerCase().includes('function') ||
+                 currentStatement.toLowerCase().includes('function'))) {
+                // Look for the start of function body (AS $$)
+                if (line.includes('$$')) {
+                    inFunction = true;
+                    dollarQuoteDepth = 1;
+                }
+            }
+
+            // Count $$ pairs in this line
+            const dollarMatches = line.match(/\$\$/g);
+            if (dollarMatches) {
+                if (inFunction) {
+                    dollarQuoteDepth += dollarMatches.length;
+                } else if (line.includes('$$')) {
+                    // Starting a function
+                    inFunction = true;
+                    dollarQuoteDepth = dollarMatches.length;
+                }
+            }
+
+            currentStatement += line + '\n';
+
+            // Check for statement end
+            if (line.endsWith(';')) {
+                if (inFunction) {
+                    // Function ends when we have an even number of $$ and the line ends with ;
+                    if (dollarQuoteDepth % 2 === 0) {
+                        inFunction = false;
+                        statements.push(currentStatement.trim());
+                        currentStatement = '';
+                        dollarQuoteDepth = 0;
+                    }
+                } else {
+                    // Regular statement end
+                    statements.push(currentStatement.trim());
+                    currentStatement = '';
+                }
+            }
+        }
+
+        // Add any remaining statement
+        if (currentStatement.trim()) {
+            statements.push(currentStatement.trim());
+        }
+
+        return statements.filter(stmt => stmt && !stmt.startsWith('--'));
+    }
+
     async initializeSchema() {
         try {
-            console.log('🏗️ Initializing database schema...');
+            console.log('🔧 Initializing PostgreSQL database schema...');
+
+            // Check if schema is already initialized
+            const existingTables = await this.query(`
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'users'
+            `);
+
+            if (existingTables.rows.length > 0) {
+                console.log('✅ PostgreSQL database schema already exists, skipping initialization');
+                return;
+            }
 
             const schemaPath = path.join(__dirname, 'production-schema.sql');
             if (!fs.existsSync(schemaPath)) {
                 throw new Error('Database schema file not found');
             }
 
+            console.log('🔧 Installing schema from file...');
+
+            // Execute the entire schema as a single transaction
             const schema = fs.readFileSync(schemaPath, 'utf8');
+            await this.query(schema);
 
-            // Split schema into individual statements for better error handling
-            const statements = schema.split(';').filter(stmt => stmt.trim() && !stmt.trim().startsWith('--'));
-
-            let statementCount = 0;
-            for (const statement of statements) {
-                const trimmedStatement = statement.trim();
-                if (trimmedStatement) {
-                    try {
-                        statementCount++;
-                        await this.query(trimmedStatement);
-                    } catch (error) {
-                        console.error(`❌ PostgreSQL schema error on statement ${statementCount}: ${error.message}`);
-                        console.error(`❌ Statement: ${trimmedStatement.substring(0, 100)}...`);
-                        throw new Error(`PostgreSQL schema initialization failed: ${error.message}`);
-                    }
-                }
-            }
-
-            console.log(`✅ Database schema initialized successfully with ${statementCount} statements`);
+            console.log('✅ PostgreSQL database schema initialized successfully');
         } catch (error) {
             console.error('❌ Schema initialization failed:', error.message);
             throw error;
