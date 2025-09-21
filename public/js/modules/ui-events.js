@@ -493,12 +493,171 @@ class UIEventsManager {
             const startTime = performance.now();
             console.log('🎯 Navigation switch triggered:', navType);
 
-            // Use messenger's navigation method
-            this.messenger.switchNavigation(navType);
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
 
-            this.messenger.logPerformance('Navigation Switch', startTime);
+            // Add active class to clicked item
+            const activeItem = document.querySelector(`[data-nav="${navType}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+
+            // Use messenger's navigation method if available
+            if (this.messenger && this.messenger.switchNavigation) {
+                this.messenger.switchNavigation(navType);
+            } else {
+                // Fallback navigation logic
+                this.handleNavigationFallback(navType);
+            }
+
+            if (this.messenger && this.messenger.logPerformance) {
+                this.messenger.logPerformance('Navigation Switch', startTime);
+            }
         } catch (error) {
-            this.messenger.handleError(error, 'Navigation');
+            console.error('Navigation error:', error);
+            if (this.messenger && this.messenger.handleError) {
+                this.messenger.handleError(error, 'Navigation');
+            }
+        }
+    }
+
+    handleNavigationFallback(navType) {
+        console.log('🔄 Using navigation fallback for:', navType);
+
+        // Hide all content sections
+        const sections = ['chats', 'groups', 'contacts', 'files', 'profile', 'search', 'settings'];
+        sections.forEach(section => {
+            const element = document.getElementById(section + '-section') || document.querySelector(`.${section}-view`);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+
+        // Show target section or handle special cases
+        switch (navType) {
+            case 'chats':
+                this.showChatsView();
+                break;
+            case 'groups':
+                this.showGroupsView();
+                break;
+            case 'contacts':
+                this.showContactsView();
+                break;
+            case 'files':
+                this.showFilesView();
+                break;
+            case 'profile':
+                this.showProfileView();
+                break;
+            case 'search':
+                this.showSearchView();
+                break;
+            case 'settings':
+                this.showSettingsView();
+                break;
+            default:
+                console.warn('Unknown navigation type:', navType);
+        }
+    }
+
+    showGroupsView() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.setAttribute('data-view', 'groups');
+            mainContent.innerHTML = `
+                <div class="groups-view">
+                    <div class="groups-header">
+                        <h2>Groups</h2>
+                        <button class="btn-primary" onclick="window.app?.uiEvents?.createGroup()">
+                            ➕ Create Group
+                        </button>
+                    </div>
+                    <div class="groups-list">
+                        <div class="group-item">
+                            <div class="group-avatar">👥</div>
+                            <div class="group-info">
+                                <span class="group-name">General Discussion</span>
+                                <span class="group-members">12 members</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    showFilesView() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.setAttribute('data-view', 'files');
+            mainContent.innerHTML = `
+                <div class="files-view">
+                    <div class="files-header">
+                        <h2>Files</h2>
+                        <button class="btn-primary" onclick="window.app?.uiEvents?.uploadFile()">
+                            📁 Upload File
+                        </button>
+                    </div>
+                    <div class="files-list">
+                        <div class="file-item">
+                            <div class="file-icon">📄</div>
+                            <div class="file-info">
+                                <span class="file-name">Document.pdf</span>
+                                <span class="file-size">2.4 MB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    showProfileView() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.setAttribute('data-view', 'profile');
+            mainContent.innerHTML = `
+                <div class="profile-view">
+                    <div class="profile-header">
+                        <h2>Profile</h2>
+                        <button class="btn-secondary" onclick="window.app?.uiEvents?.editProfile()">
+                            ✏️ Edit Profile
+                        </button>
+                    </div>
+                    <div class="profile-content">
+                        <div class="profile-avatar">👤</div>
+                        <div class="profile-info">
+                            <h3>Demo User</h3>
+                            <p>@demo_user</p>
+                            <p>Welcome to Talk pAI!</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    showSearchView() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.setAttribute('data-view', 'search');
+            mainContent.innerHTML = `
+                <div class="search-view">
+                    <div class="search-header">
+                        <h2>Search</h2>
+                        <div class="search-bar">
+                            <input type="text" placeholder="Search users, messages..." class="search-input" id="globalSearchInput">
+                            <button class="btn-primary">🔍</button>
+                        </div>
+                    </div>
+                    <div class="search-results">
+                        <p>Start typing to search...</p>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -1168,7 +1327,7 @@ class UIEventsManager {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    handleUserSearch(query) {
+    async handleUserSearch(query) {
         const resultsContainer = document.getElementById('searchResults');
         if (!resultsContainer || !query || query.length < 2) {
             if (resultsContainer) {
@@ -1182,40 +1341,129 @@ class UIEventsManager {
             return;
         }
 
-        // Simulate user search with demo data
+        // Show loading state
+        resultsContainer.innerHTML = `
+            <div class="search-placeholder">
+                <div class="search-placeholder-icon">🔍</div>
+                <div class="search-placeholder-text">Searching...</div>
+            </div>
+        `;
+
+        try {
+            // Search via API
+            const response = await fetch(`/api/contacts/search/users?q=${encodeURIComponent(query)}&limit=10`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.data && result.data.length > 0) {
+                resultsContainer.innerHTML = result.data.map(user => `
+                    <div class="user-result" onclick="window.app?.uiEvents?.selectUser('${user.id}')">
+                        <div class="user-result-avatar">
+                            ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.display_name}">` :
+                              user.display_name ? user.display_name.substring(0, 2).toUpperCase() : '👤'}
+                        </div>
+                        <div class="user-result-info">
+                            <div class="user-result-name">${user.display_name || user.nickname}</div>
+                            <div class="user-result-details">@${user.nickname}</div>
+                            ${user.bio ? `<div class="user-result-bio">${user.bio}</div>` : ''}
+                            <div class="user-result-status">
+                                <div class="status-indicator ${user.user_status || 'offline'}"></div>
+                                <span>${user.user_status || 'offline'}</span>
+                                ${user.is_verified ? '<span class="verified-badge">✓</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="user-result-actions">
+                            ${user.is_contact ?
+                                '<button class="btn-contact-exists">Contact</button>' :
+                                '<button class="btn-add-contact" onclick="event.stopPropagation(); window.app?.uiEvents?.addContact(' + user.id + ')">Add</button>'
+                            }
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                // Fall back to demo data if API fails
+                this.handleUserSearchFallback(query, resultsContainer);
+            }
+        } catch (error) {
+            console.warn('User search API failed, using fallback:', error);
+            this.handleUserSearchFallback(query, resultsContainer);
+        }
+    }
+
+    handleUserSearchFallback(query, resultsContainer) {
+        // Demo data fallback
         const demoUsers = [
-            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', status: 'online', avatar: 'AJ' },
-            { id: 2, name: 'Bob Smith', email: 'bob@example.com', status: 'away', avatar: 'BS' },
-            { id: 3, name: 'Carol Brown', email: 'carol@example.com', status: 'offline', avatar: 'CB' },
-            { id: 4, name: 'David Wilson', email: 'david@example.com', status: 'online', avatar: 'DW' }
+            { id: 1, display_name: 'Alice Johnson', nickname: 'alice', email: 'alice@example.com', user_status: 'online', avatar: 'AJ' },
+            { id: 2, display_name: 'Bob Smith', nickname: 'bob', email: 'bob@example.com', user_status: 'away', avatar: 'BS' },
+            { id: 3, display_name: 'Carol Brown', nickname: 'carol', email: 'carol@example.com', user_status: 'offline', avatar: 'CB' },
+            { id: 4, display_name: 'David Wilson', nickname: 'david', email: 'david@example.com', user_status: 'online', avatar: 'DW' }
         ];
 
         const filteredUsers = demoUsers.filter(user =>
-            user.name.toLowerCase().includes(query.toLowerCase()) ||
+            user.display_name.toLowerCase().includes(query.toLowerCase()) ||
+            user.nickname.toLowerCase().includes(query.toLowerCase()) ||
             user.email.toLowerCase().includes(query.toLowerCase())
         );
 
-        resultsContainer.innerHTML = filteredUsers.map(user => `
-            <div class="user-result" onclick="window.app?.uiEvents?.selectUser('${user.id}')">
-                <div class="user-result-avatar">${user.avatar}</div>
-                <div class="user-result-info">
-                    <div class="user-result-name">${user.name}</div>
-                    <div class="user-result-details">${user.email}</div>
-                    <div class="user-result-status">
-                        <div class="status-indicator ${user.status}"></div>
-                        <span>${user.status}</span>
+        if (filteredUsers.length > 0) {
+            resultsContainer.innerHTML = filteredUsers.map(user => `
+                <div class="user-result" onclick="window.app?.uiEvents?.selectUser('${user.id}')">
+                    <div class="user-result-avatar">${user.avatar}</div>
+                    <div class="user-result-info">
+                        <div class="user-result-name">${user.display_name}</div>
+                        <div class="user-result-details">@${user.nickname}</div>
+                        <div class="user-result-status">
+                            <div class="status-indicator ${user.user_status}"></div>
+                            <span>${user.user_status}</span>
+                        </div>
+                    </div>
+                    <div class="user-result-actions">
+                        <button class="btn-add-contact" onclick="event.stopPropagation(); window.app?.uiEvents?.addContact(${user.id})">Add</button>
                     </div>
                 </div>
-            </div>
-        `).join('');
-
-        if (filteredUsers.length === 0) {
+            `).join('');
+        } else {
             resultsContainer.innerHTML = `
                 <div class="search-placeholder">
                     <div class="search-placeholder-icon">❌</div>
                     <div class="search-placeholder-text">No users found</div>
                 </div>
             `;
+        }
+    }
+
+    async addContact(userId) {
+        try {
+            console.log('Adding contact:', userId);
+
+            const response = await fetch('/api/contacts/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    message: 'Hi! I would like to connect with you.'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.messenger?.showNotification?.('Friend request sent successfully!', 'success') ||
+                    alert('Friend request sent successfully!');
+            } else {
+                this.messenger?.showNotification?.('Failed to send friend request: ' + result.error, 'error') ||
+                    alert('Failed to send friend request: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Add contact error:', error);
+            this.messenger?.showNotification?.('Network error. Please try again.', 'error') ||
+                alert('Network error. Please try again.');
         }
     }
 

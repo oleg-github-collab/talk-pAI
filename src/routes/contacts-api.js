@@ -10,7 +10,7 @@ class ContactsAPI {
 
     setupRoutes() {
         // Get user's contacts
-        this.router.get('/contacts', async (req, res) => {
+        this.router.get('/', async (req, res) => {
             try {
                 const userId = req.user?.id || 1; // Temp fallback
                 const { status = 'accepted', search, group, limit = 50, offset = 0 } = req.query;
@@ -220,7 +220,7 @@ class ContactsAPI {
         });
 
         // Add contact/Send friend request
-        this.router.post('/contacts/add', async (req, res) => {
+        this.router.post('/add', async (req, res) => {
             try {
                 const userId = req.user?.id || 1;
                 const { user_id: contactUserId, message = '' } = req.body;
@@ -419,7 +419,7 @@ class ContactsAPI {
         });
 
         // Update contact
-        this.router.put('/contacts/:contactId', async (req, res) => {
+        this.router.put('/:contactId', async (req, res) => {
             try {
                 const userId = req.user?.id || 1;
                 const { contactId } = req.params;
@@ -460,7 +460,7 @@ class ContactsAPI {
         });
 
         // Remove contact
-        this.router.delete('/contacts/:contactId', async (req, res) => {
+        this.router.delete('/:contactId', async (req, res) => {
             try {
                 const userId = req.user?.id || 1;
                 const { contactId } = req.params;

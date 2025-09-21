@@ -14,6 +14,17 @@ class ComprehensiveAPI {
         this.db = database;
         this.logger = logger;
         this.errorHandler = errorHandler;
+
+        // Initialize AI service
+        try {
+            const AIService = require('../ai/service');
+            this.aiService = new AIService();
+            this.logger.info('AI Service initialized for API');
+        } catch (error) {
+            this.logger.warn('AI Service not available:', error.message);
+            this.aiService = null;
+        }
+
         this.setupRoutes();
     }
 
@@ -326,6 +337,59 @@ class ComprehensiveAPI {
             }
 
             this.logger.info('Demo message sent', { messageId: message.id, content });
+
+            // Send AI response if this is an AI chat (chatId 2) and AI service is available
+            if (parseInt(chatId) === 2 && this.aiService && this.aiService.isReady()) {
+                setTimeout(async () => {
+                    try {
+                        const aiResponse = await this.aiService.chatWithAI(
+                            content.trim(),
+                            [], // No context for demo
+                            'demo-user'
+                        );
+
+                        const aiMessage = {
+                            id: Date.now() + 1,
+                            chatId: parseInt(chatId),
+                            senderId: 'ai-assistant',
+                            senderName: 'AI Assistant',
+                            senderAvatar: '🤖',
+                            content: aiResponse.message,
+                            messageType: 'text',
+                            timestamp: new Date(),
+                            created_at: new Date(),
+                            isAI: true
+                        };
+
+                        // Emit AI response to WebSocket
+                        if (io) {
+                            io.to(`chat-${chatId}`).emit('message', aiMessage);
+                        }
+
+                        this.logger.info('AI response sent', { messageId: aiMessage.id });
+                    } catch (error) {
+                        this.logger.error('AI response failed:', error);
+
+                        // Send fallback response
+                        const fallbackMessage = {
+                            id: Date.now() + 1,
+                            chatId: parseInt(chatId),
+                            senderId: 'ai-assistant',
+                            senderName: 'AI Assistant',
+                            senderAvatar: '🤖',
+                            content: "I'm having trouble processing your message right now. Please try again later!",
+                            messageType: 'text',
+                            timestamp: new Date(),
+                            created_at: new Date(),
+                            isAI: true
+                        };
+
+                        if (io) {
+                            io.to(`chat-${chatId}`).emit('message', fallbackMessage);
+                        }
+                    }
+                }, 1000 + Math.random() * 2000); // Random delay 1-3 seconds
+            }
 
             res.json({
                 success: true,

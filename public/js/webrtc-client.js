@@ -535,22 +535,6 @@ class WebRTCCallClient {
         }
     }
 
-    startCallTimer() {
-        if (this.callTimer) clearInterval(this.callTimer);
-
-        this.callTimer = setInterval(() => {
-            if (this.callStartTime) {
-                const elapsed = Math.floor((Date.now() - this.callStartTime) / 1000);
-                const minutes = Math.floor(elapsed / 60);
-                const seconds = elapsed % 60;
-
-                const timerElement = document.querySelector('.call-timer');
-                if (timerElement) {
-                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }
-            }
-        }, 1000);
-    }
 
     playRingtone() {
         // Play ringtone sound
@@ -714,3 +698,6 @@ window.initializeWebRTC = (socket) => {
     window.webrtcClient = webrtcClient;
     return webrtcClient;
 };
+
+// Also export the class
+window.WebRTCCallClient = WebRTCCallClient;

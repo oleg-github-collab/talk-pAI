@@ -46,12 +46,17 @@ class TalkPAIApp {
             }
 
             // Initialize WebRTC client
-            if (window.webrtc) {
-                // Register user with WebRTC server
-                const userId = 'demo-user-' + Math.random().toString(36).substr(2, 9);
-                const userName = 'Demo User';
-                window.webrtc.registerUser(userId, userName);
-                console.log('✅ WebRTC Client registered');
+            try {
+                if (typeof initializeWebRTC === 'function') {
+                    // Initialize WebRTC with socket.io connection
+                    const socket = io();
+                    this.webrtcClient = initializeWebRTC(socket);
+                    console.log('✅ WebRTC Client initialized');
+                } else {
+                    console.warn('⚠️ WebRTC client not available');
+                }
+            } catch (error) {
+                console.warn('⚠️ WebRTC initialization failed:', error.message);
             }
 
             // Set up global references

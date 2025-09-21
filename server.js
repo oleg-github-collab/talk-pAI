@@ -113,8 +113,18 @@ try {
 
 } catch (error) {
   console.warn('⚠️ Production logger failed, using fallback:', error.message);
-  const { FallbackLogger } = require('./src/utils/production-logger');
-  logger = new FallbackLogger('TalkPAI');
+  try {
+    const { FallbackLogger } = require('./src/utils/production-logger');
+    logger = new FallbackLogger('TalkPAI');
+  } catch (fallbackError) {
+    logger = {
+      info: (msg, data) => console.log(`[INFO] ${msg}`, data || ''),
+      error: (msg, data) => console.error(`[ERROR] ${msg}`, data || ''),
+      warn: (msg, data) => console.warn(`[WARN] ${msg}`, data || ''),
+      debug: (msg, data) => console.log(`[DEBUG] ${msg}`, data || ''),
+      createRequestLogger: () => (req, res, next) => next()
+    };
+  }
   errorHandler = null;
 }
 
