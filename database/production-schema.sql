@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS message_attachments CASCADE;
 DROP TABLE IF EXISTS messages CASCADE;
 DROP TABLE IF EXISTS chat_participants CASCADE;
 DROP TABLE IF EXISTS chats CASCADE;
+DROP TABLE IF EXISTS user_oauth CASCADE;
 DROP TABLE IF EXISTS user_relationships CASCADE;
 DROP TABLE IF EXISTS user_settings CASCADE;
 DROP TABLE IF EXISTS sessions CASCADE;
@@ -26,7 +27,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nickname VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255),
     salt VARCHAR(64),
     display_name VARCHAR(100),
     bio TEXT DEFAULT 'Hey there! I am using Talk pAI.',
@@ -37,6 +38,21 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
     is_admin BOOLEAN DEFAULT FALSE,
+
+    -- 2FA fields
+    two_factor_secret VARCHAR(255),
+    two_factor_backup_codes TEXT,
+    two_factor_temp_secret VARCHAR(255),
+
+    -- Email verification
+    email_verification_token VARCHAR(255),
+    email_verified_at TIMESTAMP,
+
+    -- Password reset
+    password_reset_token VARCHAR(255),
+    password_reset_expires TIMESTAMP,
+
+    -- Timestamps
     last_login TIMESTAMP,
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -44,7 +60,8 @@ CREATE TABLE users (
 
     -- Constraints
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' OR email IS NULL),
-    CONSTRAINT nickname_format CHECK (nickname ~* '^[a-zA-Z0-9_]{3,50}$')
+    CONSTRAINT nickname_format CHECK (nickname ~* '^[a-zA-Z0-9_]{3,50}$'),
+    CONSTRAINT password_or_oauth CHECK (password_hash IS NOT NULL OR EXISTS (SELECT 1 FROM user_oauth WHERE user_id = users.id))
 );
 
 -- User settings table for extended preferences
@@ -64,6 +81,23 @@ CREATE TABLE user_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     UNIQUE(user_id)
+);
+
+-- OAuth providers table
+CREATE TABLE user_oauth (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL CHECK (provider IN ('google', 'microsoft', 'apple', 'facebook', 'github')),
+    provider_id VARCHAR(255) NOT NULL,
+    profile_data JSONB DEFAULT '{}',
+    access_token_hash VARCHAR(255),
+    refresh_token_hash VARCHAR(255),
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(user_id, provider),
+    UNIQUE(provider, provider_id)
 );
 
 -- User relationships (friends, blocks, etc.)
@@ -250,6 +284,75 @@ CREATE TABLE notifications (
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP
+);
+
+-- AI generations (images, etc.)
+CREATE TABLE ai_generations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('image', 'audio', 'video', 'text')),
+    prompt TEXT NOT NULL,
+    revised_prompt TEXT,
+    result_url VARCHAR(500),
+    file_id UUID REFERENCES files(id) ON DELETE SET NULL,
+    model VARCHAR(100),
+    parameters JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AI transcriptions
+CREATE TABLE ai_transcriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    file_id UUID REFERENCES files(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    language VARCHAR(10),
+    confidence DECIMAL(4,3),
+    duration DECIMAL(10,2),
+    segments JSONB,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AI translations
+CREATE TABLE ai_translations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    original_text TEXT NOT NULL,
+    translated_text TEXT NOT NULL,
+    source_language VARCHAR(10),
+    target_language VARCHAR(10) NOT NULL,
+    confidence DECIMAL(4,3),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Workspaces for enterprise features
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    owner_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    settings JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    max_members INTEGER DEFAULT 100,
+    subscription_tier VARCHAR(50) DEFAULT 'free',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Workspace members
+CREATE TABLE workspace_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(50) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'moderator', 'member', 'guest')),
+    permissions JSONB DEFAULT '{}',
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+
+    UNIQUE(workspace_id, user_id)
 );
 
 -- Performance indexes
