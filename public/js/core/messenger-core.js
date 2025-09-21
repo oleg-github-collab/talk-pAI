@@ -575,13 +575,29 @@ class TalkPAIMessenger {
         const chatListPanel = document.querySelector('.chat-list-panel');
         const mainChat = document.querySelector('.main-chat');
 
+        // Clear existing content in chat list
+        this.clearChatList();
+
         switch (viewType) {
             case 'chats':
+                this.loadChatsView();
+                if (chatListPanel) chatListPanel.style.display = 'flex';
+                if (mainChat) mainChat.style.display = 'flex';
+                break;
+            case 'groups':
+                this.loadGroupsView();
                 if (chatListPanel) chatListPanel.style.display = 'flex';
                 if (mainChat) mainChat.style.display = 'flex';
                 break;
             case 'contacts':
-                this.showContactsModal();
+                this.loadContactsView();
+                if (chatListPanel) chatListPanel.style.display = 'flex';
+                if (mainChat) mainChat.style.display = 'flex';
+                break;
+            case 'files':
+                this.loadFilesView();
+                if (chatListPanel) chatListPanel.style.display = 'flex';
+                if (mainChat) mainChat.style.display = 'flex';
                 break;
             case 'profile':
                 this.showProfileModal();
@@ -593,6 +609,215 @@ class TalkPAIMessenger {
                 this.showSettingsModal();
                 break;
         }
+
+        console.log(`🎯 Switched to view: ${viewType}`);
+    }
+
+    clearChatList() {
+        const chatList = document.getElementById('chatList');
+        if (chatList) {
+            chatList.innerHTML = '';
+        }
+    }
+
+    loadChatsView() {
+        const chatList = document.getElementById('chatList');
+        const chatListTitle = document.querySelector('.chat-list-title h2');
+
+        if (chatListTitle) chatListTitle.textContent = 'Chats';
+
+        if (chatList) {
+            chatList.innerHTML = `
+                <a href="#" class="chat-item active" data-chat="1">
+                    <div class="chat-avatar">AI</div>
+                    <div class="chat-info">
+                        <div class="chat-name">AI Assistant</div>
+                        <div class="chat-preview">How can I help you today?</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">2:30 PM</div>
+                        <div class="chat-unread">2</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="2">
+                    <div class="chat-avatar">GE</div>
+                    <div class="chat-info">
+                        <div class="chat-name">General</div>
+                        <div class="chat-preview">Welcome to Talk pAI!</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">1:45 PM</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="3">
+                    <div class="chat-avatar">TC</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Team Chat</div>
+                        <div class="chat-preview">Great work everyone!</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">12:15 PM</div>
+                        <div class="chat-unread">5</div>
+                    </div>
+                </a>
+            `;
+            this.bindChatItemEvents();
+        }
+    }
+
+    loadGroupsView() {
+        const chatList = document.getElementById('chatList');
+        const chatListTitle = document.querySelector('.chat-list-title h2');
+
+        if (chatListTitle) chatListTitle.textContent = 'Groups';
+
+        if (chatList) {
+            chatList.innerHTML = `
+                <a href="#" class="chat-item" data-chat="group1">
+                    <div class="chat-avatar">DE</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Development Team</div>
+                        <div class="chat-preview">John: Working on the new feature...</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">3:15 PM</div>
+                        <div class="chat-unread">12</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="group2">
+                    <div class="chat-avatar">PR</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Project Alpha</div>
+                        <div class="chat-preview">Sarah: Meeting tomorrow at 10 AM</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">2:45 PM</div>
+                        <div class="chat-unread">3</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="group3">
+                    <div class="chat-avatar">MA</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Marketing</div>
+                        <div class="chat-preview">Alex: New campaign ideas ready</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">1:30 PM</div>
+                        <div class="chat-unread">8</div>
+                    </div>
+                </a>
+            `;
+            this.bindChatItemEvents();
+        }
+    }
+
+    loadContactsView() {
+        const chatList = document.getElementById('chatList');
+        const chatListTitle = document.querySelector('.chat-list-title h2');
+
+        if (chatListTitle) chatListTitle.textContent = 'Contacts';
+
+        if (chatList) {
+            chatList.innerHTML = `
+                <a href="#" class="chat-item" data-chat="contact1">
+                    <div class="chat-avatar">JD</div>
+                    <div class="chat-info">
+                        <div class="chat-name">John Doe</div>
+                        <div class="chat-preview">Senior Developer</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">Online</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="contact2">
+                    <div class="chat-avatar">SM</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Sarah Miller</div>
+                        <div class="chat-preview">Project Manager</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">Away</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="contact3">
+                    <div class="chat-avatar">AJ</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Alex Johnson</div>
+                        <div class="chat-preview">UI/UX Designer</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">Offline</div>
+                    </div>
+                </a>
+            `;
+            this.bindChatItemEvents();
+        }
+    }
+
+    loadFilesView() {
+        const chatList = document.getElementById('chatList');
+        const chatListTitle = document.querySelector('.chat-list-title h2');
+
+        if (chatListTitle) chatListTitle.textContent = 'Files';
+
+        if (chatList) {
+            chatList.innerHTML = `
+                <a href="#" class="chat-item" data-chat="file1">
+                    <div class="chat-avatar">📄</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Project_Specs.pdf</div>
+                        <div class="chat-preview">2.4 MB • Yesterday</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">PDF</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="file2">
+                    <div class="chat-avatar">🖼️</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Design_Mockup.png</div>
+                        <div class="chat-preview">1.8 MB • 2 days ago</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">PNG</div>
+                    </div>
+                </a>
+
+                <a href="#" class="chat-item" data-chat="file3">
+                    <div class="chat-avatar">📊</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Analytics_Report.xlsx</div>
+                        <div class="chat-preview">856 KB • 1 week ago</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">XLSX</div>
+                    </div>
+                </a>
+            `;
+            this.bindChatItemEvents();
+        }
+    }
+
+    bindChatItemEvents() {
+        // Re-bind events for dynamically created chat items
+        const chatItems = document.querySelectorAll('.chat-item');
+        chatItems.forEach((item) => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const chatId = item.dataset.chat;
+                if (chatId) {
+                    this.selectChat(chatId);
+                }
+            });
+        });
     }
 
     // Modal management

@@ -6,6 +6,8 @@ class WebRTCCallClient {
         this.peerConnection = null;
         this.currentCall = null;
         this.isInitiator = false;
+        this.callStartTime = null;
+        this.callTimerInterval = null;
         this.mediaConstraints = {
             audio: true,
             video: false
@@ -473,7 +475,6 @@ class WebRTCCallClient {
 
     updateCallInterface(data) {
         const statusElement = document.querySelector('.call-status');
-        const timerElement = document.querySelector('.call-timer');
 
         if (statusElement) {
             statusElement.textContent = this.getStatusText(data.status);
@@ -481,10 +482,31 @@ class WebRTCCallClient {
 
         if (data.status === 'connected' && !this.callStartTime) {
             this.callStartTime = Date.now();
+            this.startCallTimer();
         }
     }
 
+    startCallTimer() {
+        const timerElement = document.querySelector('.call-timer');
+        if (!timerElement) return;
+
+        this.callTimerInterval = setInterval(() => {
+            if (this.callStartTime) {
+                const elapsed = Date.now() - this.callStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+    }
+
     hideCallInterface() {
+        // Clear call timer
+        if (this.callTimerInterval) {
+            clearInterval(this.callTimerInterval);
+            this.callTimerInterval = null;
+        }
+
         const callOverlay = document.getElementById('callOverlay');
         const incomingCallOverlay = document.getElementById('incomingCallOverlay');
 

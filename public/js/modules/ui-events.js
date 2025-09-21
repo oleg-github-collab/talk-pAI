@@ -122,6 +122,16 @@ class UIEventsManager {
                 });
                 console.log('🔍 Find users button bound');
             }
+
+            // Logout button
+            const logoutBtn = document.querySelector('.logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleLogout();
+                });
+                console.log('🚪 Logout button bound');
+            }
         } catch (error) {
             console.error('❌ Error binding navigation events:', error);
         }
@@ -196,6 +206,24 @@ class UIEventsManager {
         // Emoji button
         document.getElementById('emojiBtn')?.addEventListener('click', () => {
             this.toggleEmojiPicker();
+        });
+
+        // Header action buttons
+        document.getElementById('searchBtn')?.addEventListener('click', () => {
+            this.messenger.showSearchModal();
+        });
+
+        document.getElementById('callBtn')?.addEventListener('click', () => {
+            this.startVoiceCall();
+        });
+
+        document.getElementById('videoBtn')?.addEventListener('click', () => {
+            this.startVideoCall();
+        });
+
+        // New chat button
+        document.getElementById('newChatBtn')?.addEventListener('click', () => {
+            this.showNewChatModal();
         });
 
         // File attachment button
@@ -1273,6 +1301,180 @@ class UIEventsManager {
             console.error('❌ Failed to load messages from backend:', error);
             this.messenger.handleError(error, 'Backend Communication');
             return [];
+        }
+    }
+
+    handleLogout() {
+        try {
+            console.log('🚪 Logout initiated');
+
+            // Clear local storage
+            localStorage.removeItem('talkpai-token');
+            localStorage.removeItem('talkpai-user');
+
+            // Show logout confirmation
+            this.messenger.showNotification('Logged out successfully', 'success');
+
+            // In a real app, this would redirect to login page
+            // For demo, we'll reload the page
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
+        } catch (error) {
+            console.error('❌ Logout error:', error);
+            this.messenger.handleError(error, 'Logout');
+        }
+    }
+
+    handleLogin() {
+        try {
+            console.log('🔐 Login initiated');
+
+            // For demo, simulate login
+            const demoUser = {
+                id: 'demo-user-' + Math.random().toString(36).substr(2, 9),
+                name: 'Demo User',
+                email: 'demo@talkpai.com'
+            };
+
+            localStorage.setItem('talkpai-user', JSON.stringify(demoUser));
+            localStorage.setItem('talkpai-token', 'demo-token-' + Date.now());
+
+            this.messenger.showNotification('Login successful!', 'success');
+
+            // Hide auth modal
+            document.body.classList.remove('auth-mode');
+
+        } catch (error) {
+            console.error('❌ Login error:', error);
+            this.messenger.handleError(error, 'Login');
+        }
+    }
+
+    handleRegister() {
+        try {
+            console.log('📝 Registration initiated');
+
+            // For demo, simulate registration
+            const demoUser = {
+                id: 'new-user-' + Math.random().toString(36).substr(2, 9),
+                name: 'New User',
+                email: 'newuser@talkpai.com'
+            };
+
+            localStorage.setItem('talkpai-user', JSON.stringify(demoUser));
+            localStorage.setItem('talkpai-token', 'demo-token-' + Date.now());
+
+            this.messenger.showNotification('Registration successful!', 'success');
+
+            // Hide auth modal
+            document.body.classList.remove('auth-mode');
+
+        } catch (error) {
+            console.error('❌ Registration error:', error);
+            this.messenger.handleError(error, 'Registration');
+        }
+    }
+
+    demoLogin() {
+        try {
+            console.log('🎮 Demo login initiated');
+
+            const demoUser = {
+                id: 'demo-user-001',
+                name: 'Demo User',
+                email: 'demo@talkpai.com',
+                avatar: 'DU'
+            };
+
+            localStorage.setItem('talkpai-user', JSON.stringify(demoUser));
+            localStorage.setItem('talkpai-token', 'demo-token');
+
+            this.messenger.showNotification('Welcome to Talk pAI Demo!', 'success');
+
+            // Hide auth modal
+            document.body.classList.remove('auth-mode');
+
+        } catch (error) {
+            console.error('❌ Demo login error:', error);
+            this.messenger.handleError(error, 'Demo Login');
+        }
+    }
+
+    startVoiceCall() {
+        try {
+            console.log('📞 Starting voice call');
+            if (window.webrtc) {
+                window.webrtc.makeCall('demo-target-user', 'voice');
+            }
+            this.messenger.showNotification('Voice call initiated', 'info');
+        } catch (error) {
+            console.error('❌ Voice call error:', error);
+            this.messenger.handleError(error, 'Voice Call');
+        }
+    }
+
+    startVideoCall() {
+        try {
+            console.log('📹 Starting video call');
+            if (window.webrtc) {
+                window.webrtc.makeCall('demo-target-user', 'video');
+            }
+            this.messenger.showNotification('Video call initiated', 'info');
+        } catch (error) {
+            console.error('❌ Video call error:', error);
+            this.messenger.handleError(error, 'Video Call');
+        }
+    }
+
+    showNewChatModal() {
+        try {
+            console.log('💬 Opening new chat modal');
+            this.messenger.showNotification('New chat feature coming soon!', 'info');
+        } catch (error) {
+            console.error('❌ New chat modal error:', error);
+            this.messenger.handleError(error, 'New Chat');
+        }
+    }
+
+    toggleEmojiPicker() {
+        try {
+            console.log('😀 Toggling emoji picker');
+            this.messenger.showNotification('Emoji picker coming soon!', 'info');
+        } catch (error) {
+            console.error('❌ Emoji picker error:', error);
+            this.messenger.handleError(error, 'Emoji Picker');
+        }
+    }
+
+    openFileDialog() {
+        try {
+            console.log('📎 Opening file dialog');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = '*/*';
+            input.addEventListener('change', (e) => {
+                this.handleFileSelection(e.target.files);
+            });
+            input.click();
+        } catch (error) {
+            console.error('❌ File dialog error:', error);
+            this.messenger.handleError(error, 'File Upload');
+        }
+    }
+
+    handleFileSelection(files) {
+        try {
+            console.log('📁 Files selected:', files.length);
+            for (let file of files) {
+                console.log(`File: ${file.name}, Size: ${file.size} bytes`);
+            }
+            this.messenger.showNotification(`${files.length} file(s) selected`, 'success');
+        } catch (error) {
+            console.error('❌ File selection error:', error);
+            this.messenger.handleError(error, 'File Selection');
         }
     }
 }

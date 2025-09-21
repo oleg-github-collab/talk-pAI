@@ -4050,7 +4050,7 @@
                             <span>Online</span>
                         </div>
                     </div>
-                    <button class="logout-btn" onclick="logout()" title="Logout">
+                    <button class="logout-btn" onclick="window.uiEvents?.handleLogout()" title="Logout">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                             <polyline points="16,17 21,12 16,7"/>
@@ -4714,8 +4714,8 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password" required>
                 </div>
-                <button class="auth-btn primary" onclick="handleLogin()">Login</button>
-                <button class="auth-btn secondary" onclick="demoLogin()">Demo Login</button>
+                <button class="auth-btn primary" onclick="window.uiEvents?.handleLogin()">Login</button>
+                <button class="auth-btn secondary" onclick="window.uiEvents?.demoLogin()">Demo Login</button>
             </div>
 
             <div class="auth-form" id="registerForm" style="display: none;">
@@ -4739,7 +4739,7 @@
                     <label>Confirm Password</label>
                     <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
                 </div>
-                <button class="auth-btn primary" onclick="handleRegister()">Register</button>
+                <button class="auth-btn primary" onclick="window.uiEvents?.handleRegister()">Register</button>
             </div>
         </div>
     </div>
