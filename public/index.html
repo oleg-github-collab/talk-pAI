@@ -4026,7 +4026,7 @@
 
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="light" class="auth-mode">
     <!-- Floating Background Elements -->
     <div class="bg-elements">
         <div class="floating-orb"></div>
@@ -4050,7 +4050,7 @@
                             <span>Online</span>
                         </div>
                     </div>
-                    <button class="logout-btn" onclick="window.uiEvents?.handleLogout()" title="Logout">
+                    <button class="logout-btn" onclick="window.logout()" title="Logout">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                             <polyline points="16,17 21,12 16,7"/>
@@ -4062,7 +4062,7 @@
 
             <!-- Sidebar Navigation -->
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-nav="chats">
+                <a href="#" class="nav-item active" data-nav="chats" onclick="window.switchNav('chats'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -4072,7 +4072,7 @@
                     <div class="nav-badge">3</div>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="groups">
+                <a href="#" class="nav-item" data-nav="groups" onclick="window.switchNav('groups'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -4084,7 +4084,7 @@
                     <div class="nav-badge">7</div>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="contacts">
+                <a href="#" class="nav-item" data-nav="contacts" onclick="window.switchNav('contacts'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
@@ -4094,7 +4094,7 @@
                     <span class="nav-text">Contacts</span>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="files">
+                <a href="#" class="nav-item" data-nav="files" onclick="window.switchNav('files'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
@@ -4104,7 +4104,7 @@
                     <span class="nav-text">Files</span>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="profile" id="profileBtn">
+                <a href="#" class="nav-item" data-nav="profile" id="profileBtn" onclick="window.switchNav('profile'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
@@ -4114,7 +4114,7 @@
                     <span class="nav-text">Profile</span>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="search" id="findUsersBtn">
+                <a href="#" class="nav-item" data-nav="search" id="findUsersBtn" onclick="window.switchNav('search'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <circle cx="11" cy="11" r="8"/>
@@ -4124,7 +4124,7 @@
                     <span class="nav-text">Find Users</span>
                 </a>
 
-                <a href="#" class="nav-item" data-nav="settings">
+                <a href="#" class="nav-item" data-nav="settings" onclick="window.switchNav('settings'); return false;">
                     <div class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3"/>
@@ -4151,7 +4151,7 @@
             <div class="chat-list-header">
                 <div class="chat-list-title">
                     <h2>Chats</h2>
-                    <button class="new-chat-btn" id="newChatBtn">
+                    <button class="new-chat-btn" id="newChatBtn" onclick="console.log('New chat clicked');">
                         <svg viewBox="0 0 24 24">
                             <line x1="12" y1="5" x2="12" y2="19"/>
                             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -4231,20 +4231,20 @@
                 </div>
 
                 <div class="chat-header-actions">
-                    <button class="header-action-btn" id="searchBtn">
+                    <button class="header-action-btn" id="searchBtn" onclick="console.log('Search clicked');">
                         <svg viewBox="0 0 24 24">
                             <circle cx="11" cy="11" r="8"/>
                             <path d="m21 21-4.35-4.35"/>
                         </svg>
                     </button>
 
-                    <button class="header-action-btn" id="callBtn">
+                    <button class="header-action-btn" id="callBtn" onclick="console.log('Voice call clicked');">
                         <svg viewBox="0 0 24 24">
                             <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
                         </svg>
                     </button>
 
-                    <button class="header-action-btn" id="videoBtn">
+                    <button class="header-action-btn" id="videoBtn" onclick="console.log('Video call clicked');">
                         <svg viewBox="0 0 24 24">
                             <polygon points="23 7 16 12 23 17 23 7"/>
                             <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
@@ -4328,7 +4328,7 @@
             <div class="message-input-area">
                 <div class="input-container">
                     <div class="input-actions-left">
-                        <button class="input-action-btn" id="emojiBtn">
+                        <button class="input-action-btn" id="emojiBtn" onclick="console.log('Emoji clicked');">
                             <svg viewBox="0 0 24 24">
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -4337,7 +4337,7 @@
                             </svg>
                         </button>
 
-                        <button class="input-action-btn" id="attachBtn">
+                        <button class="input-action-btn" id="attachBtn" onclick="console.log('Attach clicked');">
                             <svg viewBox="0 0 24 24">
                                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.64 16.2a2 2 0 01-2.83-2.83l8.49-8.49"/>
                             </svg>
@@ -4355,7 +4355,7 @@
 
                     <textarea class="message-input" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
 
-                    <button class="send-button" id="sendBtn">
+                    <button class="send-button" id="sendBtn" onclick="console.log('Send clicked');">
                         <svg viewBox="0 0 24 24">
                             <line x1="22" y1="2" x2="11" y2="13"/>
                             <polygon points="22,2 15,22 11,13 2,9 22,2"/>
@@ -4714,8 +4714,8 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password" required>
                 </div>
-                <button class="auth-btn primary" onclick="window.uiEvents?.handleLogin()">Login</button>
-                <button class="auth-btn secondary" onclick="window.uiEvents?.demoLogin()">Demo Login</button>
+                <button class="auth-btn primary" onclick="window.handleLogin()">Login</button>
+                <button class="auth-btn secondary" onclick="window.demoLogin()">Demo Login</button>
             </div>
 
             <div class="auth-form" id="registerForm" style="display: none;">
@@ -4739,7 +4739,7 @@
                     <label>Confirm Password</label>
                     <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
                 </div>
-                <button class="auth-btn primary" onclick="window.uiEvents?.handleRegister()">Register</button>
+                <button class="auth-btn primary" onclick="window.handleRegister()">Register</button>
             </div>
         </div>
     </div>
@@ -4800,6 +4800,80 @@
                 initialized: window.app ? window.app.isInitialized() : false
             });
         }
+
+        // Global navigation function for immediate response
+        window.switchNav = function(navType) {
+            console.log('🎯 GLOBAL NAV SWITCH:', navType);
+
+            // Remove active from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Add active to clicked item
+            const activeItem = document.querySelector(`[data-nav="${navType}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+
+            // Use messenger if available
+            if (window.messenger) {
+                window.messenger.switchNavigation(navType);
+            } else {
+                // Fallback logic
+                console.log('📱 Fallback navigation to:', navType);
+            }
+        };
+
+        // Global login functions
+        window.handleLogin = function() {
+            console.log('🔐 Global login called');
+            if (window.uiEvents) {
+                window.uiEvents.handleLogin();
+            } else {
+                document.body.classList.remove('auth-mode');
+            }
+        };
+
+        window.handleRegister = function() {
+            console.log('📝 Global register called');
+            if (window.uiEvents) {
+                window.uiEvents.handleRegister();
+            } else {
+                document.body.classList.remove('auth-mode');
+            }
+        };
+
+        window.demoLogin = function() {
+            console.log('🎮 Global demo login called');
+            if (window.uiEvents) {
+                window.uiEvents.demoLogin();
+            } else {
+                document.body.classList.remove('auth-mode');
+            }
+        };
+
+        window.logout = function() {
+            console.log('🚪 Global logout called');
+            if (window.uiEvents) {
+                window.uiEvents.handleLogout();
+            } else {
+                document.body.classList.add('auth-mode');
+            }
+        };
+
+        // Form switching functions
+        window.showLogin = function() {
+            console.log('📱 Show login form');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        };
+
+        window.showRegister = function() {
+            console.log('📱 Show register form');
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        };
 
         // Service Worker Registration
         if ('serviceWorker' in navigator) {

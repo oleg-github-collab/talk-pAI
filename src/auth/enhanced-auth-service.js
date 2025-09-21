@@ -20,7 +20,7 @@ class EnhancedAuthService {
     }
 
     initializeMailer() {
-        this.mailer = nodemailer.createTransporter({
+        this.mailer = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: process.env.SMTP_PORT || 587,
             secure: false,
