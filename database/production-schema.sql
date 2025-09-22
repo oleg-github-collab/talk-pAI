@@ -60,8 +60,7 @@ CREATE TABLE users (
 
     -- Constraints
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' OR email IS NULL),
-    CONSTRAINT nickname_format CHECK (nickname ~* '^[a-zA-Z0-9_]{3,50}$'),
-    CONSTRAINT password_or_oauth CHECK (password_hash IS NOT NULL OR EXISTS (SELECT 1 FROM user_oauth WHERE user_id = users.id))
+    CONSTRAINT nickname_format CHECK (nickname ~* '^[a-zA-Z0-9_]{3,50}$')
 );
 
 -- User settings table for extended preferences

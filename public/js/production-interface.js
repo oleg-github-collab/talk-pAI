@@ -609,6 +609,134 @@ class ProductionInterface {
         // Implement settings modal
     }
 
+    setupContactManagement() {
+        // Contact management functionality
+        console.log('✅ Contact management initialized');
+
+        // Bind search functionality
+        const contactSearch = document.getElementById('contactSearch');
+        if (contactSearch) {
+            contactSearch.addEventListener('input', (e) => {
+                this.filterContacts(e.target.value);
+            });
+        }
+
+        // Bind add contact button
+        const addContactBtn = document.getElementById('addContactBtn');
+        if (addContactBtn) {
+            addContactBtn.addEventListener('click', () => {
+                this.showAddContactModal();
+            });
+        }
+    }
+
+    setupCallSystem() {
+        console.log('✅ Call system initialized');
+
+        // Initialize WebRTC if available
+        if (window.CallManager) {
+            this.callManager = new CallManager();
+        }
+    }
+
+    setupEmojiPicker() {
+        console.log('✅ Emoji picker initialized');
+
+        // Initialize emoji picker if available
+        if (window.EmojiPicker) {
+            this.emojiPicker = new EmojiPicker();
+        }
+    }
+
+    setupModalSystem() {
+        console.log('✅ Modal system initialized');
+
+        // Global modal close handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                this.closeModal(e.target);
+            }
+        });
+
+        // Escape key handler
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeTopModal();
+            }
+        });
+    }
+
+    setupMessageInput() {
+        console.log('✅ Message input initialized');
+
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            // Auto-resize functionality
+            messageInput.addEventListener('input', () => {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            });
+        }
+    }
+
+    setupDragAndDrop() {
+        console.log('✅ Drag and drop initialized');
+
+        // File drag and drop
+        const dropZone = document.getElementById('chatArea');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                this.handleFileDrop(e.dataTransfer.files);
+            });
+        }
+    }
+
+    filterContacts(query) {
+        if (window.contactManager) {
+            window.contactManager.searchContacts(query);
+        }
+    }
+
+    showAddContactModal() {
+        if (window.contactManager) {
+            window.contactManager.showAddContactModal();
+        }
+    }
+
+    closeModal(modalElement) {
+        if (modalElement) {
+            modalElement.style.display = 'none';
+            modalElement.remove();
+        }
+    }
+
+    closeTopModal() {
+        const modals = document.querySelectorAll('.modal-overlay');
+        if (modals.length > 0) {
+            this.closeModal(modals[modals.length - 1]);
+        }
+    }
+
+    handleFileDrop(files) {
+        console.log('Files dropped:', files);
+        // Handle file upload
+        if (window.messagingService) {
+            window.messagingService.uploadFiles(files);
+        }
+    }
+
     bindGlobalEvents() {
         // Global keyboard shortcuts
         document.addEventListener('keydown', (e) => {

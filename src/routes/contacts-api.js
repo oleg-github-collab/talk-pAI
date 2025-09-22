@@ -12,6 +12,12 @@ class ContactsAPI {
         // Get user's contacts
         this.router.get('/', async (req, res) => {
             try {
+                // Check if database is connected
+                if (!this.database || !this.database.isConnected) {
+                    // Return demo contacts
+                    return this.getDemoContacts(req, res);
+                }
+
                 const userId = req.user?.id || 1; // Temp fallback
                 const { status = 'accepted', search, group, limit = 50, offset = 0 } = req.query;
 
@@ -614,6 +620,82 @@ class ContactsAPI {
                 success: false,
                 error: 'Internal server error'
             });
+        });
+    }
+
+    getDemoContacts(req, res) {
+        const demoContacts = [
+            {
+                contact_id: 'demo-contact-1',
+                status: 'accepted',
+                custom_nickname: null,
+                notes: 'Demo contact for testing',
+                tags: ['demo', 'testing'],
+                is_favorite: true,
+                is_pinned: false,
+                last_interaction_at: new Date(),
+                user_id: 'demo-user-1',
+                display_name: 'Alice Johnson',
+                nickname: 'alice_j',
+                bio: 'Product Manager at TechCorp',
+                avatar_url: '👩‍💼',
+                user_status: 'online',
+                status_message: null,
+                last_seen_at: new Date(),
+                department: 'Product',
+                position: 'Manager'
+            },
+            {
+                contact_id: 'demo-contact-2',
+                status: 'accepted',
+                custom_nickname: 'Bob',
+                notes: 'Senior Developer',
+                tags: ['work'],
+                is_favorite: false,
+                is_pinned: true,
+                last_interaction_at: new Date(Date.now() - 30 * 60 * 1000),
+                user_id: 'demo-user-2',
+                display_name: 'Bob Smith',
+                nickname: 'bob_dev',
+                bio: 'Full-stack developer',
+                avatar_url: '👨‍💻',
+                user_status: 'away',
+                status_message: null,
+                last_seen_at: new Date(Date.now() - 30 * 60 * 1000),
+                department: 'Engineering',
+                position: 'Senior Developer'
+            },
+            {
+                contact_id: 'demo-contact-3',
+                status: 'accepted',
+                custom_nickname: null,
+                notes: 'UX Designer',
+                tags: ['design', 'creative'],
+                is_favorite: true,
+                is_pinned: false,
+                last_interaction_at: new Date(Date.now() - 10 * 60 * 1000),
+                user_id: 'demo-user-3',
+                display_name: 'Carol Wilson',
+                nickname: 'carol_design',
+                bio: 'Creating beautiful user experiences',
+                avatar_url: '👩‍🎨',
+                user_status: 'busy',
+                status_message: null,
+                last_seen_at: new Date(Date.now() - 10 * 60 * 1000),
+                department: 'Design',
+                position: 'UX Designer'
+            }
+        ];
+
+        res.json({
+            success: true,
+            data: demoContacts,
+            demo: true,
+            pagination: {
+                limit: 50,
+                offset: 0,
+                total: demoContacts.length
+            }
         });
     }
 

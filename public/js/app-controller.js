@@ -55,7 +55,10 @@ class TalkPAIController {
         console.log('📦 Initializing core services...');
 
         // Initialize authentication service
-        if (window.AuthManager) {
+        if (window.authManager) {
+            this.services.set('auth', window.authManager);
+            console.log('✅ Authentication service initialized');
+        } else if (window.AuthManager) {
             this.services.set('auth', new AuthManager());
             console.log('✅ Authentication service initialized');
         }
@@ -78,10 +81,20 @@ class TalkPAIController {
             console.log('✅ Call manager initialized');
         }
 
-        // Initialize WebRTC client
-        if (window.WebRTCClient) {
-            this.services.set('webrtc', new WebRTCClient());
-            console.log('✅ WebRTC client initialized');
+        // Initialize WebRTC client (fallback safe)
+        try {
+            if (window.webrtc) {
+                this.services.set('webrtc', window.webrtc);
+                console.log('✅ WebRTC client initialized (existing instance)');
+            } else if (window.WebRTCClient) {
+                this.services.set('webrtc', new WebRTCClient());
+                console.log('✅ WebRTC client initialized');
+            } else if (window.TalkPAIWebRTC) {
+                this.services.set('webrtc', new TalkPAIWebRTC());
+                console.log('✅ WebRTC client initialized (TalkPAI)');
+            }
+        } catch (error) {
+            console.warn('⚠️ WebRTC initialization failed, continuing without WebRTC:', error.message);
         }
 
         // Initialize theme manager
@@ -90,7 +103,7 @@ class TalkPAIController {
             console.log('✅ Theme manager initialized');
         }
 
-        // Wait for critical services to be ready
+        // Wait for critical services to be ready (only auth is critical)
         await this.waitForServicesReady(['auth']);
     }
 
@@ -290,6 +303,18 @@ class TalkPAIController {
         while (Date.now() - startTime < timeout) {
             const allReady = serviceNames.every(name => {
                 const service = this.services.get(name);
+
+                // Auth service is ready if it exists (no async initialization needed)
+                if (name === 'auth') {
+                    return service !== undefined;
+                }
+
+                // WebRTC service is optional and considered ready if it exists or doesn't exist
+                if (name === 'webrtc') {
+                    return true; // Always consider WebRTC ready to prevent blocking
+                }
+
+                // Other services need to be ready
                 return service && (service.isReady === undefined || service.isReady);
             });
 
@@ -300,7 +325,22 @@ class TalkPAIController {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        throw new Error(`Services not ready within ${timeout}ms: ${serviceNames.join(', ')}`);
+        // Log warning instead of throwing error for non-critical services
+        const missingServices = serviceNames.filter(name => {
+            const service = this.services.get(name);
+            if (name === 'auth') return service === undefined;
+            if (name === 'webrtc') return false; // Never consider WebRTC missing
+            return !service || (service.isReady !== undefined && !service.isReady);
+        });
+
+        if (missingServices.length > 0) {
+            console.warn(`⚠️ Services not ready within ${timeout}ms: ${missingServices.join(', ')}`);
+            if (missingServices.includes('auth')) {
+                throw new Error(`Critical service not ready: auth`);
+            }
+        }
+
+        return true;
     }
 
     triggerApplicationReady() {

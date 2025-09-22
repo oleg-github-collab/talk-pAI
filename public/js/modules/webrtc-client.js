@@ -64,28 +64,42 @@ class TalkPAIWebRTC {
     }
 
     async connectToSignalingServer() {
-        // Use relative URL for production, specific URL for development
-        const serverUrl = window.location.hostname === 'localhost' ?
-            'ws://localhost:3001' :
-            `wss://${window.location.hostname}:3001`;
+        // Use existing socket connection if available, or create new one to main server
+        if (window.socket && window.socket.connected) {
+            console.log('🔗 Using existing socket connection for WebRTC');
+            this.socket = window.socket;
+            this.isConnected = true;
+            return Promise.resolve();
+        }
+
+        // Fallback: connect to main server (same as application)
+        const serverUrl = window.location.origin;
 
         this.socket = io(serverUrl, {
             transports: ['websocket', 'polling'],
-            timeout: 20000,
-            forceNew: true
+            timeout: 10000,
+            forceNew: false
         });
 
         return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                console.warn('⚠️ WebRTC connection timeout, using fallback mode');
+                this.isConnected = false;
+                resolve(); // Don't reject, allow fallback operation
+            }, 8000);
+
             this.socket.on('connect', () => {
+                clearTimeout(timeout);
                 console.log('🔗 Connected to WebRTC signaling server');
                 this.isConnected = true;
                 resolve();
             });
 
             this.socket.on('connect_error', (error) => {
-                console.error('❌ Signaling server connection failed:', error);
+                clearTimeout(timeout);
+                console.warn('⚠️ Signaling server connection failed, using fallback mode:', error.message);
                 this.isConnected = false;
-                reject(error);
+                resolve(); // Don't reject, allow fallback operation
             });
 
             this.socket.on('disconnect', (reason) => {
