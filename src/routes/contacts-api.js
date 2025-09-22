@@ -38,7 +38,7 @@ class ContactsAPI {
                         u.avatar as avatar_url,
                         u.status as user_status,
                         NULL as status_message,
-                        u.last_seen_at,
+                        u.last_seen as last_seen_at,
                         NULL as department,
                         NULL as position
                     FROM user_contacts uc
