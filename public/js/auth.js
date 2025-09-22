@@ -13,29 +13,52 @@ class AuthManager {
     }
 
     init() {
-        // For production interface - always authenticate with demo user
-        this.authenticateWithDemo();
+        // Check for existing token
+        if (this.token) {
+            this.validateToken();
+        } else {
+            this.showAuthModal();
+        }
 
         // Bind auth tab switching
         this.bindAuthTabs();
+        this.bindAuthForms();
     }
 
-    authenticateWithDemo() {
-        // Set up demo user for immediate access
-        const demoUser = {
-            id: 'demo-user-' + Date.now(),
-            nickname: 'Demo User',
-            username: 'Demo User',
-            displayName: 'Demo User',
-            avatar: '👤',
-            email: 'demo@talkpai.com'
-        };
+    bindAuthForms() {
+        // Bind login form
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleLogin();
+            });
+        }
 
-        this.setUser(demoUser);
-        this.setToken('demo-token-' + Math.random().toString(36).substr(2, 16));
-        this.hideAuthModal();
+        // Bind register form
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleRegister();
+            });
+        }
 
-        console.log('✅ Auto-authenticated with demo user');
+        // Bind enter key handlers
+        const authInputs = document.querySelectorAll('#authModal input');
+        authInputs.forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const activeTab = document.querySelector('.auth-tab.active');
+                    if (activeTab && activeTab.dataset.tab === 'login') {
+                        this.handleLogin();
+                    } else if (activeTab && activeTab.dataset.tab === 'register') {
+                        this.handleRegister();
+                    }
+                }
+            });
+        });
     }
 
     bindAuthTabs() {
@@ -99,19 +122,24 @@ class AuthManager {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (data.success) {
                 this.setUser({
-                    id: data.id,
-                    nickname: data.nickname,
-                    username: data.nickname,
-                    displayName: data.nickname,
-                    avatar: data.avatar
+                    id: data.user.id,
+                    nickname: data.user.nickname,
+                    username: data.user.nickname,
+                    displayName: data.user.displayName,
+                    avatar: data.user.avatar
                 });
                 this.setToken(data.token);
                 this.hideAuthModal();
                 this.showSuccess(data.message || 'Login successful!');
+
+                // Connect WebRTC with user data
+                if (window.webrtcClient) {
+                    window.webrtcClient.register(data.user);
+                }
             } else {
-                this.showError(data.error || 'Login failed');
+                this.showError(data.message || 'Login failed');
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -154,8 +182,8 @@ class AuthManager {
             return;
         }
 
-        if (password.length < 6) {
-            this.showError('Password must be at least 6 characters');
+        if (password.length < 8) {
+            this.showError('Password must be at least 8 characters');
             return;
         }
 
@@ -166,7 +194,12 @@ class AuthManager {
         }
 
         try {
-            const requestData = { nickname, email, password, avatar: null };
+            const requestData = {
+                nickname,
+                email: email || null,
+                password,
+                displayName: nickname
+            };
             console.log('🚀 Sending request:', requestData);
 
             const response = await fetch('/api/auth/register', {
@@ -179,19 +212,24 @@ class AuthManager {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (data.success) {
                 this.setUser({
                     id: data.user.id,
                     nickname: data.user.nickname,
                     username: data.user.nickname,
-                    displayName: data.user.nickname,
+                    displayName: data.user.displayName,
                     avatar: data.user.avatar
                 });
-                this.setToken(data.user.token);
+                this.setToken(data.token);
                 this.hideAuthModal();
                 this.showSuccess(data.message || 'Registration successful! Welcome to Talk pAI!');
+
+                // Connect WebRTC with user data
+                if (window.webrtcClient) {
+                    window.webrtcClient.register(data.user);
+                }
             } else {
-                this.showError(data.error || 'Registration failed');
+                this.showError(data.message || 'Registration failed');
             }
         } catch (error) {
             console.error('Registration error:', error);
@@ -199,21 +237,6 @@ class AuthManager {
         }
     }
 
-    demoLogin() {
-        // Demo login with predefined user
-        const demoUser = {
-            id: 'demo-user-' + Math.random().toString(36).substr(2, 9),
-            username: 'demo_user',
-            email: 'demo@talkpai.com',
-            displayName: 'Demo User',
-            avatar: '/avatars/demo-user.jpg'
-        };
-
-        this.setUser(demoUser);
-        this.setToken('demo-token-' + Math.random().toString(36).substr(2, 16));
-        this.hideAuthModal();
-        this.showSuccess('Demo login successful!');
-    }
 
     setUser(user) {
         this.currentUser = user;

@@ -4355,7 +4355,7 @@
 
                     <textarea class="message-input" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
 
-                    <button class="send-button" id="sendBtn" onclick="console.log('Send clicked');">
+                    <button class="send-button" id="sendBtn" onclick="handleSendMessage();">
                         <svg viewBox="0 0 24 24">
                             <line x1="22" y1="2" x2="11" y2="13"/>
                             <polygon points="22,2 15,22 11,13 2,9 22,2"/>
@@ -4757,11 +4757,14 @@
     <script src="js/auth.js?v=4"></script>
     <script src="js/mobile-ux.js?v=1"></script>
     <script src="js/core/messenger-core.js?v=2"></script>
+    <script src="js/modules/messaging-service.js?v=1"></script>
+    <script src="js/messaging-handler.js?v=1"></script>
     <script src="js/modules/ui-events.js?v=2"></script>
     <script src="js/modules/call-manager.js?v=2"></script>
     <script src="js/modules/webrtc-client.js?v=2"></script>
     <script src="js/components.js?v=2"></script>
     <script src="js/app.js?v=2"></script>
+    <script src="js/app-controller.js?v=1"></script>
 
     <!-- Contact Management and Calling System -->
     <script src="js/contact-manager.js?v=1"></script>

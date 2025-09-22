@@ -163,7 +163,7 @@ const safeRequire = (modulePath, fallbackName) => {
   }
 };
 
-const AuthRoutes = safeRequire('./src/auth/routes', 'AuthRoutes');
+const AuthRoutes = safeRequire('./src/auth/enhanced-routes-wrapper', 'AuthRoutes');
 const ChatRoutes = safeRequire('./src/chat/routes', 'ChatRoutes');
 const AIRoutes = safeRequire('./src/ai/routes', 'AIRoutes');
 const AidenRoutes = safeRequire('./src/ai/aiden-routes', 'AidenRoutes');
@@ -172,6 +172,7 @@ const SearchRoutes = safeRequire('./src/search/routes', 'SearchRoutes');
 const EnterpriseRoutes = safeRequire('./src/enterprise/routes', 'EnterpriseRoutes');
 const EnhancedRoutes = safeRequire('./src/routes/enhanced-api', 'EnhancedRoutes');
 const ContactsAPI = safeRequire('./src/routes/contacts-api', 'ContactsAPI');
+const MessagingAPI = safeRequire('./src/routes/messaging-api', 'MessagingAPI');
 
 // Initialize Express app
 const app = express();
@@ -180,6 +181,9 @@ const io = new Server(server, {
   cors: config.corsOptions,
   transports: config.socketOptions.transports
 });
+
+// Make io available to routes
+app.set('io', io);
 
 const serverLogger = new FallbackLogger('Server');
 
@@ -251,6 +255,7 @@ app.use('/api/search', new SearchRoutes(database, logger || serverLogger).getRou
 app.use('/api/enterprise', new EnterpriseRoutes(database, logger || serverLogger).getRouter());
 app.use('/api/enhanced', new EnhancedRoutes(database, logger || serverLogger).getRouter());
 app.use('/api/contacts', new ContactsAPI(database, logger || serverLogger).getRouter());
+app.use('/api/messages', new MessagingAPI(database, logger || serverLogger).getRouter());
 
 // Global error handling middleware (must be last)
 if (errorHandler) {

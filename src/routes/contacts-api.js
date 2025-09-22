@@ -29,12 +29,12 @@ class ContactsAPI {
                         u.display_name,
                         u.nickname,
                         u.bio,
-                        u.avatar_url,
+                        u.avatar as avatar_url,
                         u.status as user_status,
-                        u.status_message,
+                        NULL as status_message,
                         u.last_seen_at,
-                        u.department,
-                        u.position
+                        NULL as department,
+                        NULL as position
                     FROM user_contacts uc
                     JOIN users u ON uc.contact_user_id = u.id
                     WHERE uc.user_id = $1
@@ -126,10 +126,10 @@ class ContactsAPI {
                         u.display_name,
                         u.nickname,
                         u.bio,
-                        u.avatar_url,
-                        u.department,
-                        u.position,
-                        u.location,
+                        u.avatar as avatar_url,
+                        NULL as department,
+                        NULL as position,
+                        NULL as location,
                         u.is_verified,
                         ud.verification_level,
                         ud.rating,
@@ -301,7 +301,7 @@ class ContactsAPI {
                             u.id as user_id,
                             u.display_name,
                             u.nickname,
-                            u.avatar_url,
+                            u.avatar as avatar_url,
                             u.bio
                         FROM friend_requests fr
                         JOIN users u ON fr.to_user_id = u.id
@@ -319,7 +319,7 @@ class ContactsAPI {
                             u.id as user_id,
                             u.display_name,
                             u.nickname,
-                            u.avatar_url,
+                            u.avatar as avatar_url,
                             u.bio
                         FROM friend_requests fr
                         JOIN users u ON fr.from_user_id = u.id

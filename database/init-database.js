@@ -144,17 +144,23 @@ class DatabaseInitializer {
         try {
             console.log('🔧 Initializing PostgreSQL database schema...');
 
-            // Check if schema is already initialized
+            // Check if all required tables exist
+            const requiredTables = ['users', 'user_contacts', 'friend_requests', 'blocked_users'];
             const existingTables = await this.query(`
                 SELECT table_name
                 FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_name = 'users'
-            `);
+                WHERE table_schema = 'public' AND table_name = ANY($1)
+            `, [requiredTables]);
 
-            if (existingTables.rows.length > 0) {
+            const existingTableNames = existingTables.rows.map(row => row.table_name);
+            const missingTables = requiredTables.filter(table => !existingTableNames.includes(table));
+
+            if (missingTables.length === 0) {
                 console.log('✅ PostgreSQL database schema already exists, skipping initialization');
                 return;
             }
+
+            console.log(`🔧 Missing tables detected: ${missingTables.join(', ')}, reinitializing schema...`);
 
             const schemaPath = path.join(__dirname, 'production-schema.sql');
             if (!fs.existsSync(schemaPath)) {
