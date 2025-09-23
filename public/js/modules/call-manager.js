@@ -1,493 +1,357 @@
 /**
  * TalkPAI Call Manager Module
- * Handles voice and video call functionality with WebRTC
+ * Bridges WebRTC client with UI controls and provides graceful fallbacks.
  */
 
 class CallManager {
     constructor(messenger) {
         this.messenger = messenger;
-        this.peerConnection = null;
-        this.localStream = null;
-        this.remoteStream = null;
+        this.webrtcClient = null;
+        this.currentTargetId = null;
+        this.currentChatId = null;
+        this.currentParticipants = [];
+        this.callType = 'voice';
+        this.isScreenSharing = false;
         this.isInitialized = false;
 
         this.init();
     }
 
-    async init() {
+    init() {
         try {
-            this.setupWebRTC();
+            this.setupCallInterface();
+            this.bindInternalEvents();
+            this.registerWebRTCListeners();
             this.isInitialized = true;
+            window.callManager = this;
             console.log('📞 Call Manager initialized');
         } catch (error) {
-            this.messenger.handleError(error, 'Call Manager Initialization');
+            console.error('❌ Failed to initialize call manager:', error);
+            this.messenger?.handleError?.(error, 'Call Manager Initialization');
         }
     }
 
-    setupWebRTC() {
-        // Check for WebRTC support
-        if (!navigator.mediaDevices || !window.RTCPeerConnection) {
-            throw new Error('WebRTC not supported in this browser');
+    registerWebRTCListeners() {
+        if (window.webrtcClient) {
+            this.attachWebRTCClient(window.webrtcClient);
         }
 
-        // Configure peer connection
-        this.peerConnectionConfig = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
+        document.addEventListener('webrtc:ready', (event) => {
+            this.attachWebRTCClient(event.detail);
+        }, { once: true });
     }
 
-    async startCall(callType = 'voice', contactId = null) {
+    attachWebRTCClient(client) {
+        if (!client) return;
+        this.webrtcClient = client;
+        this.ensureUserRegistration();
+    }
+
+    ensureUserRegistration() {
+        if (!this.webrtcClient || typeof this.webrtcClient.register !== 'function') {
+            return;
+        }
+
+        const authUser = window.authManager?.getCurrentUser?.() || window.currentUser;
+        this.webrtcClient.register(authUser);
+    }
+
+    async startCall(type = 'voice', chatId = null, participants = []) {
         try {
             if (!this.isInitialized) {
                 throw new Error('Call manager not initialized');
             }
 
-            const startTime = performance.now();
+            this.callType = type;
+            this.currentChatId = chatId;
+            this.currentParticipants = participants || [];
 
-            console.log(`📞 Starting ${callType} call`);
+        const targetUserId = this.resolveTargetUserId();
+        if (!targetUserId) {
+            this.showNotification('No recipient available for this call. Starting demo preview.', 'info');
+            this.showDemoCallInterface(type);
+            return;
+        }
 
-            // Use WebRTC client if available
-            if (window.webrtc && window.webrtc.isConnected) {
-                const targetUserId = contactId || 'demo-user-id';
-                await window.webrtc.initiateCall(targetUserId, callType);
+            this.currentTargetId = targetUserId;
+
+            if (this.webrtcClient && typeof this.webrtcClient.initiateCall === 'function') {
+                this.ensureUserRegistration();
+                await this.webrtcClient.initiateCall(targetUserId, type === 'video' ? 'video' : 'audio', chatId);
                 return;
             }
 
-            // Fallback to demo call interface
-            this.showDemoCallInterface(callType);
-
-            this.messenger.logPerformance('Start Call', startTime);
+            this.showDemoCallInterface(type);
         } catch (error) {
             console.error('❌ Failed to start call:', error);
-            this.messenger.handleError(error, 'Start Call');
-        }
-    }
-
-    showDemoCallInterface(callType) {
-        // Create demo call interface
-        const callOverlay = document.createElement('div');
-        callOverlay.className = 'call-ui-overlay active';
-        callOverlay.innerHTML = `
-            <div class="call-interface calling">
-                <div class="call-info">
-                    <div class="call-avatar">${callType === 'video' ? '📹' : '📞'}</div>
-                    <h3>Demo ${callType === 'video' ? 'Video' : 'Voice'} Call</h3>
-                    <p>This is a demo call interface</p>
-                    <p>WebRTC server not connected</p>
-                </div>
-                <div class="call-controls">
-                    <button class="call-btn end-call" onclick="this.parentElement.parentElement.parentElement.remove()">
-                        📞 End Call
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(callOverlay);
-
-        // Auto-close after 5 seconds for demo
-        setTimeout(() => {
-            if (callOverlay.parentNode) {
-                callOverlay.remove();
-            }
-        }, 5000);
-    }
-
-    createPeerConnection() {
-        this.peerConnection = new RTCPeerConnection(this.peerConnectionConfig);
-
-        // Handle remote stream
-        this.peerConnection.ontrack = (event) => {
-            this.remoteStream = event.streams[0];
-            this.setupRemoteVideo();
-        };
-
-        // Handle ICE candidates
-        this.peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                // In a real app, send this to the remote peer
-                console.log('ICE candidate:', event.candidate);
-            }
-        };
-
-        // Handle connection state changes
-        this.peerConnection.onconnectionstatechange = () => {
-            console.log('Connection state:', this.peerConnection.connectionState);
-
-            switch (this.peerConnection.connectionState) {
-                case 'connected':
-                    this.messenger.callState = 'connected';
-                    this.updateCallInterface();
-                    break;
-                case 'disconnected':
-                case 'failed':
-                    this.endCall();
-                    break;
-            }
-        };
-    }
-
-    setupLocalVideo() {
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo && this.localStream) {
-            localVideo.srcObject = this.localStream;
-            localVideo.muted = true; // Prevent audio feedback
-        }
-    }
-
-    setupRemoteVideo() {
-        const remoteVideo = document.getElementById('remoteVideo');
-        if (remoteVideo && this.remoteStream) {
-            remoteVideo.srcObject = this.remoteStream;
-        }
-    }
-
-    showCallInterface(callType, contactId) {
-        const callOverlay = document.getElementById('callOverlay');
-        if (callOverlay) {
-            callOverlay.classList.add('active');
-
-            // Update call interface based on type
-            const videoContainer = callOverlay.querySelector('.video-container');
-            if (videoContainer) {
-                videoContainer.style.display = callType === 'video' ? 'block' : 'none';
-            }
-
-            // Update contact info
-            this.updateCallContactInfo(contactId);
-
-            // Update call type indicator
-            const callTypeIndicator = callOverlay.querySelector('.call-type');
-            if (callTypeIndicator) {
-                callTypeIndicator.textContent = callType === 'video' ? '📹 Video Call' : '📞 Voice Call';
-            }
-        }
-    }
-
-    updateCallContactInfo(contactId) {
-        // Get contact information (in real app, fetch from API)
-        const contactInfo = this.getContactInfo(contactId);
-
-        const callAvatar = document.getElementById('callAvatar');
-        const callUserName = document.getElementById('callUserName');
-
-        if (callAvatar && contactInfo.avatar) {
-            callAvatar.src = contactInfo.avatar;
-        }
-
-        if (callUserName) {
-            callUserName.textContent = contactInfo.name;
-        }
-    }
-
-    getContactInfo(contactId) {
-        // Mock contact data
-        const contacts = {
-            '1': { name: 'Sarah Wilson', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b3b4?w=100&h=100&fit=crop&crop=face' },
-            '2': { name: 'Mike Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' },
-            '3': { name: 'Emily Chen', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face' }
-        };
-
-        return contacts[contactId] || { name: 'Unknown Contact', avatar: null };
-    }
-
-    startCallTimer() {
-        if (this.messenger.callTimer) {
-            clearInterval(this.messenger.callTimer);
-        }
-
-        this.messenger.callTimer = setInterval(() => {
-            this.updateCallTimer();
-        }, 1000);
-    }
-
-    updateCallTimer() {
-        if (!this.messenger.callStartTime) return;
-
-        const elapsed = Date.now() - this.messenger.callStartTime;
-        const minutes = Math.floor(elapsed / 60000);
-        const seconds = Math.floor((elapsed % 60000) / 1000);
-
-        const timerElement = document.getElementById('callTimer');
-        if (timerElement) {
-            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-    }
-
-    simulateCallConnection() {
-        // Simulate call connection process
-        setTimeout(() => {
-            this.messenger.callState = 'connected';
-            this.updateCallInterface();
-            console.log('📞 Call connected');
-        }, 2000 + Math.random() * 3000);
-    }
-
-    updateCallInterface() {
-        const callStatus = document.getElementById('callStatus');
-        if (callStatus) {
-            switch (this.messenger.callState) {
-                case 'calling':
-                    callStatus.textContent = 'Calling...';
-                    break;
-                case 'connected':
-                    callStatus.textContent = 'Connected';
-                    break;
-                case 'incoming':
-                    callStatus.textContent = 'Incoming call';
-                    break;
-            }
-        }
-    }
-
-    async toggleMute() {
-        try {
-            if (!this.localStream) return;
-
-            const audioTrack = this.localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                this.messenger.isMuted = !audioTrack.enabled;
-
-                // Update UI
-                const muteBtn = document.getElementById('muteBtn');
-                if (muteBtn) {
-                    muteBtn.classList.toggle('active', this.messenger.isMuted);
-                }
-
-                console.log(`🔇 Audio ${this.messenger.isMuted ? 'muted' : 'unmuted'}`);
-            }
-        } catch (error) {
-            this.messenger.handleError(error, 'Toggle Mute');
-        }
-    }
-
-    async toggleVideo() {
-        try {
-            if (!this.localStream) return;
-
-            const videoTrack = this.localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                this.messenger.isVideoOn = videoTrack.enabled;
-
-                // Update UI
-                const cameraBtn = document.getElementById('cameraBtn');
-                if (cameraBtn) {
-                    cameraBtn.classList.toggle('active', !this.messenger.isVideoOn);
-                }
-
-                console.log(`📹 Video ${this.messenger.isVideoOn ? 'enabled' : 'disabled'}`);
-            }
-        } catch (error) {
-            this.messenger.handleError(error, 'Toggle Video');
-        }
-    }
-
-    async toggleSpeaker() {
-        try {
-            this.messenger.isSpeakerOn = !this.messenger.isSpeakerOn;
-
-            // Update UI
-            const speakerBtn = document.getElementById('speakerBtn');
-            if (speakerBtn) {
-                speakerBtn.classList.toggle('active', this.messenger.isSpeakerOn);
-            }
-
-            // In a real app, you would change audio output device
-            console.log(`🔊 Speaker ${this.messenger.isSpeakerOn ? 'on' : 'off'}`);
-        } catch (error) {
-            this.messenger.handleError(error, 'Toggle Speaker');
-        }
-    }
-
-    async toggleScreenShare() {
-        try {
-            if (!this.messenger.isScreenSharing) {
-                // Start screen sharing
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true,
-                    audio: true
-                });
-
-                // Replace video track
-                if (this.peerConnection && this.localStream) {
-                    const videoTrack = this.localStream.getVideoTracks()[0];
-                    const sender = this.peerConnection.getSenders().find(s =>
-                        s.track && s.track.kind === 'video'
-                    );
-
-                    if (sender) {
-                        await sender.replaceTrack(screenStream.getVideoTracks()[0]);
-                    }
-                }
-
-                this.messenger.isScreenSharing = true;
-                console.log('🖥️ Screen sharing started');
-
-                // Listen for screen share end
-                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                    this.stopScreenShare();
-                });
-
-            } else {
-                this.stopScreenShare();
-            }
-
-            // Update UI
-            const screenShareBtn = document.getElementById('screenShareBtn');
-            if (screenShareBtn) {
-                screenShareBtn.classList.toggle('active', this.messenger.isScreenSharing);
-            }
-
-        } catch (error) {
-            this.messenger.handleError(error, 'Toggle Screen Share');
-        }
-    }
-
-    async stopScreenShare() {
-        try {
-            if (this.messenger.isScreenSharing && this.localStream) {
-                // Get camera stream again
-                const cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: true
-                });
-
-                // Replace screen share track with camera track
-                if (this.peerConnection) {
-                    const sender = this.peerConnection.getSenders().find(s =>
-                        s.track && s.track.kind === 'video'
-                    );
-
-                    if (sender) {
-                        await sender.replaceTrack(cameraStream.getVideoTracks()[0]);
-                    }
-                }
-
-                this.messenger.isScreenSharing = false;
-                console.log('🖥️ Screen sharing stopped');
-            }
-        } catch (error) {
-            this.messenger.handleError(error, 'Stop Screen Share');
+            this.messenger?.handleError?.(error, 'Start Call');
+            this.showNotification('Failed to start call. Please try again.', 'error');
         }
     }
 
     endCall() {
         try {
-            const startTime = performance.now();
-
-            // Stop all media tracks
-            if (this.localStream) {
-                this.localStream.getTracks().forEach(track => track.stop());
-                this.localStream = null;
+            if (this.webrtcClient && typeof this.webrtcClient.endCall === 'function') {
+                this.webrtcClient.endCall();
             }
-
-            // Close peer connection
-            if (this.peerConnection) {
-                this.peerConnection.close();
-                this.peerConnection = null;
-            }
-
-            // Clear call timer
-            if (this.messenger.callTimer) {
-                clearInterval(this.messenger.callTimer);
-                this.messenger.callTimer = null;
-            }
-
-            // Reset call state
-            this.messenger.callState = 'idle';
-            this.messenger.callType = null;
-            this.messenger.callStartTime = null;
-            this.messenger.isMuted = false;
-            this.messenger.isVideoOn = true;
-            this.messenger.isSpeakerOn = false;
-            this.messenger.isScreenSharing = false;
-
-            // Hide call interface
             this.hideCallInterface();
-
-            this.messenger.logPerformance('End Call', startTime);
-            console.log('📞 Call ended');
-
         } catch (error) {
-            this.messenger.handleError(error, 'End Call');
+            console.error('❌ Failed to end call:', error);
+            this.messenger?.handleError?.(error, 'End Call');
+        } finally {
+            this.currentTargetId = null;
+            this.currentChatId = null;
+            this.isScreenSharing = false;
         }
+    }
+
+    toggleMute() {
+        try {
+            let muted = false;
+            if (this.webrtcClient && typeof this.webrtcClient.toggleAudio === 'function') {
+                muted = this.webrtcClient.toggleAudio();
+            } else {
+                muted = !this.messenger?.isMuted;
+                this.messenger.isMuted = muted;
+            }
+
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn?.classList.toggle('active', muted);
+            this.showNotification(muted ? 'Microphone muted' : 'Microphone unmuted', muted ? 'info' : 'success');
+        } catch (error) {
+            console.error('❌ Toggle mute error:', error);
+            this.messenger?.handleError?.(error, 'Toggle Mute');
+        }
+    }
+
+    toggleVideo() {
+        try {
+            let disabled = false;
+            if (this.webrtcClient && typeof this.webrtcClient.toggleVideo === 'function') {
+                disabled = this.webrtcClient.toggleVideo();
+            } else {
+                disabled = !this.messenger?.isVideoOn;
+                this.messenger.isVideoOn = !disabled;
+            }
+
+            const cameraBtn = document.getElementById('cameraBtn');
+            cameraBtn?.classList.toggle('active', disabled);
+            this.showNotification(disabled ? 'Camera off' : 'Camera on', disabled ? 'info' : 'success');
+        } catch (error) {
+            console.error('❌ Toggle video error:', error);
+            this.messenger?.handleError?.(error, 'Toggle Video');
+        }
+    }
+
+    toggleSpeaker() {
+        try {
+            this.messenger.isSpeakerOn = !this.messenger.isSpeakerOn;
+            const speakerBtn = document.getElementById('speakerBtn');
+            speakerBtn?.classList.toggle('active', this.messenger.isSpeakerOn);
+            this.showNotification(this.messenger.isSpeakerOn ? 'Speaker on' : 'Speaker off', 'info');
+        } catch (error) {
+            console.error('❌ Toggle speaker error:', error);
+            this.messenger?.handleError?.(error, 'Toggle Speaker');
+        }
+    }
+
+    async toggleScreenShare() {
+        try {
+            if (!this.webrtcClient) {
+                this.showNotification('Screen sharing requires WebRTC connection.', 'error');
+                return;
+            }
+
+            if (!this.isScreenSharing && typeof this.webrtcClient.startScreenShare === 'function') {
+                await this.webrtcClient.startScreenShare();
+                this.isScreenSharing = true;
+            } else if (this.isScreenSharing && typeof this.webrtcClient.stopScreenShare === 'function') {
+                await this.webrtcClient.stopScreenShare();
+                this.isScreenSharing = false;
+            }
+
+            const screenBtn = document.getElementById('screenShareBtn');
+            screenBtn?.classList.toggle('active', this.isScreenSharing);
+        } catch (error) {
+            console.error('❌ Screen share error:', error);
+            this.messenger?.handleError?.(error, 'Toggle Screen Share');
+        }
+    }
+
+    showDemoCallInterface(callType) {
+        const overlay = document.createElement('div');
+        overlay.className = 'call-ui-overlay active';
+        overlay.innerHTML = `
+            <div class="call-interface calling">
+                <div class="call-info">
+                    <div class="call-avatar">${callType === 'video' ? '📹' : '📞'}</div>
+                    <h3>${callType === 'video' ? 'Video' : 'Voice'} Call (Demo)</h3>
+                    <p>WebRTC server not connected. Running in demo mode.</p>
+                </div>
+                <div class="call-controls">
+                    <button class="call-btn end-call" id="demoEndCallBtn">📞 End Call</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        document.getElementById('demoEndCallBtn')?.addEventListener('click', () => {
+            overlay.remove();
+        });
+
+        setTimeout(() => {
+            overlay.remove();
+        }, 5000);
+    }
+
+    setupCallInterface() {
+        if (document.getElementById('callOverlay')) {
+            return;
+        }
+
+        const callOverlay = document.createElement('div');
+        callOverlay.id = 'callOverlay';
+        callOverlay.className = 'call-overlay';
+        callOverlay.innerHTML = this.createCallInterface();
+        document.body.appendChild(callOverlay);
+    }
+
+    bindInternalEvents() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.webrtcClient?.currentCall) {
+                this.showNotification('Call is running in the background.', 'info');
+            }
+        });
+    }
+
+    createCallInterface() {
+        return `
+            <div class="call-interface">
+                <div class="call-header">
+                    <div class="call-info">
+                        <div class="caller-avatar" id="callerAvatar">👤</div>
+                        <div class="caller-details">
+                            <h3 class="caller-name" id="callerName">Contact</h3>
+                            <p class="call-status" id="callStatus">Connecting...</p>
+                            <div class="call-timer" id="callTimer" style="display: none;">00:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="video-container" id="videoContainer" style="display: none;">
+                    <video id="remoteVideo" class="remote-video" autoplay playsinline></video>
+                    <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+                </div>
+
+                <div class="audio-visualization" id="audioVisualization">
+                    <div class="audio-wave">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                </div>
+
+                <div class="call-controls">
+                    <div class="primary-controls">
+                        <button class="control-btn mute-btn" id="muteBtn" title="Mute">
+                            <span class="btn-icon">🎤</span>
+                            <span class="btn-label">Mute</span>
+                        </button>
+                        <button class="control-btn end-call-btn" id="endCallBtn" title="End Call">
+                            <span class="btn-icon">📞</span>
+                            <span class="btn-label">End</span>
+                        </button>
+                        <button class="control-btn video-btn" id="cameraBtn" title="Toggle Video">
+                            <span class="btn-icon">📹</span>
+                            <span class="btn-label">Video</span>
+                        </button>
+                    </div>
+                    <div class="secondary-controls">
+                        <button class="control-btn speaker-btn" id="speakerBtn" title="Speaker">
+                            <span class="btn-icon">🔊</span>
+                        </button>
+                        <button class="control-btn screen-btn" id="screenShareBtn" title="Share Screen">
+                            <span class="btn-icon">📺</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     hideCallInterface() {
-        const callOverlay = document.getElementById('callOverlay');
-        if (callOverlay) {
-            callOverlay.classList.remove('active');
+        const overlay = document.getElementById('callOverlay');
+        if (overlay) {
+            overlay.classList.remove('active');
         }
     }
 
-    showCallError(message) {
-        this.messenger.showErrorNotification(message);
-        this.endCall();
-    }
+    resolveTargetUserId() {
+        const authUser = window.authManager?.getCurrentUser?.();
+        const currentUserId = authUser?.id?.toString();
 
-    // Incoming call handling
-    handleIncomingCall(callData) {
-        try {
-            this.messenger.callState = 'incoming';
-            this.messenger.callType = callData.type;
+        if (Array.isArray(this.currentParticipants) && this.currentParticipants.length > 0) {
+            for (const participant of this.currentParticipants) {
+                if (!participant) continue;
 
-            // Show incoming call notification
-            this.showIncomingCallNotification(callData);
-
-            console.log('📞 Incoming call from:', callData.from);
-        } catch (error) {
-            this.messenger.handleError(error, 'Incoming Call');
-        }
-    }
-
-    showIncomingCallNotification(callData) {
-        const notification = document.getElementById('callNotification');
-        if (notification) {
-            notification.classList.add('active');
-
-            // Update notification content
-            const notificationName = notification.querySelector('.call-notification-name');
-            const notificationType = notification.querySelector('.call-notification-type');
-
-            if (notificationName) {
-                notificationName.textContent = callData.fromName || 'Unknown';
-            }
-
-            if (notificationType) {
-                notificationType.textContent = `Incoming ${callData.type} call`;
+                if (typeof participant === 'object' && participant.id) {
+                    if (participant.id.toString() !== currentUserId) {
+                        return participant.id.toString();
+                    }
+                } else if (typeof participant === 'string') {
+                    if (!currentUserId || participant !== currentUserId) {
+                        return participant;
+                    }
+                }
             }
         }
+
+        if (this.currentTargetId) {
+            return this.currentTargetId;
+        }
+
+        if (this.currentChatId) {
+            return this.currentChatId.toString();
+        }
+
+        return null;
     }
 
-    answerCall() {
-        try {
-            this.hideIncomingCallNotification();
-            this.startCall(this.messenger.callType);
-        } catch (error) {
-            this.messenger.handleError(error, 'Answer Call');
+    showNotification(message, type = 'info') {
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(message, type);
+            return;
         }
-    }
 
-    declineCall() {
-        try {
-            this.hideIncomingCallNotification();
-            this.messenger.callState = 'idle';
-            this.messenger.callType = null;
-        } catch (error) {
-            this.messenger.handleError(error, 'Decline Call');
-        }
-    }
+        // Minimal fallback notification
+        const toast = document.createElement('div');
+        toast.className = `call-toast ${type}`;
+        toast.textContent = message;
+        Object.assign(toast.style, {
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            background: type === 'error' ? '#DC2626' : '#2563EB',
+            color: '#fff',
+            zIndex: 10001,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+            opacity: '0',
+            transition: 'opacity 0.2s ease'
+        });
 
-    hideIncomingCallNotification() {
-        const notification = document.getElementById('callNotification');
-        if (notification) {
-            notification.classList.remove('active');
-        }
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 200);
+        }, 2500);
     }
 }
 

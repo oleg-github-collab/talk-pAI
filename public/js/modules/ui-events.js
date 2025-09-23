@@ -7,7 +7,9 @@ class UIEventsManager {
     constructor(messenger) {
         this.messenger = messenger;
         this.typingTimer = null;
+        this.messagingService = window.messagingService || null;
         this.bindEvents();
+        this.setupMessagingServiceListeners();
     }
 
     bindEvents() {
@@ -19,6 +21,16 @@ class UIEventsManager {
         } else {
             setTimeout(() => this.initializeEventBindings(), 100);
         }
+    }
+
+    setupMessagingServiceListeners() {
+        if (this.messagingService && typeof this.messagingService.isReady === 'function' && this.messagingService.isReady()) {
+            return;
+        }
+
+        document.addEventListener('messaging-service:ready', (event) => {
+            this.messagingService = event.detail;
+        }, { once: true });
     }
 
     initializeEventBindings() {
@@ -253,25 +265,28 @@ class UIEventsManager {
         });
 
         // Call control buttons
-        document.getElementById('muteBtn')?.addEventListener('click', () => {
-            this.messenger.toggleMute();
-        });
+        const callManager = window.app?.callManager || window.callManager;
+        if (callManager) {
+            document.getElementById('muteBtn')?.addEventListener('click', () => {
+                callManager.toggleMute();
+            });
 
-        document.getElementById('cameraBtn')?.addEventListener('click', () => {
-            this.messenger.toggleVideo();
-        });
+            document.getElementById('cameraBtn')?.addEventListener('click', () => {
+                callManager.toggleVideo();
+            });
 
-        document.getElementById('endCallBtn')?.addEventListener('click', () => {
-            this.endCall();
-        });
+            document.getElementById('endCallBtn')?.addEventListener('click', () => {
+                callManager.endCall();
+            });
 
-        document.getElementById('speakerBtn')?.addEventListener('click', () => {
-            this.messenger.toggleSpeaker();
-        });
+            document.getElementById('speakerBtn')?.addEventListener('click', () => {
+                callManager.toggleSpeaker();
+            });
 
-        document.getElementById('screenShareBtn')?.addEventListener('click', () => {
-            this.messenger.toggleScreenShare();
-        });
+            document.getElementById('screenShareBtn')?.addEventListener('click', () => {
+                callManager.toggleScreenShare();
+            });
+        }
 
         console.log('📞 Call events bound');
     }
@@ -666,8 +681,11 @@ class UIEventsManager {
             const startTime = performance.now();
             console.log('🎯 Chat selection triggered:', chatId);
 
-            // Use messenger's chat selection method
-            this.messenger.selectChat(chatId);
+            if (this.messagingService) {
+                this.messagingService.selectChat(chatId);
+            } else if (this.messenger) {
+                this.messenger.selectChat(chatId);
+            }
 
             this.messenger.logPerformance('Chat Selection', startTime);
         } catch (error) {
@@ -675,7 +693,7 @@ class UIEventsManager {
         }
     }
 
-    sendMessage() {
+    async sendMessage() {
         try {
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value.trim();
@@ -685,15 +703,16 @@ class UIEventsManager {
             const startTime = performance.now();
             console.log('📤 Sending message:', message);
 
-            // Use messenger's send message method
-            this.messenger.sendMessage(message);
+            if (this.messagingService) {
+                await this.messagingService.sendMessage(message);
+            } else {
+                this.messenger.sendMessage(message);
+                this.sendMessageToBackend(message);
+            }
 
             // Clear input
             messageInput.value = '';
             this.messenger.autoResizeTextarea(messageInput);
-
-            // Send message to backend
-            this.sendMessageToBackend(message);
 
             this.messenger.logPerformance('Send Message', startTime);
         } catch (error) {
@@ -1191,9 +1210,12 @@ class UIEventsManager {
 
     startCall(type) {
         console.log('Starting call:', type);
+        const callManager = window.app?.callManager || window.callManager;
+        const activeChatId = this.messagingService?.currentChatId || this.messenger?.currentChat;
+        const participants = this.messagingService?.getChatParticipants(activeChatId);
 
-        if (window.app && window.app.callManager) {
-            window.app.callManager.initiateCall(type);
+        if (callManager) {
+            callManager.startCall(type, activeChatId, participants);
         } else {
             // Fallback implementation for testing
             this.showCallInterface(type);
@@ -1203,8 +1225,9 @@ class UIEventsManager {
     endCall() {
         console.log('Ending call');
 
-        if (window.app && window.app.callManager) {
-            window.app.callManager.endCall();
+        const callManager = window.app?.callManager || window.callManager;
+        if (callManager) {
+            callManager.endCall();
         } else {
             // Fallback implementation
             this.hideCallInterface();
@@ -1487,7 +1510,7 @@ class UIEventsManager {
     // Frontend-Backend Communication
     async sendMessageToBackend(message) {
         try {
-            const response = await fetch('/api/v2/demo/message', {
+            const response = await fetch('/api/messages/demo/message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1516,7 +1539,13 @@ class UIEventsManager {
 
     async loadChatsFromBackend() {
         try {
-            const response = await fetch('/api/v2/demo/chats');
+            if (this.messagingService) {
+                const chats = await this.messagingService.loadChats();
+                console.log('✅ Chats loaded from messaging service:', chats);
+                return chats;
+            }
+
+            const response = await fetch('/api/messages/demo/chats');
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -1535,7 +1564,14 @@ class UIEventsManager {
 
     async loadMessagesFromBackend(chatId) {
         try {
-            const response = await fetch(`/chats/${chatId}/messages`);
+            if (this.messagingService) {
+                await this.messagingService.loadMessages(chatId);
+                const cache = this.messagingService.messages.get(chatId.toString()) || [];
+                console.log('✅ Messages loaded from messaging service:', cache);
+                return cache;
+            }
+
+            const response = await fetch(`/api/messages/chats/${chatId}/messages`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -1653,10 +1689,7 @@ class UIEventsManager {
     startVoiceCall() {
         try {
             console.log('📞 Starting voice call');
-            if (window.webrtc) {
-                window.webrtc.makeCall('demo-target-user', 'voice');
-            }
-            this.messenger.showNotification('Voice call initiated', 'info');
+            this.startCall('voice');
         } catch (error) {
             console.error('❌ Voice call error:', error);
             this.messenger.handleError(error, 'Voice Call');
@@ -1666,10 +1699,7 @@ class UIEventsManager {
     startVideoCall() {
         try {
             console.log('📹 Starting video call');
-            if (window.webrtc) {
-                window.webrtc.makeCall('demo-target-user', 'video');
-            }
-            this.messenger.showNotification('Video call initiated', 'info');
+            this.startCall('video');
         } catch (error) {
             console.error('❌ Video call error:', error);
             this.messenger.handleError(error, 'Video Call');

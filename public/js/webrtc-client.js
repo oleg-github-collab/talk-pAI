@@ -12,6 +12,8 @@ class WebRTCCallClient {
             audio: true,
             video: false
         };
+        this.currentUser = null;
+        this.guestId = `guest-${Math.random().toString(36).slice(2, 10)}`;
 
         // WebRTC configuration with STUN servers
         this.rtcConfiguration = {
@@ -25,12 +27,22 @@ class WebRTCCallClient {
 
         this.setupEventListeners();
         this.initializeMediaDevices();
+        this.register();
     }
 
     setupEventListeners() {
+        this.socket.on('connect', () => {
+            this.register(this.currentUser);
+        });
+
         // Incoming call
         this.socket.on('incoming_call', (data) => {
             this.handleIncomingCall(data);
+        });
+
+        // Call initiated acknowledgement
+        this.socket.on('call_initiated', (data) => {
+            this.handleCallInitiated(data);
         });
 
         // Call accepted
@@ -103,6 +115,12 @@ class WebRTCCallClient {
         try {
             this.mediaConstraints.video = callType === 'video';
             this.isInitiator = true;
+            this.currentCall = {
+                id: null,
+                type: callType,
+                targetUserId,
+                chatId
+            };
 
             // Get user media
             this.localStream = await navigator.mediaDevices.getUserMedia(this.mediaConstraints);
@@ -126,9 +144,10 @@ class WebRTCCallClient {
                 callType,
                 chatId,
                 callerInfo: {
-                    nickname: window.currentUser?.nickname,
-                    displayName: window.currentUser?.displayName,
-                    avatar: window.currentUser?.avatar
+                    id: this.currentUser?.id,
+                    nickname: this.currentUser?.nickname || window.currentUser?.nickname,
+                    displayName: this.currentUser?.displayName || window.currentUser?.displayName,
+                    avatar: this.currentUser?.avatar || window.currentUser?.avatar
                 }
             });
 
@@ -143,6 +162,19 @@ class WebRTCCallClient {
             console.error('Failed to initiate call:', error);
             this.handleCallError({ error: 'MEDIA_ERROR', message: error.message });
         }
+    }
+
+    handleCallInitiated(data) {
+        if (!this.currentCall) {
+            this.currentCall = {};
+        }
+
+        this.currentCall.id = data.callId;
+        this.currentCall.type = data.callType || this.currentCall.type || 'audio';
+        this.currentCall.targetUserId = data.targetUserId || this.currentCall.targetUserId;
+        this.currentCall.chatId = data.chatId || this.currentCall.chatId;
+
+        this.updateCallInterface({ status: 'ringing' });
     }
 
     // Accept incoming call
@@ -241,7 +273,12 @@ class WebRTCCallClient {
 
     // Handle incoming call
     handleIncomingCall(data) {
-        this.currentCall = { id: data.callId, type: data.callType };
+        this.currentCall = {
+            id: data.callId,
+            type: data.callType,
+            targetUserId: data.from?.id,
+            chatId: data.chatId
+        };
 
         // Show incoming call UI
         this.showIncomingCallInterface({
@@ -257,6 +294,9 @@ class WebRTCCallClient {
 
     // Handle call accepted
     async handleCallAccepted(data) {
+        if (this.currentCall) {
+            this.currentCall.id = data.callId;
+        }
         if (this.isInitiator) {
             // Create and send offer
             try {
@@ -604,6 +644,34 @@ class WebRTCCallClient {
         this.remoteStream = null;
     }
 
+    register(user) {
+        if (user) {
+            this.currentUser = {
+                id: user.id?.toString() || this.guestId,
+                nickname: user.nickname || user.username || user.displayName || 'User',
+                displayName: user.displayName || user.nickname || user.username || 'User',
+                avatar: user.avatar || user.displayName?.charAt?.(0) || '👤'
+            };
+        } else if (!this.currentUser) {
+            this.currentUser = {
+                id: this.guestId,
+                nickname: 'Guest',
+                displayName: 'Guest User',
+                avatar: '👤'
+            };
+        }
+
+        if (!this.currentUser?.id) {
+            return;
+        }
+
+        this.socket.emit('register_user', {
+            userId: this.currentUser.id,
+            displayName: this.currentUser.displayName,
+            avatar: this.currentUser.avatar
+        });
+    }
+
     getStatusText(status) {
         const statusMap = {
             calling: 'Calling...',
@@ -693,9 +761,13 @@ class WebRTCCallClient {
 let webrtcClient = null;
 
 // Export for global access
+window.WebRTCCallClient = WebRTCCallClient;
+
 window.initializeWebRTC = (socket) => {
     webrtcClient = new WebRTCCallClient(socket);
     window.webrtcClient = webrtcClient;
+    window.webrtc = webrtcClient;
+    document.dispatchEvent(new CustomEvent('webrtc:ready', { detail: webrtcClient }));
     return webrtcClient;
 };
 

@@ -242,12 +242,15 @@ class AuthManager {
         this.currentUser = user;
         this.isAuthenticated = true;
 
+        window.currentUser = user;
+        window.messagingService?.setCurrentUser?.(user);
+
         // Update UI with user info
         this.updateUIWithUser(user);
 
         // Register user with WebRTC if available
-        if (window.webrtc) {
-            window.webrtc.registerUser(user.id, user.displayName || user.username);
+        if (window.webrtcClient?.register) {
+            window.webrtcClient.register(user);
         }
     }
 
@@ -297,13 +300,15 @@ class AuthManager {
         this.isAuthenticated = false;
         this.token = null;
         localStorage.removeItem('talkpai-token');
+        window.currentUser = null;
+        window.messagingService?.setCurrentUser?.(null);
 
         // Clear UI
         this.showAuthModal();
 
         // Disconnect WebRTC
-        if (window.webrtc) {
-            window.webrtc.cleanup();
+        if (window.webrtcClient?.cleanup) {
+            window.webrtcClient.cleanup();
         }
 
         this.showSuccess('Logged out successfully');

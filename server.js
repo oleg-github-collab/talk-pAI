@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const http = require('http');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 // Enhanced global error handlers with retry logic
@@ -187,8 +188,42 @@ app.set('io', io);
 
 const serverLogger = new FallbackLogger('Server');
 
+// In-memory call tracking
+const connectedCallUsers = new Map(); // userId -> socketId
+const activeCalls = new Map(); // callId -> { participants: Map<userId, socketId>, callType, chatId }
+
 // Trust proxy for Railway deployment
 app.set('trust proxy', 1);
+
+const getSocketByUserId = (userId) => {
+  if (!userId) return null;
+  const socketId = connectedCallUsers.get(userId.toString());
+  if (!socketId) return null;
+  return io.sockets.sockets.get(socketId) || null;
+};
+
+const emitToCallParticipants = (callId, event, payload, excludeUserId) => {
+  const call = activeCalls.get(callId);
+  if (!call) return;
+
+  for (const [userId, socketId] of call.participants.entries()) {
+    if (excludeUserId && userId === excludeUserId) continue;
+    io.to(socketId).emit(event, payload);
+  }
+};
+
+const endActiveCall = (callId, reason = 'ended', initiatedBy) => {
+  const call = activeCalls.get(callId);
+  if (!call) return;
+
+  emitToCallParticipants(callId, 'call_ended', {
+    callId,
+    reason,
+    endedBy: initiatedBy || null
+  });
+
+  activeCalls.delete(callId);
+};
 
 // Rate limiting with proper proxy configuration
 const generalLimiter = rateLimit({
@@ -380,6 +415,193 @@ app.get('/health/metrics', (req, res) => {
 io.on('connection', (socket) => {
   logger.info(`User connected: ${socket.id}`);
 
+  socket.on('register_user', (data = {}) => {
+    const userId = data.userId?.toString();
+    if (!userId) return;
+
+    connectedCallUsers.set(userId, socket.id);
+    socket.data.userId = userId;
+    socket.data.profile = {
+      displayName: data.displayName || 'User',
+      avatar: data.avatar || '👤'
+    };
+
+    logger.debug(`📇 Registered call user ${userId} on socket ${socket.id}`);
+  });
+
+  socket.on('initiate_call', (data = {}) => {
+    const callerId = socket.data.userId;
+    const targetId = data.targetUserId?.toString();
+
+    if (!callerId || !targetId) {
+      socket.emit('call_error', {
+        error: 'INVALID_CALL',
+        message: 'Caller or target user is missing'
+      });
+      return;
+    }
+
+    const targetSocket = getSocketByUserId(targetId);
+    if (!targetSocket) {
+      socket.emit('call_error', {
+        error: 'USER_OFFLINE',
+        message: 'Target user is not online'
+      });
+      return;
+    }
+
+    const callId = uuidv4();
+    const callType = data.callType === 'video' ? 'video' : 'audio';
+
+    activeCalls.set(callId, {
+      callId,
+      initiatorId: callerId,
+      targetUserId: targetId,
+      callType,
+      chatId: data.chatId || null,
+      participants: new Map([
+        [callerId, socket.id],
+        [targetId, targetSocket.id]
+      ])
+    });
+
+    socket.emit('call_initiated', {
+      callId,
+      callType,
+      targetUserId: targetId,
+      chatId: data.chatId || null
+    });
+
+    targetSocket.emit('incoming_call', {
+      callId,
+      from: {
+        id: callerId,
+        nickname: data.callerInfo?.nickname,
+        displayName: data.callerInfo?.displayName,
+        avatar: data.callerInfo?.avatar
+      },
+      callType,
+      chatId: data.chatId || null
+    });
+  });
+
+  socket.on('accept_call', (data = {}) => {
+    const callId = data.callId;
+    const call = activeCalls.get(callId);
+    if (!call) {
+      socket.emit('call_error', {
+        error: 'CALL_NOT_FOUND',
+        message: 'Call not found'
+      });
+      return;
+    }
+
+    emitToCallParticipants(callId, 'call_accepted', {
+      callId,
+      acceptedBy: socket.data.userId || null
+    });
+  });
+
+  socket.on('decline_call', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    endActiveCall(callId, 'declined', socket.data.userId);
+  });
+
+  socket.on('end_call', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    endActiveCall(callId, 'ended', socket.data.userId);
+  });
+
+  socket.on('webrtc_offer', (data = {}) => {
+    const call = activeCalls.get(data.callId);
+    if (!call) return;
+    const targetSocketId = call.participants.get(data.targetUserId?.toString());
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('webrtc_offer', {
+        callId: data.callId,
+        offer: data.offer,
+        from: socket.data.userId
+      });
+    }
+  });
+
+  socket.on('webrtc_answer', (data = {}) => {
+    const call = activeCalls.get(data.callId);
+    if (!call) return;
+    const targetSocketId = call.participants.get(data.targetUserId?.toString());
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('webrtc_answer', {
+        callId: data.callId,
+        answer: data.answer,
+        from: socket.data.userId
+      });
+    }
+  });
+
+  socket.on('webrtc_ice_candidate', (data = {}) => {
+    const call = activeCalls.get(data.callId);
+    if (!call) return;
+    const targetSocketId = call.participants.get(data.targetUserId?.toString());
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('webrtc_ice_candidate', {
+        callId: data.callId,
+        candidate: data.candidate,
+        from: socket.data.userId
+      });
+    }
+  });
+
+  socket.on('toggle_audio', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    emitToCallParticipants(callId, 'participant_audio_toggle', {
+      callId,
+      userId: socket.data.userId,
+      muted: data.muted
+    }, socket.data.userId);
+  });
+
+  socket.on('toggle_video', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    emitToCallParticipants(callId, 'participant_video_toggle', {
+      callId,
+      userId: socket.data.userId,
+      disabled: data.disabled
+    }, socket.data.userId);
+  });
+
+  socket.on('screen_share_start', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    emitToCallParticipants(callId, 'screen_share_started', {
+      callId,
+      userId: socket.data.userId
+    }, socket.data.userId);
+  });
+
+  socket.on('screen_share_stop', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    emitToCallParticipants(callId, 'screen_share_stopped', {
+      callId,
+      userId: socket.data.userId
+    }, socket.data.userId);
+  });
+
+  socket.on('report_call_quality', (data = {}) => {
+    const callId = data.callId;
+    if (!callId) return;
+    emitToCallParticipants(callId, 'call_quality_update', {
+      callId,
+      userId: socket.data.userId,
+      quality: data.quality,
+      connectionStats: data.connectionStats
+    }, socket.data.userId);
+  });
+
   socket.on('join-chat', (chatId) => {
     socket.join(`chat-${chatId}`);
     logger.debug(`User ${socket.id} joined chat ${chatId}`);
@@ -431,6 +653,17 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     logger.info(`User disconnected: ${socket.id}`);
+
+    const userId = socket.data.userId;
+    if (userId) {
+      connectedCallUsers.delete(userId);
+
+      for (const [callId, call] of activeCalls.entries()) {
+        if (call.participants.has(userId)) {
+          endActiveCall(callId, 'participant_disconnected', userId);
+        }
+      }
+    }
   });
 });
 

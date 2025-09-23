@@ -13,6 +13,7 @@ class MessagingService {
         this.isConnected = false;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
+        this.ready = false;
 
         this.init();
     }
@@ -29,6 +30,11 @@ class MessagingService {
 
             // Load initial chats
             await this.loadChats();
+
+            this.ready = true;
+            document.dispatchEvent(new CustomEvent('messaging-service:ready', {
+                detail: this
+            }));
 
             console.log('✅ Messaging service initialized');
         } catch (error) {
@@ -96,7 +102,7 @@ class MessagingService {
             const token = localStorage.getItem('talkpai-token');
             if (!token) {
                 // Load demo chats for unauthenticated users
-                return this.loadDemoChats();
+                return await this.loadDemoChats();
             }
 
             const response = await fetch('/api/messages/chats', {
@@ -108,20 +114,21 @@ class MessagingService {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
+                    this.chats.clear();
                     data.chats.forEach(chat => {
                         this.chats.set(chat.id.toString(), chat);
                     });
                     this.updateChatsList();
-                    return;
+                    return data.chats;
                 }
             }
 
             // Fallback to demo chats
-            this.loadDemoChats();
+            return await this.loadDemoChats();
 
         } catch (error) {
             console.error('❌ Failed to load chats:', error);
-            this.loadDemoChats();
+            return await this.loadDemoChats();
         }
     }
 
@@ -131,70 +138,96 @@ class MessagingService {
             const data = await response.json();
 
             if (data.success) {
+                this.chats.clear();
                 data.chats.forEach(chat => {
                     this.chats.set(chat.id.toString(), chat);
                 });
                 this.updateChatsList();
+                return data.chats;
             }
         } catch (error) {
             console.error('❌ Failed to load demo chats:', error);
         }
+
+        return [];
     }
 
     updateChatsList() {
-        const chatsList = document.querySelector('.chats-list');
-        if (!chatsList) return;
+        const chatList = document.getElementById('chatList') || document.querySelector('.chat-list');
+        if (!chatList) return;
 
-        chatsList.innerHTML = '';
+        chatList.innerHTML = '';
 
-        this.chats.forEach((chat, chatId) => {
+        this.chats.forEach((chat) => {
             const chatElement = this.createChatElement(chat);
-            chatsList.appendChild(chatElement);
+            chatList.appendChild(chatElement);
         });
+
+        if (!this.currentChatId && this.chats.size > 0) {
+            const firstChatId = this.chats.keys().next().value;
+            if (firstChatId) {
+                this.selectChat(firstChatId);
+            }
+        }
     }
 
     createChatElement(chat) {
-        const div = document.createElement('div');
-        div.className = 'chat-item';
-        div.dataset.chatId = chat.id;
+        const item = document.createElement('a');
+        item.href = '#';
+        item.className = 'chat-item';
+        item.dataset.chat = chat.id;
 
-        div.innerHTML = `
-            <div class="chat-avatar">${chat.avatar || chat.name.charAt(0).toUpperCase()}</div>
+        if (chat.participants) {
+            item.dataset.participants = JSON.stringify(chat.participants);
+        }
+
+        const avatar = chat.avatar || chat.name?.charAt(0)?.toUpperCase() || '💬';
+        const lastMessage = chat.lastMessage || 'No messages yet';
+        const time = chat.lastMessageTime ? this.formatTime(chat.lastMessageTime) : '';
+        const unread = chat.unreadCount ? `<div class="chat-unread">${chat.unreadCount}</div>` : '';
+
+        item.innerHTML = `
+            <div class="chat-avatar">${avatar}</div>
             <div class="chat-info">
-                <div class="chat-name">${chat.name}</div>
-                <div class="chat-last-message">${chat.lastMessage || 'No messages yet'}</div>
+                <div class="chat-name">${chat.name || 'Chat'}</div>
+                <div class="chat-preview">${lastMessage}</div>
             </div>
             <div class="chat-meta">
-                <div class="chat-time">${this.formatTime(chat.lastMessageTime)}</div>
-                ${chat.unreadCount ? `<div class="chat-unread">${chat.unreadCount}</div>` : ''}
+                <div class="chat-time">${time}</div>
+                ${unread}
             </div>
         `;
 
-        div.addEventListener('click', () => {
+        item.addEventListener('click', (event) => {
+            event.preventDefault();
             this.selectChat(chat.id);
         });
 
-        return div;
+        return item;
     }
 
     async selectChat(chatId) {
+        if (!chatId) return;
+
         // Update UI
         document.querySelectorAll('.chat-item').forEach(item => {
             item.classList.remove('active');
         });
 
-        const selectedChatElement = document.querySelector(`[data-chat-id="${chatId}"]`);
+        const selectedChatElement = document.querySelector(`[data-chat="${chatId}"]`);
         if (selectedChatElement) {
             selectedChatElement.classList.add('active');
         }
 
+        const previousChatId = this.currentChatId;
+        this.currentChatId = chatId.toString();
+
         // Leave current chat room
-        if (this.currentChatId && this.isConnected) {
-            this.socket.emit('leave-chat', this.currentChatId);
+        if (previousChatId && this.isConnected) {
+            this.socket.emit('leave-chat', previousChatId);
         }
 
         // Join new chat room
-        this.currentChatId = chatId;
         if (this.isConnected) {
             this.joinChat(chatId);
         }
@@ -238,12 +271,18 @@ class MessagingService {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.displayMessages(data.messages);
-                    this.messages.set(chatId, data.messages);
+                    const normalizedMessages = data.messages.map(msg => ({
+                        ...msg,
+                        chatId
+                    }));
+
+                    this.messages.set(chatId.toString(), normalizedMessages);
+                    this.displayMessages(normalizedMessages);
+                    return;
                 }
-            } else {
-                this.loadDemoMessages(chatId);
             }
+
+            this.loadDemoMessages(chatId);
 
         } catch (error) {
             console.error('❌ Failed to load messages:', error);
@@ -254,7 +293,8 @@ class MessagingService {
     loadDemoMessages(chatId) {
         const demoMessages = [
             {
-                id: 1,
+                id: `demo-${chatId}-1`,
+                chatId,
                 content: 'Welcome to Talk pAI! 🎉',
                 senderId: 'system',
                 senderName: 'System',
@@ -263,7 +303,8 @@ class MessagingService {
                 messageType: 'text'
             },
             {
-                id: 2,
+                id: `demo-${chatId}-2`,
+                chatId,
                 content: 'This is a demo message to show the interface.',
                 senderId: 'demo-user',
                 senderName: 'Demo User',
@@ -273,8 +314,8 @@ class MessagingService {
             }
         ];
 
+        this.messages.set(chatId.toString(), demoMessages);
         this.displayMessages(demoMessages);
-        this.messages.set(chatId, demoMessages);
     }
 
     displayMessages(messages) {
@@ -293,22 +334,44 @@ class MessagingService {
     }
 
     createMessageElement(message) {
-        const div = document.createElement('div');
-        const isOwnMessage = message.senderId === this.currentUser?.id || message.senderId === 'demo-user';
+        const wrapper = document.createElement('div');
+        const isOwnMessage = this.isOwnMessage(message);
+        const timestamp = this.formatTime(message.timestamp);
 
-        div.className = `message ${isOwnMessage ? 'own-message' : 'other-message'}`;
+        wrapper.className = `message-group ${isOwnMessage ? 'sent' : 'received'}`;
 
-        div.innerHTML = `
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="sender-name">${message.senderName}</span>
-                    <span class="message-time">${this.formatTime(message.timestamp)}</span>
+        if (isOwnMessage) {
+            wrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-content">${this.escapeHtml(message.content)}</div>
+                    <div class="message-states">
+                        <svg class="message-check" viewBox="0 0 24 24">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                        <svg class="message-check" viewBox="0 0 24 24">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                        <span>${timestamp}</span>
+                    </div>
                 </div>
-                <div class="message-text">${this.escapeHtml(message.content)}</div>
-            </div>
-        `;
+            `;
+        } else {
+            const avatar = message.senderAvatar || this.getChatAvatar(this.currentChatId);
+            const senderName = message.senderName || 'Participant';
+            wrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <div class="message-avatar">${avatar}</div>
+                        <span class="message-sender">${senderName}</span>
+                        <span class="message-time">${timestamp}</span>
+                    </div>
+                    <div class="message-content">${this.escapeHtml(message.content)}</div>
+                </div>
+            `;
+        }
 
-        return div;
+        wrapper.dataset.messageId = message.id;
+        return wrapper;
     }
 
     async sendMessage(content, messageType = 'text') {
@@ -318,6 +381,10 @@ class MessagingService {
         try {
             const token = localStorage.getItem('talkpai-token');
             let response;
+            const payload = {
+                content: content.trim(),
+                messageType
+            };
 
             if (token) {
                 response = await fetch(`/api/messages/chats/${this.currentChatId}/messages`, {
@@ -326,10 +393,7 @@ class MessagingService {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({
-                        content: content.trim(),
-                        messageType
-                    })
+                    body: JSON.stringify(payload)
                 });
             } else {
                 // Demo mode
@@ -339,8 +403,7 @@ class MessagingService {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        content: content.trim(),
-                        messageType,
+                        ...payload,
                         chatId: this.currentChatId
                     })
                 });
@@ -349,7 +412,13 @@ class MessagingService {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    // Message will be received via WebSocket, so we don't need to add it manually
+                    // For demo mode or when socket is unavailable, ensure the message appears
+                    if (!this.isConnected || !this.socket) {
+                        this.handleIncomingMessage({
+                            ...data.message,
+                            chatId: this.currentChatId
+                        });
+                    }
                     console.log('✅ Message sent successfully');
                 }
             } else {
@@ -363,19 +432,19 @@ class MessagingService {
     }
 
     handleIncomingMessage(message) {
-        // Add to messages cache
-        const chatMessages = this.messages.get(message.chatId.toString()) || [];
-        chatMessages.push(message);
-        this.messages.set(message.chatId.toString(), chatMessages);
+        if (!message || !message.chatId) return;
+
+        const chatKey = message.chatId.toString();
+        const chatMessages = this.messages.get(chatKey) || [];
+        const alreadyExists = chatMessages.some(existing => existing.id === message.id);
+        if (!alreadyExists) {
+            chatMessages.push(message);
+            this.messages.set(chatKey, chatMessages);
+        }
 
         // Update UI if this is the current chat
-        if (message.chatId.toString() === this.currentChatId) {
-            const messageElement = this.createMessageElement(message);
-            const messagesContainer = document.getElementById('messagesContainer');
-            if (messagesContainer) {
-                messagesContainer.appendChild(messageElement);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+        if (chatKey === this.currentChatId?.toString()) {
+            this.appendMessageToUI(message);
         }
 
         // Update chat list
@@ -392,12 +461,12 @@ class MessagingService {
             chat.lastMessageTime = message.timestamp;
 
             // Update in UI
-            const chatElement = document.querySelector(`[data-chat-id="${chatId}"] .chat-last-message`);
-            if (chatElement) {
-                chatElement.textContent = message.content;
+            const previewElement = document.querySelector(`[data-chat="${chatId}"] .chat-preview`);
+            if (previewElement) {
+                previewElement.textContent = message.content;
             }
 
-            const timeElement = document.querySelector(`[data-chat-id="${chatId}"] .chat-time`);
+            const timeElement = document.querySelector(`[data-chat="${chatId}"] .chat-time`);
             if (timeElement) {
                 timeElement.textContent = this.formatTime(message.timestamp);
             }
@@ -484,6 +553,47 @@ class MessagingService {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    appendMessageToUI(message) {
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (!messagesContainer) return;
+
+        const element = this.createMessageElement(message);
+        messagesContainer.appendChild(element);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    isOwnMessage(message) {
+        const senderId = message.senderId?.toString();
+        const currentUserId = this.currentUser?.id?.toString();
+        if (currentUserId && senderId) {
+            return senderId === currentUserId;
+        }
+
+        return senderId === 'demo-user' || senderId === 'system-self';
+    }
+
+    getChatAvatar(chatId) {
+        const chat = this.chats.get(chatId?.toString());
+        return chat?.avatar || chat?.name?.charAt(0)?.toUpperCase() || '👤';
+    }
+
+    setCurrentUser(user) {
+        this.currentUser = user;
+    }
+
+    getChatsArray() {
+        return Array.from(this.chats.values());
+    }
+
+    getChatParticipants(chatId) {
+        const chat = this.chats.get(chatId?.toString());
+        return chat?.participants || [];
+    }
+
+    isReady() {
+        return this.ready;
     }
 
     showError(message) {
