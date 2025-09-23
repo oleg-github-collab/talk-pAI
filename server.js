@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const http = require('http');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 require('dotenv').config();
 
 // Enhanced global error handlers with retry logic
@@ -450,7 +450,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const callId = uuidv4();
+    const callId = randomUUID();
     const callType = data.callType === 'video' ? 'video' : 'audio';
 
     activeCalls.set(callId, {

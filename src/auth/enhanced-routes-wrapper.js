@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 class EnhancedAuthRoutes {
     constructor(database, logger) {
@@ -108,7 +108,7 @@ class EnhancedAuthRoutes {
             const passwordHash = await bcrypt.hash(password, saltRounds);
 
             // Create user
-            const userId = uuidv4();
+            const userId = randomUUID();
             const result = await this.db.query(`
                 INSERT INTO users (
                     id, nickname, email, password_hash, display_name,

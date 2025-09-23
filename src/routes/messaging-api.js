@@ -1,5 +1,5 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 class MessagingAPI {
     constructor(database, logger) {
@@ -125,7 +125,7 @@ class MessagingAPI {
             }
 
             // Create chat in database
-            const chatId = uuidv4();
+            const chatId = randomUUID();
             const result = await this.db.query(`
                 INSERT INTO chats (
                     id, name, type, description, created_by, created_at, updated_at
@@ -282,7 +282,7 @@ class MessagingAPI {
             }
 
             // Create message
-            const messageId = uuidv4();
+            const messageId = randomUUID();
             const result = await this.db.query(`
                 INSERT INTO messages (
                     id, chat_id, sender_id, content, message_type, created_at
